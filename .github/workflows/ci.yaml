@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ master, main ]
+    branches: [master, main]
   pull_request:
-    branches: [ master, main ]
+    branches: [master, main]
 
 jobs:
   build-and-test:
@@ -23,12 +23,12 @@ jobs:
           gcov: true
           cmake: true
           ninja: true
-        
+
       - name: Install LCOV
         run: sudo apt-get update && sudo apt-get install -y lcov
 
       - name: Configure CMake
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON 
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON
 
       - name: Build
         run: cmake --build build
@@ -41,12 +41,19 @@ jobs:
       - name: Generate Coverage Report
         run: |
           lcov --gcov-tool gcov-14 --capture --directory . --output-file coverage.info
-          lcov --extract coverage.info "$(pwd)/include/*" "$(pwd)/src/*" --output-file coverage_clean.info
+
+          # Build pattern dynamically based on what exists
+          PATTERNS="$(pwd)/include/*"
+          if [ -d "src" ] && [ "$(find src -name '*.cpp' -o -name '*.c' 2>/dev/null)" ]; then
+            PATTERNS="$PATTERNS $(pwd)/src/*"
+          fi
+
+          lcov --extract coverage.info $PATTERNS --output-file coverage_clean.info
           genhtml coverage_clean.info --output-directory coverage_html
-          
+
           COVERAGE=$(lcov --summary coverage_clean.info | grep "lines......" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
           echo "COVERAGE=$COVERAGE" >> $GITHUB_ENV
-          
+
           if (( $(echo "$COVERAGE < 80" | bc -l) )); then
             echo "BADGE_COLOR=red" >> $GITHUB_ENV
           elif (( $(echo "$COVERAGE < 90" | bc -l) )); then
@@ -54,7 +61,7 @@ jobs:
           else
             echo "BADGE_COLOR=brightgreen" >> $GITHUB_ENV
           fi
-          
+
       # --- BADGE GENERATION (Gist Method) ---
       # This updates a Gist with the JSON data for shields.io
       - name: Create Coverage Badge
