@@ -31,18 +31,18 @@
             <td class="headerValue">coverage_clean.info</td>
             <td></td>
             <td class="headerItem">Lines:</td>
-            <td class="headerCovTableEntryHi">98.4&nbsp;%</td>
-            <td class="headerCovTableEntry">63</td>
-            <td class="headerCovTableEntry">62</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">87</td>
+            <td class="headerCovTableEntry">87</td>
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-02-14 13:23:47</td>
+            <td class="headerValue">2026-02-14 14:21:02</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
-            <td class="headerCovTableEntry">12</td>
-            <td class="headerCovTableEntry">12</td>
+            <td class="headerCovTableEntry">20</td>
+            <td class="headerCovTableEntry">20</td>
           </tr>
                   <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
                 </table>
@@ -68,153 +68,186 @@
 <span id="L6"><span class="lineNum">       6</span>              : namespace m3d</span>
 <span id="L7"><span class="lineNum">       7</span>              : {</span>
 <span id="L8"><span class="lineNum">       8</span>              : </span>
-<span id="L9"><span class="lineNum">       9</span>              :     struct SymMat3; // Forward declaration</span>
-<span id="L10"><span class="lineNum">      10</span>              : </span>
-<span id="L11"><span class="lineNum">      11</span>              :     struct mat3</span>
-<span id="L12"><span class="lineNum">      12</span>              :     {</span>
-<span id="L13"><span class="lineNum">      13</span>              :         vec3 cols[3]; // Column-major</span>
-<span id="L14"><span class="lineNum">      14</span>              : </span>
-<span id="L15"><span class="lineNum">      15</span> <span class="tlaGNC tlaBgGNC">           8 :         mat3()</span></span>
-<span id="L16"><span class="lineNum">      16</span> <span class="tlaGNC">          32 :         {</span></span>
-<span id="L17"><span class="lineNum">      17</span> <span class="tlaGNC">           8 :             cols[0] = {1, 0, 0};</span></span>
-<span id="L18"><span class="lineNum">      18</span> <span class="tlaGNC">           8 :             cols[1] = {0, 1, 0};</span></span>
-<span id="L19"><span class="lineNum">      19</span> <span class="tlaGNC">           8 :             cols[2] = {0, 0, 1};</span></span>
-<span id="L20"><span class="lineNum">      20</span> <span class="tlaGNC">           8 :         }</span></span>
-<span id="L21"><span class="lineNum">      21</span>              : </span>
-<span id="L22"><span class="lineNum">      22</span> <span class="tlaGNC">           5 :         mat3(scalar m00, scalar m01, scalar m02,</span></span>
-<span id="L23"><span class="lineNum">      23</span>              :              scalar m10, scalar m11, scalar m12,</span>
-<span id="L24"><span class="lineNum">      24</span>              :              scalar m20, scalar m21, scalar m22)</span>
-<span id="L25"><span class="lineNum">      25</span> <span class="tlaGNC">          20 :         {</span></span>
-<span id="L26"><span class="lineNum">      26</span> <span class="tlaGNC">           5 :             cols[0] = {m00, m10, m20};</span></span>
-<span id="L27"><span class="lineNum">      27</span> <span class="tlaGNC">           5 :             cols[1] = {m01, m11, m21};</span></span>
-<span id="L28"><span class="lineNum">      28</span> <span class="tlaGNC">           5 :             cols[2] = {m02, m12, m22};</span></span>
-<span id="L29"><span class="lineNum">      29</span> <span class="tlaGNC">           5 :         }</span></span>
-<span id="L30"><span class="lineNum">      30</span>              : </span>
-<span id="L31"><span class="lineNum">      31</span> <span class="tlaGNC">          44 :         vec3 &amp;operator[](int i) { return cols[i]; }</span></span>
-<span id="L32"><span class="lineNum">      32</span> <span class="tlaGNC">          90 :         const vec3 &amp;operator[](int i) const { return cols[i]; }</span></span>
-<span id="L33"><span class="lineNum">      33</span>              : </span>
-<span id="L34"><span class="lineNum">      34</span> <span class="tlaGNC">          10 :         vec3 operator*(const vec3 &amp;v) const</span></span>
-<span id="L35"><span class="lineNum">      35</span>              :         {</span>
-<span id="L36"><span class="lineNum">      36</span>              :             return {</span>
-<span id="L37"><span class="lineNum">      37</span> <span class="tlaGNC">          10 :                 cols[0].x * v.x + cols[1].x * v.y + cols[2].x * v.z,</span></span>
-<span id="L38"><span class="lineNum">      38</span> <span class="tlaGNC">          10 :                 cols[0].y * v.x + cols[1].y * v.y + cols[2].y * v.z,</span></span>
-<span id="L39"><span class="lineNum">      39</span> <span class="tlaGNC">          10 :                 cols[0].z * v.x + cols[1].z * v.y + cols[2].z * v.z};</span></span>
-<span id="L40"><span class="lineNum">      40</span>              :         }</span>
-<span id="L41"><span class="lineNum">      41</span>              : </span>
-<span id="L42"><span class="lineNum">      42</span> <span class="tlaGNC">           3 :         mat3 operator*(const mat3 &amp;rhs) const</span></span>
-<span id="L43"><span class="lineNum">      43</span>              :         {</span>
-<span id="L44"><span class="lineNum">      44</span> <span class="tlaGNC">           3 :             mat3 res;</span></span>
-<span id="L45"><span class="lineNum">      45</span> <span class="tlaGNC">          12 :             for (int c = 0; c &lt; 3; c++)</span></span>
-<span id="L46"><span class="lineNum">      46</span>              :             {</span>
-<span id="L47"><span class="lineNum">      47</span> <span class="tlaGNC">           9 :                 res[c] = (*this) * rhs[c];</span></span>
-<span id="L48"><span class="lineNum">      48</span>              :             }</span>
-<span id="L49"><span class="lineNum">      49</span> <span class="tlaGNC">           3 :             return res;</span></span>
-<span id="L50"><span class="lineNum">      50</span>              :         }</span>
-<span id="L51"><span class="lineNum">      51</span>              : </span>
-<span id="L52"><span class="lineNum">      52</span>              :         bool operator==(const mat3 &amp;other) const</span>
-<span id="L53"><span class="lineNum">      53</span>              :         {</span>
-<span id="L54"><span class="lineNum">      54</span>              :             return cols[0] == other[0] &amp;&amp; cols[1] == other[1] &amp;&amp; cols[2] == other[2];</span>
-<span id="L55"><span class="lineNum">      55</span>              :         }</span>
-<span id="L56"><span class="lineNum">      56</span>              : </span>
-<span id="L57"><span class="lineNum">      57</span>              :         bool is_approx(const mat3 &amp;other, scalar precision = EPSILON) const</span>
-<span id="L58"><span class="lineNum">      58</span>              :         {</span>
-<span id="L59"><span class="lineNum">      59</span>              :             return cols[0].is_approx(other[0], precision) &amp;&amp;</span>
-<span id="L60"><span class="lineNum">      60</span>              :                    cols[1].is_approx(other[1], precision) &amp;&amp;</span>
-<span id="L61"><span class="lineNum">      61</span>              :                    cols[2].is_approx(other[2], precision);</span>
-<span id="L62"><span class="lineNum">      62</span>              :         }</span>
-<span id="L63"><span class="lineNum">      63</span>              : </span>
-<span id="L64"><span class="lineNum">      64</span> <span class="tlaGNC">           1 :         static mat3 transpose(const mat3 &amp;m)</span></span>
-<span id="L65"><span class="lineNum">      65</span>              :         {</span>
-<span id="L66"><span class="lineNum">      66</span>              :             return mat3(</span>
-<span id="L67"><span class="lineNum">      67</span> <span class="tlaGNC">           1 :                 m[0].x, m[0].y, m[0].z,</span></span>
-<span id="L68"><span class="lineNum">      68</span> <span class="tlaGNC">           1 :                 m[1].x, m[1].y, m[1].z,</span></span>
-<span id="L69"><span class="lineNum">      69</span> <span class="tlaGNC">           2 :                 m[2].x, m[2].y, m[2].z);</span></span>
-<span id="L70"><span class="lineNum">      70</span>              :         }</span>
-<span id="L71"><span class="lineNum">      71</span>              : </span>
-<span id="L72"><span class="lineNum">      72</span> <span class="tlaGNC">           3 :         scalar determinant() const</span></span>
-<span id="L73"><span class="lineNum">      73</span>              :         {</span>
-<span id="L74"><span class="lineNum">      74</span> <span class="tlaGNC">           3 :             return cols[0].x * (cols[1].y * cols[2].z - cols[1].z * cols[2].y) -</span></span>
-<span id="L75"><span class="lineNum">      75</span> <span class="tlaGNC">           3 :                    cols[1].x * (cols[0].y * cols[2].z - cols[0].z * cols[2].y) +</span></span>
-<span id="L76"><span class="lineNum">      76</span> <span class="tlaGNC">           3 :                    cols[2].x * (cols[0].y * cols[1].z - cols[0].z * cols[1].y);</span></span>
-<span id="L77"><span class="lineNum">      77</span>              :         }</span>
-<span id="L78"><span class="lineNum">      78</span>              : </span>
-<span id="L79"><span class="lineNum">      79</span> <span class="tlaGNC">           2 :         static mat3 inverse(const mat3 &amp;m)</span></span>
-<span id="L80"><span class="lineNum">      80</span>              :         {</span>
-<span id="L81"><span class="lineNum">      81</span> <span class="tlaGNC">           2 :             scalar det = m.determinant();</span></span>
-<span id="L82"><span class="lineNum">      82</span> <span class="tlaGNC">           2 :             if (std::abs(det) &lt; EPSILON)</span></span>
-<span id="L83"><span class="lineNum">      83</span> <span class="tlaUNC tlaBgUNC">           0 :                 return mat3(); // Return identity on failure</span></span>
-<span id="L84"><span class="lineNum">      84</span>              : </span>
-<span id="L85"><span class="lineNum">      85</span> <span class="tlaGNC tlaBgGNC">           2 :             scalar invDet = 1.0 / det;</span></span>
-<span id="L86"><span class="lineNum">      86</span> <span class="tlaGNC">           2 :             mat3 res;</span></span>
-<span id="L87"><span class="lineNum">      87</span> <span class="tlaGNC">           2 :             res[0].x = (m[1].y * m[2].z - m[1].z * m[2].y) * invDet;</span></span>
-<span id="L88"><span class="lineNum">      88</span> <span class="tlaGNC">           2 :             res[0].y = (m[0].z * m[2].y - m[0].y * m[2].z) * invDet;</span></span>
-<span id="L89"><span class="lineNum">      89</span> <span class="tlaGNC">           2 :             res[0].z = (m[0].y * m[1].z - m[0].z * m[1].y) * invDet;</span></span>
-<span id="L90"><span class="lineNum">      90</span> <span class="tlaGNC">           2 :             res[1].x = (m[1].z * m[2].x - m[1].x * m[2].z) * invDet;</span></span>
-<span id="L91"><span class="lineNum">      91</span> <span class="tlaGNC">           2 :             res[1].y = (m[0].x * m[2].z - m[0].z * m[2].x) * invDet;</span></span>
-<span id="L92"><span class="lineNum">      92</span> <span class="tlaGNC">           2 :             res[1].z = (m[1].x * m[0].z - m[0].x * m[1].z) * invDet;</span></span>
-<span id="L93"><span class="lineNum">      93</span> <span class="tlaGNC">           2 :             res[2].x = (m[1].x * m[2].y - m[1].y * m[2].x) * invDet;</span></span>
-<span id="L94"><span class="lineNum">      94</span> <span class="tlaGNC">           2 :             res[2].y = (m[0].y * m[2].x - m[0].x * m[2].y) * invDet;</span></span>
-<span id="L95"><span class="lineNum">      95</span> <span class="tlaGNC">           2 :             res[2].z = (m[0].x * m[1].y - m[1].x * m[0].y) * invDet;</span></span>
-<span id="L96"><span class="lineNum">      96</span> <span class="tlaGNC">           2 :             return res;</span></span>
-<span id="L97"><span class="lineNum">      97</span>              :         }</span>
-<span id="L98"><span class="lineNum">      98</span>              : </span>
-<span id="L99"><span class="lineNum">      99</span>              :         friend std::ostream &amp;operator&lt;&lt;(std::ostream &amp;os, const mat3 &amp;m)</span>
-<span id="L100"><span class="lineNum">     100</span>              :         {</span>
-<span id="L101"><span class="lineNum">     101</span>              :             os &lt;&lt; &quot;\n&quot;;</span>
-<span id="L102"><span class="lineNum">     102</span>              :             for (int r = 0; r &lt; 3; r++)</span>
-<span id="L103"><span class="lineNum">     103</span>              :             {</span>
-<span id="L104"><span class="lineNum">     104</span>              :                 os &lt;&lt; &quot;| &quot; &lt;&lt; std::setw(8) &lt;&lt; m[0][r] &lt;&lt; &quot; &quot;</span>
-<span id="L105"><span class="lineNum">     105</span>              :                    &lt;&lt; std::setw(8) &lt;&lt; m[1][r] &lt;&lt; &quot; &quot;</span>
-<span id="L106"><span class="lineNum">     106</span>              :                    &lt;&lt; std::setw(8) &lt;&lt; m[2][r] &lt;&lt; &quot; |\n&quot;;</span>
-<span id="L107"><span class="lineNum">     107</span>              :             }</span>
-<span id="L108"><span class="lineNum">     108</span>              :             return os;</span>
-<span id="L109"><span class="lineNum">     109</span>              :         }</span>
-<span id="L110"><span class="lineNum">     110</span>              :     };</span>
-<span id="L111"><span class="lineNum">     111</span>              : </span>
-<span id="L112"><span class="lineNum">     112</span> <span class="tlaGNC">           1 :     inline mat3 mat3_cast(const quat &amp;q)</span></span>
-<span id="L113"><span class="lineNum">     113</span>              :     {</span>
-<span id="L114"><span class="lineNum">     114</span> <span class="tlaGNC">           1 :         mat3 m;</span></span>
-<span id="L115"><span class="lineNum">     115</span> <span class="tlaGNC">           1 :         scalar x2 = q.x + q.x, y2 = q.y + q.y, z2 = q.z + q.z;</span></span>
-<span id="L116"><span class="lineNum">     116</span> <span class="tlaGNC">           1 :         scalar xx = q.x * x2, xy = q.x * y2, xz = q.x * z2;</span></span>
-<span id="L117"><span class="lineNum">     117</span> <span class="tlaGNC">           1 :         scalar yy = q.y * y2, yz = q.y * z2, zz = q.z * z2;</span></span>
-<span id="L118"><span class="lineNum">     118</span> <span class="tlaGNC">           1 :         scalar wx = q.w * x2, wy = q.w * y2, wz = q.w * z2;</span></span>
-<span id="L119"><span class="lineNum">     119</span>              : </span>
-<span id="L120"><span class="lineNum">     120</span> <span class="tlaGNC">           1 :         m[0] = {1 - (yy + zz), xy + wz, xz - wy};</span></span>
-<span id="L121"><span class="lineNum">     121</span> <span class="tlaGNC">           1 :         m[1] = {xy - wz, 1 - (xx + zz), yz + wx};</span></span>
-<span id="L122"><span class="lineNum">     122</span> <span class="tlaGNC">           1 :         m[2] = {xz + wy, yz - wx, 1 - (xx + yy)};</span></span>
-<span id="L123"><span class="lineNum">     123</span> <span class="tlaGNC">           1 :         return m;</span></span>
-<span id="L124"><span class="lineNum">     124</span>              :     }</span>
-<span id="L125"><span class="lineNum">     125</span>              : </span>
-<span id="L126"><span class="lineNum">     126</span>              :     struct SymMat3</span>
-<span id="L127"><span class="lineNum">     127</span>              :     {</span>
-<span id="L128"><span class="lineNum">     128</span>              :         scalar xx, yy, zz;</span>
-<span id="L129"><span class="lineNum">     129</span>              :         scalar xy, xz, yz;</span>
-<span id="L130"><span class="lineNum">     130</span>              : </span>
-<span id="L131"><span class="lineNum">     131</span>              :         SymMat3() : xx(0), yy(0), zz(0), xy(0), xz(0), yz(0) {}</span>
-<span id="L132"><span class="lineNum">     132</span> <span class="tlaGNC">           1 :         SymMat3(scalar xx, scalar yy, scalar zz, scalar xy, scalar xz, scalar yz)</span></span>
-<span id="L133"><span class="lineNum">     133</span> <span class="tlaGNC">           1 :             : xx(xx), yy(yy), zz(zz), xy(xy), xz(xz), yz(yz) {}</span></span>
-<span id="L134"><span class="lineNum">     134</span>              : </span>
-<span id="L135"><span class="lineNum">     135</span> <span class="tlaGNC">           1 :         vec3 operator*(const vec3 &amp;v) const</span></span>
-<span id="L136"><span class="lineNum">     136</span>              :         {</span>
-<span id="L137"><span class="lineNum">     137</span>              :             return {</span>
-<span id="L138"><span class="lineNum">     138</span> <span class="tlaGNC">           1 :                 xx * v.x + xy * v.y + xz * v.z,</span></span>
-<span id="L139"><span class="lineNum">     139</span> <span class="tlaGNC">           1 :                 xy * v.x + yy * v.y + yz * v.z,</span></span>
-<span id="L140"><span class="lineNum">     140</span> <span class="tlaGNC">           1 :                 xz * v.x + yz * v.y + zz * v.z};</span></span>
-<span id="L141"><span class="lineNum">     141</span>              :         }</span>
-<span id="L142"><span class="lineNum">     142</span>              : </span>
-<span id="L143"><span class="lineNum">     143</span>              :         bool is_approx(const SymMat3 &amp;o, scalar p = EPSILON) const</span>
-<span id="L144"><span class="lineNum">     144</span>              :         {</span>
-<span id="L145"><span class="lineNum">     145</span>              :             return std::abs(xx - o.xx) &lt; p &amp;&amp; std::abs(yy - o.yy) &lt; p &amp;&amp; std::abs(zz - o.zz) &lt; p &amp;&amp;</span>
-<span id="L146"><span class="lineNum">     146</span>              :                    std::abs(xy - o.xy) &lt; p &amp;&amp; std::abs(xz - o.xz) &lt; p &amp;&amp; std::abs(yz - o.yz) &lt; p;</span>
-<span id="L147"><span class="lineNum">     147</span>              :         }</span>
-<span id="L148"><span class="lineNum">     148</span>              : </span>
-<span id="L149"><span class="lineNum">     149</span>              :         friend std::ostream &amp;operator&lt;&lt;(std::ostream &amp;os, const SymMat3 &amp;m)</span>
-<span id="L150"><span class="lineNum">     150</span>              :         {</span>
-<span id="L151"><span class="lineNum">     151</span>              :             return os &lt;&lt; &quot;SymMat3(diag: &quot; &lt;&lt; m.xx &lt;&lt; &quot;,&quot; &lt;&lt; m.yy &lt;&lt; &quot;,&quot; &lt;&lt; m.zz</span>
-<span id="L152"><span class="lineNum">     152</span>              :                       &lt;&lt; &quot; off: &quot; &lt;&lt; m.xy &lt;&lt; &quot;,&quot; &lt;&lt; m.xz &lt;&lt; &quot;,&quot; &lt;&lt; m.yz &lt;&lt; &quot;)&quot;;</span>
-<span id="L153"><span class="lineNum">     153</span>              :         }</span>
-<span id="L154"><span class="lineNum">     154</span>              :     };</span>
-<span id="L155"><span class="lineNum">     155</span>              : }</span>
+<span id="L9"><span class="lineNum">       9</span>              :     struct mat3</span>
+<span id="L10"><span class="lineNum">      10</span>              :     {</span>
+<span id="L11"><span class="lineNum">      11</span>              :         vec3 cols[3]; // Column-major</span>
+<span id="L12"><span class="lineNum">      12</span>              : </span>
+<span id="L13"><span class="lineNum">      13</span> <span class="tlaGNC tlaBgGNC">          12 :         mat3()</span></span>
+<span id="L14"><span class="lineNum">      14</span> <span class="tlaGNC">          48 :         {</span></span>
+<span id="L15"><span class="lineNum">      15</span> <span class="tlaGNC">          12 :             cols[0] = {1, 0, 0};</span></span>
+<span id="L16"><span class="lineNum">      16</span> <span class="tlaGNC">          12 :             cols[1] = {0, 1, 0};</span></span>
+<span id="L17"><span class="lineNum">      17</span> <span class="tlaGNC">          12 :             cols[2] = {0, 0, 1};</span></span>
+<span id="L18"><span class="lineNum">      18</span> <span class="tlaGNC">          12 :         }</span></span>
+<span id="L19"><span class="lineNum">      19</span>              : </span>
+<span id="L20"><span class="lineNum">      20</span> <span class="tlaGNC">          17 :         mat3(scalar m00, scalar m01, scalar m02,</span></span>
+<span id="L21"><span class="lineNum">      21</span>              :              scalar m10, scalar m11, scalar m12,</span>
+<span id="L22"><span class="lineNum">      22</span>              :              scalar m20, scalar m21, scalar m22)</span>
+<span id="L23"><span class="lineNum">      23</span> <span class="tlaGNC">          68 :         {</span></span>
+<span id="L24"><span class="lineNum">      24</span> <span class="tlaGNC">          17 :             cols[0] = {m00, m10, m20};</span></span>
+<span id="L25"><span class="lineNum">      25</span> <span class="tlaGNC">          17 :             cols[1] = {m01, m11, m21};</span></span>
+<span id="L26"><span class="lineNum">      26</span> <span class="tlaGNC">          17 :             cols[2] = {m02, m12, m22};</span></span>
+<span id="L27"><span class="lineNum">      27</span> <span class="tlaGNC">          17 :         }</span></span>
+<span id="L28"><span class="lineNum">      28</span>              : </span>
+<span id="L29"><span class="lineNum">      29</span> <span class="tlaGNC">          66 :         vec3 &amp;operator[](int i) { return cols[i]; }</span></span>
+<span id="L30"><span class="lineNum">      30</span> <span class="tlaGNC">          43 :         const vec3 &amp;operator[](int i) const { return cols[i]; }</span></span>
+<span id="L31"><span class="lineNum">      31</span>              : </span>
+<span id="L32"><span class="lineNum">      32</span> <span class="tlaGNC">          13 :         vec3 operator*(const vec3 &amp;v) const</span></span>
+<span id="L33"><span class="lineNum">      33</span>              :         {</span>
+<span id="L34"><span class="lineNum">      34</span>              :             return {</span>
+<span id="L35"><span class="lineNum">      35</span> <span class="tlaGNC">          13 :                 cols[0].x * v.x + cols[1].x * v.y + cols[2].x * v.z,</span></span>
+<span id="L36"><span class="lineNum">      36</span> <span class="tlaGNC">          13 :                 cols[0].y * v.x + cols[1].y * v.y + cols[2].y * v.z,</span></span>
+<span id="L37"><span class="lineNum">      37</span> <span class="tlaGNC">          13 :                 cols[0].z * v.x + cols[1].z * v.y + cols[2].z * v.z};</span></span>
+<span id="L38"><span class="lineNum">      38</span>              :         }</span>
+<span id="L39"><span class="lineNum">      39</span>              : </span>
+<span id="L40"><span class="lineNum">      40</span> <span class="tlaGNC">           3 :         mat3 operator*(const mat3 &amp;rhs) const</span></span>
+<span id="L41"><span class="lineNum">      41</span>              :         {</span>
+<span id="L42"><span class="lineNum">      42</span> <span class="tlaGNC">           3 :             mat3 res;</span></span>
+<span id="L43"><span class="lineNum">      43</span> <span class="tlaGNC">          12 :             for (int c = 0; c &lt; 3; c++)</span></span>
+<span id="L44"><span class="lineNum">      44</span>              :             {</span>
+<span id="L45"><span class="lineNum">      45</span> <span class="tlaGNC">           9 :                 res[c] = (*this) * rhs[c];</span></span>
+<span id="L46"><span class="lineNum">      46</span>              :             }</span>
+<span id="L47"><span class="lineNum">      47</span> <span class="tlaGNC">           3 :             return res;</span></span>
+<span id="L48"><span class="lineNum">      48</span>              :         }</span>
+<span id="L49"><span class="lineNum">      49</span>              : </span>
+<span id="L50"><span class="lineNum">      50</span> <span class="tlaGNC">           2 :         bool operator==(const mat3 &amp;other) const</span></span>
+<span id="L51"><span class="lineNum">      51</span>              :         {</span>
+<span id="L52"><span class="lineNum">      52</span> <span class="tlaGNC">           2 :             return cols[0] == other[0] &amp;&amp; cols[1] == other[1] &amp;&amp; cols[2] == other[2];</span></span>
+<span id="L53"><span class="lineNum">      53</span>              :         }</span>
+<span id="L54"><span class="lineNum">      54</span>              : </span>
+<span id="L55"><span class="lineNum">      55</span> <span class="tlaGNC">           3 :         bool is_approx(const mat3 &amp;other, scalar precision = EPSILON) const</span></span>
+<span id="L56"><span class="lineNum">      56</span>              :         {</span>
+<span id="L57"><span class="lineNum">      57</span> <span class="tlaGNC">           5 :             return cols[0].is_approx(other[0], precision) &amp;&amp;</span></span>
+<span id="L58"><span class="lineNum">      58</span> <span class="tlaGNC">           5 :                    cols[1].is_approx(other[1], precision) &amp;&amp;</span></span>
+<span id="L59"><span class="lineNum">      59</span> <span class="tlaGNC">           5 :                    cols[2].is_approx(other[2], precision);</span></span>
+<span id="L60"><span class="lineNum">      60</span>              :         }</span>
+<span id="L61"><span class="lineNum">      61</span>              : </span>
+<span id="L62"><span class="lineNum">      62</span> <span class="tlaGNC">           2 :         mat3 transpose() const</span></span>
+<span id="L63"><span class="lineNum">      63</span>              :         {</span>
+<span id="L64"><span class="lineNum">      64</span>              :             return mat3(</span>
+<span id="L65"><span class="lineNum">      65</span> <span class="tlaGNC">           2 :                 cols[0].x, cols[0].y, cols[0].z,</span></span>
+<span id="L66"><span class="lineNum">      66</span> <span class="tlaGNC">           2 :                 cols[1].x, cols[1].y, cols[1].z,</span></span>
+<span id="L67"><span class="lineNum">      67</span> <span class="tlaGNC">           2 :                 cols[2].x, cols[2].y, cols[2].z);</span></span>
+<span id="L68"><span class="lineNum">      68</span>              :         }</span>
+<span id="L69"><span class="lineNum">      69</span>              : </span>
+<span id="L70"><span class="lineNum">      70</span> <span class="tlaGNC">           6 :         scalar determinant() const</span></span>
+<span id="L71"><span class="lineNum">      71</span>              :         {</span>
+<span id="L72"><span class="lineNum">      72</span> <span class="tlaGNC">           6 :             return cols[0].x * (cols[1].y * cols[2].z - cols[1].z * cols[2].y) -</span></span>
+<span id="L73"><span class="lineNum">      73</span> <span class="tlaGNC">           6 :                    cols[1].x * (cols[0].y * cols[2].z - cols[0].z * cols[2].y) +</span></span>
+<span id="L74"><span class="lineNum">      74</span> <span class="tlaGNC">           6 :                    cols[2].x * (cols[0].y * cols[1].z - cols[0].z * cols[1].y);</span></span>
+<span id="L75"><span class="lineNum">      75</span>              :         }</span>
+<span id="L76"><span class="lineNum">      76</span>              : </span>
+<span id="L77"><span class="lineNum">      77</span> <span class="tlaGNC">           4 :         mat3 inverse() const</span></span>
+<span id="L78"><span class="lineNum">      78</span>              :         {</span>
+<span id="L79"><span class="lineNum">      79</span> <span class="tlaGNC">           4 :             scalar det = this-&gt;determinant();</span></span>
+<span id="L80"><span class="lineNum">      80</span> <span class="tlaGNC">           4 :             if (std::abs(det) &lt; EPSILON)</span></span>
+<span id="L81"><span class="lineNum">      81</span> <span class="tlaGNC">           1 :                 return mat3(); // Return identity on failure</span></span>
+<span id="L82"><span class="lineNum">      82</span>              : </span>
+<span id="L83"><span class="lineNum">      83</span> <span class="tlaGNC">           3 :             scalar invDet = 1.0 / det;</span></span>
+<span id="L84"><span class="lineNum">      84</span> <span class="tlaGNC">           3 :             mat3 res;</span></span>
+<span id="L85"><span class="lineNum">      85</span> <span class="tlaGNC">           3 :             res[0].x = (cols[1].y * cols[2].z - cols[1].z * cols[2].y) * invDet;</span></span>
+<span id="L86"><span class="lineNum">      86</span> <span class="tlaGNC">           3 :             res[0].y = (cols[0].z * cols[2].y - cols[0].y * cols[2].z) * invDet;</span></span>
+<span id="L87"><span class="lineNum">      87</span> <span class="tlaGNC">           3 :             res[0].z = (cols[0].y * cols[1].z - cols[0].z * cols[1].y) * invDet;</span></span>
+<span id="L88"><span class="lineNum">      88</span> <span class="tlaGNC">           3 :             res[1].x = (cols[1].z * cols[2].x - cols[1].x * cols[2].z) * invDet;</span></span>
+<span id="L89"><span class="lineNum">      89</span> <span class="tlaGNC">           3 :             res[1].y = (cols[0].x * cols[2].z - cols[0].z * cols[2].x) * invDet;</span></span>
+<span id="L90"><span class="lineNum">      90</span> <span class="tlaGNC">           3 :             res[1].z = (cols[1].x * cols[0].z - cols[0].x * cols[1].z) * invDet;</span></span>
+<span id="L91"><span class="lineNum">      91</span> <span class="tlaGNC">           3 :             res[2].x = (cols[1].x * cols[2].y - cols[1].y * cols[2].x) * invDet;</span></span>
+<span id="L92"><span class="lineNum">      92</span> <span class="tlaGNC">           3 :             res[2].y = (cols[0].y * cols[2].x - cols[0].x * cols[2].y) * invDet;</span></span>
+<span id="L93"><span class="lineNum">      93</span> <span class="tlaGNC">           3 :             res[2].z = (cols[0].x * cols[1].y - cols[1].x * cols[0].y) * invDet;</span></span>
+<span id="L94"><span class="lineNum">      94</span> <span class="tlaGNC">           3 :             return res;</span></span>
+<span id="L95"><span class="lineNum">      95</span>              :         }</span>
+<span id="L96"><span class="lineNum">      96</span>              : </span>
+<span id="L97"><span class="lineNum">      97</span>              :         friend std::ostream &amp;operator&lt;&lt;(std::ostream &amp;os, const mat3 &amp;m)</span>
+<span id="L98"><span class="lineNum">      98</span>              :         {</span>
+<span id="L99"><span class="lineNum">      99</span>              :             os &lt;&lt; &quot;\n&quot;;</span>
+<span id="L100"><span class="lineNum">     100</span>              :             for (int r = 0; r &lt; 3; r++)</span>
+<span id="L101"><span class="lineNum">     101</span>              :             {</span>
+<span id="L102"><span class="lineNum">     102</span>              :                 os &lt;&lt; &quot;| &quot; &lt;&lt; std::setw(8) &lt;&lt; m[0][r] &lt;&lt; &quot; &quot;</span>
+<span id="L103"><span class="lineNum">     103</span>              :                    &lt;&lt; std::setw(8) &lt;&lt; m[1][r] &lt;&lt; &quot; &quot;</span>
+<span id="L104"><span class="lineNum">     104</span>              :                    &lt;&lt; std::setw(8) &lt;&lt; m[2][r] &lt;&lt; &quot; |\n&quot;;</span>
+<span id="L105"><span class="lineNum">     105</span>              :             }</span>
+<span id="L106"><span class="lineNum">     106</span>              :             return os;</span>
+<span id="L107"><span class="lineNum">     107</span>              :         }</span>
+<span id="L108"><span class="lineNum">     108</span>              :     };</span>
+<span id="L109"><span class="lineNum">     109</span>              : </span>
+<span id="L110"><span class="lineNum">     110</span> <span class="tlaGNC">           2 :     inline mat3 mat3_cast(const quat &amp;q)</span></span>
+<span id="L111"><span class="lineNum">     111</span>              :     {</span>
+<span id="L112"><span class="lineNum">     112</span> <span class="tlaGNC">           2 :         mat3 m;</span></span>
+<span id="L113"><span class="lineNum">     113</span> <span class="tlaGNC">           2 :         scalar x2 = q.x + q.x, y2 = q.y + q.y, z2 = q.z + q.z;</span></span>
+<span id="L114"><span class="lineNum">     114</span> <span class="tlaGNC">           2 :         scalar xx = q.x * x2, xy = q.x * y2, xz = q.x * z2;</span></span>
+<span id="L115"><span class="lineNum">     115</span> <span class="tlaGNC">           2 :         scalar yy = q.y * y2, yz = q.y * z2, zz = q.z * z2;</span></span>
+<span id="L116"><span class="lineNum">     116</span> <span class="tlaGNC">           2 :         scalar wx = q.w * x2, wy = q.w * y2, wz = q.w * z2;</span></span>
+<span id="L117"><span class="lineNum">     117</span>              : </span>
+<span id="L118"><span class="lineNum">     118</span> <span class="tlaGNC">           2 :         m[0] = {1 - (yy + zz), xy + wz, xz - wy};</span></span>
+<span id="L119"><span class="lineNum">     119</span> <span class="tlaGNC">           2 :         m[1] = {xy - wz, 1 - (xx + zz), yz + wx};</span></span>
+<span id="L120"><span class="lineNum">     120</span> <span class="tlaGNC">           2 :         m[2] = {xz + wy, yz - wx, 1 - (xx + yy)};</span></span>
+<span id="L121"><span class="lineNum">     121</span> <span class="tlaGNC">           2 :         return m;</span></span>
+<span id="L122"><span class="lineNum">     122</span>              :     }</span>
+<span id="L123"><span class="lineNum">     123</span>              : </span>
+<span id="L124"><span class="lineNum">     124</span>              :     struct smat3</span>
+<span id="L125"><span class="lineNum">     125</span>              :     {</span>
+<span id="L126"><span class="lineNum">     126</span>              :         scalar xx, yy, zz;</span>
+<span id="L127"><span class="lineNum">     127</span>              :         scalar xy, xz, yz;</span>
+<span id="L128"><span class="lineNum">     128</span>              : </span>
+<span id="L129"><span class="lineNum">     129</span> <span class="tlaGNC">           1 :         smat3() : xx(0), yy(0), zz(0), xy(0), xz(0), yz(0) {}</span></span>
+<span id="L130"><span class="lineNum">     130</span> <span class="tlaGNC">           9 :         smat3(scalar xx, scalar yy, scalar zz, scalar xy, scalar xz, scalar yz)</span></span>
+<span id="L131"><span class="lineNum">     131</span> <span class="tlaGNC">           9 :             : xx(xx), yy(yy), zz(zz), xy(xy), xz(xz), yz(yz) {}</span></span>
+<span id="L132"><span class="lineNum">     132</span>              : </span>
+<span id="L133"><span class="lineNum">     133</span> <span class="tlaGNC">           2 :         explicit smat3(const mat3 &amp;m)</span></span>
+<span id="L134"><span class="lineNum">     134</span> <span class="tlaGNC">           2 :             : xx(m[0].x), yy(m[1].y), zz(m[2].z), xy(0.5 * (m[1].x + m[0].y)) // Average off-diagonal elements</span></span>
+<span id="L135"><span class="lineNum">     135</span>              :               ,</span>
+<span id="L136"><span class="lineNum">     136</span> <span class="tlaGNC">           2 :               xz(0.5 * (m[2].x + m[0].z)), yz(0.5 * (m[2].y + m[1].z))</span></span>
+<span id="L137"><span class="lineNum">     137</span>              :         {</span>
+<span id="L138"><span class="lineNum">     138</span> <span class="tlaGNC">           2 :         }</span></span>
+<span id="L139"><span class="lineNum">     139</span>              : </span>
+<span id="L140"><span class="lineNum">     140</span> <span class="tlaGNC">           2 :         vec3 operator*(const vec3 &amp;v) const</span></span>
+<span id="L141"><span class="lineNum">     141</span>              :         {</span>
+<span id="L142"><span class="lineNum">     142</span>              :             return {</span>
+<span id="L143"><span class="lineNum">     143</span> <span class="tlaGNC">           2 :                 xx * v.x + xy * v.y + xz * v.z,</span></span>
+<span id="L144"><span class="lineNum">     144</span> <span class="tlaGNC">           2 :                 xy * v.x + yy * v.y + yz * v.z,</span></span>
+<span id="L145"><span class="lineNum">     145</span> <span class="tlaGNC">           2 :                 xz * v.x + yz * v.y + zz * v.z};</span></span>
+<span id="L146"><span class="lineNum">     146</span>              :         }</span>
+<span id="L147"><span class="lineNum">     147</span>              : </span>
+<span id="L148"><span class="lineNum">     148</span> <span class="tlaGNC">           2 :         smat3 operator*(scalar s) const</span></span>
+<span id="L149"><span class="lineNum">     149</span>              :         {</span>
+<span id="L150"><span class="lineNum">     150</span> <span class="tlaGNC">           2 :             return smat3(xx * s, yy * s, zz * s, xy * s, xz * s, yz * s);</span></span>
+<span id="L151"><span class="lineNum">     151</span>              :         }</span>
+<span id="L152"><span class="lineNum">     152</span>              : </span>
+<span id="L153"><span class="lineNum">     153</span> <span class="tlaGNC">           2 :         bool is_approx(const smat3 &amp;o, scalar p = EPSILON) const</span></span>
+<span id="L154"><span class="lineNum">     154</span>              :         {</span>
+<span id="L155"><span class="lineNum">     155</span> <span class="tlaGNC">           4 :             return std::abs(xx - o.xx) &lt; p &amp;&amp; std::abs(yy - o.yy) &lt; p &amp;&amp; std::abs(zz - o.zz) &lt; p &amp;&amp;</span></span>
+<span id="L156"><span class="lineNum">     156</span> <span class="tlaGNC">           4 :                    std::abs(xy - o.xy) &lt; p &amp;&amp; std::abs(xz - o.xz) &lt; p &amp;&amp; std::abs(yz - o.yz) &lt; p;</span></span>
+<span id="L157"><span class="lineNum">     157</span>              :         }</span>
+<span id="L158"><span class="lineNum">     158</span>              : </span>
+<span id="L159"><span class="lineNum">     159</span>              :         friend std::ostream &amp;operator&lt;&lt;(std::ostream &amp;os, const smat3 &amp;m)</span>
+<span id="L160"><span class="lineNum">     160</span>              :         {</span>
+<span id="L161"><span class="lineNum">     161</span>              :             return os &lt;&lt; &quot;smat3(diag: &quot; &lt;&lt; m.xx &lt;&lt; &quot;,&quot; &lt;&lt; m.yy &lt;&lt; &quot;,&quot; &lt;&lt; m.zz</span>
+<span id="L162"><span class="lineNum">     162</span>              :                       &lt;&lt; &quot; off: &quot; &lt;&lt; m.xy &lt;&lt; &quot;,&quot; &lt;&lt; m.xz &lt;&lt; &quot;,&quot; &lt;&lt; m.yz &lt;&lt; &quot;)&quot;;</span>
+<span id="L163"><span class="lineNum">     163</span>              :         }</span>
+<span id="L164"><span class="lineNum">     164</span>              :     };</span>
+<span id="L165"><span class="lineNum">     165</span>              : </span>
+<span id="L166"><span class="lineNum">     166</span>              :     // Free function for scalar * smat3 (commutative)</span>
+<span id="L167"><span class="lineNum">     167</span> <span class="tlaGNC">           1 :     inline smat3 operator*(scalar s, const smat3 &amp;m)</span></span>
+<span id="L168"><span class="lineNum">     168</span>              :     {</span>
+<span id="L169"><span class="lineNum">     169</span> <span class="tlaGNC">           1 :         return m * s;</span></span>
+<span id="L170"><span class="lineNum">     170</span>              :     }</span>
+<span id="L171"><span class="lineNum">     171</span>              : </span>
+<span id="L172"><span class="lineNum">     172</span>              :     // mat3 * smat3 multiplication</span>
+<span id="L173"><span class="lineNum">     173</span> <span class="tlaGNC">           1 :     inline mat3 operator*(const mat3 &amp;lhs, const smat3 &amp;rhs)</span></span>
+<span id="L174"><span class="lineNum">     174</span>              :     {</span>
+<span id="L175"><span class="lineNum">     175</span>              :         // Expand smat3 to full matrix and multiply</span>
+<span id="L176"><span class="lineNum">     176</span>              :         // rhs as matrix is:</span>
+<span id="L177"><span class="lineNum">     177</span>              :         // | xx  xy  xz |</span>
+<span id="L178"><span class="lineNum">     178</span>              :         // | xy  yy  yz |</span>
+<span id="L179"><span class="lineNum">     179</span>              :         // | xz  yz  zz |</span>
+<span id="L180"><span class="lineNum">     180</span>              : </span>
+<span id="L181"><span class="lineNum">     181</span> <span class="tlaGNC">           1 :         mat3 result;</span></span>
+<span id="L182"><span class="lineNum">     182</span>              :         // Each column of result = lhs * column of rhs</span>
+<span id="L183"><span class="lineNum">     183</span> <span class="tlaGNC">           1 :         result[0] = lhs * vec3{rhs.xx, rhs.xy, rhs.xz};</span></span>
+<span id="L184"><span class="lineNum">     184</span> <span class="tlaGNC">           1 :         result[1] = lhs * vec3{rhs.xy, rhs.yy, rhs.yz};</span></span>
+<span id="L185"><span class="lineNum">     185</span> <span class="tlaGNC">           1 :         result[2] = lhs * vec3{rhs.xz, rhs.yz, rhs.zz};</span></span>
+<span id="L186"><span class="lineNum">     186</span> <span class="tlaGNC">           1 :         return result;</span></span>
+<span id="L187"><span class="lineNum">     187</span>              :     }</span>
+<span id="L188"><span class="lineNum">     188</span>              : }</span>
         </pre>
               </td>
             </tr>
