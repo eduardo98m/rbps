@@ -1,8 +1,10 @@
 #pragma once
 #include <vector>
-#include "physics/math/math.hpp"
-#include "physicsAcc/Constraints/ConstraintCollection.hpp"
-#include "physicsAcc/Body/BodyCollection.hpp"
+#include <math3d.hpp>
+#include <physics/Body.hpp>
+
+using namespace m3d;
+
 
 /**
  * @brief Collection of per-contact data for non-persistent collision handling.

@@ -1,9 +1,12 @@
 #pragma once
 #include <vector>
 
-#include "physics/math/math.hpp"
-#include "physicsAcc/Constraints/ConstraintCollection.hpp"
-#include "physicsAcc/Body/BodyCollection.hpp"
+#include <math3d.hpp>
+#include <physics/Body.hpp>
+#include <physics/constraints/Constraint.hpp>
+
+using namespace m3d;
+
 
 enum JointType
 {

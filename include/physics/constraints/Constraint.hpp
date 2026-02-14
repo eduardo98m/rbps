@@ -1,9 +1,12 @@
 #pragma once
-#include "physics/math/math.hpp"
-#include "physicsAcc/Body/BodyCollection.hpp"
 
 #include <vector>
 #include <tuple>
+
+
+#include <math3d.hpp>
+#include <physics/Body.hpp>
+
 
 /**
  * @brief Types of constraints 

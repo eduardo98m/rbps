@@ -1,6 +1,8 @@
 #pragma once
-#include "physics/math/math.hpp"
 #include <vector>
+
+#include <math3d.hpp>
+using namespace m3d;
 
 /**
  * @brief Enum for the types of bodies that can be
