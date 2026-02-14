@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-#include <math3d.hpp>
+#include <math3d/math3d.hpp>
 
 using namespace m3d;
 
