@@ -80,12 +80,20 @@ jobs:
           publish_dir: ./coverage_html
       
       - name: Extract Test Results
+        if: always()
         run: |
-          # Count passed tests from ctest output (adjusting based on your test runner output)
-          # Assuming your TEST_SUITE prints "X passed, Y failed."
-          PASSED=$(grep -h "passed" build/Testing/Temporary/LastTest.log | awk '{print $1}' | awk '{sum+=$1} END {print sum}')
-          TOTAL=$(grep -h "passed" build/Testing/Temporary/LastTest.log | awk '{print $1+$3}' | awk '{sum+=$1} END {print sum}')
-          echo "TESTS_PASSED=$PASSED/$TOTAL" >> $GITHUB_ENV
+          # Robust way to grab the "4/4" or "Passed" summary from CTest
+          # It looks for the "out of X" line and extracts the numbers
+          SUMMARY=$(grep -i "tests passed" build/Testing/Temporary/LastTest.log | tail -n 1)
+          PASSED=$(echo $SUMMARY | grep -oP '\d+(?=% tests passed)')
+          TOTAL=$(echo $SUMMARY | grep -oP '(?<=out of )\d+')
+          
+          # If we successfully parsed numbers, use them. Otherwise, use a fallback.
+          if [ -n "$TOTAL" ]; then
+            echo "TESTS_MSG=$TOTAL/$TOTAL" >> $GITHUB_ENV
+          else
+             echo "TESTS_MSG=passing" >> $GITHUB_ENV
+          fi
 
       - name: Update Test Badge
         if: always() # Update even if tests fail so the badge turns red
@@ -96,5 +104,5 @@ jobs:
           filename: tests.json
           label: Tests
           # If the 'Run Tests' step succeeded, show 'passing', otherwise 'failing'
-          message: ${{ steps.run_tests.outcome == 'success' && 'passing' || 'failing' }}
-          color: ${{ steps.run_tests.outcome == 'success' && 'brightgreen' || 'red' }}
+          message: ${{ steps.run_tests.outcome == 'success' && env.TESTS_MSG || 'failing' }}
+          color: ${{ steps.run_tests.outcome == 'success' && 'brightgreen' || 'red' }}     
