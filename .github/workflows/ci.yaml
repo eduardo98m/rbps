@@ -80,34 +80,50 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./coverage_html
       
-      - name: Extract Test Results
+      - name: Run Tests
+        id: run_tests
+        working-directory: build
+        run: ctest --output-on-failure
+        continue-on-error: true
+
+      - name: Extract & Debug Test Results
         if: always()
         run: |
           LOG_FILE="build/Testing/Temporary/LastTest.log"
           
-          # Default values
-          TESTS_OUTCOME="failing"
-          TESTS_COLOR="red"
-
-          # If the previous step actually succeeded
-          if [ "${{ steps.run_tests.outcome }}" == "success" ]; then
-            TESTS_COLOR="brightgreen"
-            if [ -f "$LOG_FILE" ]; then
-              # Grab the "X/X" part from CTest summary
-              SUMMARY=$(grep -i "tests passed" "$LOG_FILE" | tail -n 1 || echo "")
-              TOTAL=$(echo "$SUMMARY" | sed -n 's/.*out of \([0-9]*\).*/\1/p')
-              if [ -n "$TOTAL" ]; then
-                TESTS_OUTCOME="$TOTAL/$TOTAL"
-              else
-                TESTS_OUTCOME="passing"
-              fi
-            else
-              TESTS_OUTCOME="passing"
-            fi
+          echo "=== DEBUG: STARTING EXTRACTION ==="
+          echo "Step Outcome: ${{ steps.run_tests.outcome }}"
+          
+          if [ -f "$LOG_FILE" ]; then
+            echo "Log file found."
+            # Print the last 5 lines of the log so we can see the exact CTest summary
+            tail -n 5 "$LOG_FILE"
+            
+            SUMMARY=$(grep -i "tests passed" "$LOG_FILE" | tail -n 1 || echo "")
+            echo "Extracted Summary: $SUMMARY"
+            
+            TOTAL=$(echo "$SUMMARY" | sed -n 's/.*out of \([0-9]*\).*/\1/p')
+            echo "Parsed Total: $TOTAL"
+          else
+            echo "ERROR: Log file NOT found at $LOG_FILE"
           fi
 
-          echo "FINAL_TESTS_MSG=$TESTS_OUTCOME" >> $GITHUB_ENV
-          echo "FINAL_TESTS_COLOR=$TESTS_COLOR" >> $GITHUB_ENV
+          # Logic Selection
+          if [ "${{ steps.run_tests.outcome }}" == "success" ]; then
+            COLOR="brightgreen"
+            MSG="${TOTAL:-passing}"
+            [ "$MSG" != "passing" ] && MSG="$MSG/$MSG"
+          else
+            COLOR="red"
+            MSG="failing"
+          fi
+
+          echo "Final Badge Msg: $MSG"
+          echo "Final Badge Color: $COLOR"
+          
+          echo "FINAL_TESTS_MSG=$MSG" >> $GITHUB_ENV
+          echo "FINAL_TESTS_COLOR=$COLOR" >> $GITHUB_ENV
+          echo "=== DEBUG: END EXTRACTION ==="
 
       - name: Update Test Badge
         if: always()
@@ -119,3 +135,4 @@ jobs:
           label: Tests
           message: ${{ env.FINAL_TESTS_MSG }}
           color: ${{ env.FINAL_TESTS_COLOR }}
+          forceUpdate: true
