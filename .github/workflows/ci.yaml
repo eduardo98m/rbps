@@ -82,17 +82,19 @@ jobs:
       - name: Extract Test Results
         if: always()
         run: |
-          # Robust way to grab the "4/4" or "Passed" summary from CTest
-          # It looks for the "out of X" line and extracts the numbers
-          SUMMARY=$(grep -i "tests passed" build/Testing/Temporary/LastTest.log | tail -n 1)
-          PASSED=$(echo $SUMMARY | grep -oP '\d+(?=% tests passed)')
-          TOTAL=$(echo $SUMMARY | grep -oP '(?<=out of )\d+')
+          # Use || true to prevent script from crashing if grep finds nothing
+          LOG_FILE="build/Testing/Temporary/LastTest.log"
           
-          # If we successfully parsed numbers, use them. Otherwise, use a fallback.
+          if [ -f "$LOG_FILE" ]; then
+            SUMMARY=$(grep -i "tests passed" "$LOG_FILE" | tail -n 1 || echo "")
+            # We use sed instead of grep -oP because it's more portable in CI environments
+            TOTAL=$(echo "$SUMMARY" | sed -n 's/.*out of \([0-9]*\).*/\1/p')
+          fi
+
           if [ -n "$TOTAL" ]; then
             echo "TESTS_MSG=$TOTAL/$TOTAL" >> $GITHUB_ENV
           else
-             echo "TESTS_MSG=passing" >> $GITHUB_ENV
+            echo "TESTS_MSG=passing" >> $GITHUB_ENV
           fi
 
       - name: Update Test Badge
