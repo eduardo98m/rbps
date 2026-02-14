@@ -40,18 +40,17 @@ jobs:
       # --- COVERAGE GENERATION ---
       - name: Generate Coverage Report
         run: |
-          # 1. Capture Data
-          lcov --capture --directory . --output-file coverage.info
+          # 1. Capture Data using the correct gcov version
+          # We specify --gcov-tool to point to the one installed by setup-cpp
+          lcov --gcov-tool gcov --capture --directory . --output-file coverage.info
           
-          # 2. Filter: Include ONLY src/ and include/ (Your Physics Engine Core)
-          # We define a pattern to extract only files starting with the current directory's include/ or src/
+          # 2. Filter: Include ONLY src/ and include/
           lcov --extract coverage.info "$(pwd)/include/*" "$(pwd)/src/*" --output-file coverage_clean.info
           
-          # 3. Generate HTML Report (for humans)
+          # 3. Generate HTML Report
           genhtml coverage_clean.info --output-directory coverage_html
           
-          # 4. Extract Percentage for the Badge (Logic to get the number)
-          # We read the summary, find the "lines" line, and grab the percentage.
+          # 4. Extract Percentage
           COVERAGE=$(lcov --summary coverage_clean.info | grep "lines......" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
           echo "COVERAGE=$COVERAGE" >> $GITHUB_ENV
           
