@@ -41,6 +41,40 @@ TEST(quat_conjugate_normalize) {
     ASSERT_NEAR(mag, 1.0);
 }
 
+TEST(quat_drift_stress) {
+    // A small rotation (0.01 rad around X)
+    m3d::quat step = m3d::quat::from_axis_angle(m3d::vec3(1, 0, 0), 0.01);
+    m3d::quat total; // Identity
+
+    // Apply rotation 1000 times
+    for(int i = 0; i < 1000; ++i) {
+        total = total * step;
+    }
+
+    // Check magnitude - should be exactly 1.0 (or very close)
+    m3d::scalar mag_sq = total.w*total.w + total.x*total.x + total.y*total.y + total.z*total.z;
+    
+    // If our mandatory normalization works, this should be effectively 1.0
+    ASSERT_TRUE(m3d::test::near(mag_sq, 1.0, 1e-12))
+}
+
+TEST(quat_multiplication_logic) {
+    // 90 deg around X
+    m3d::quat qX = m3d::quat::from_axis_angle({1, 0, 0}, 1.57079632679);
+    // 90 deg around Y
+    m3d::quat qY = m3d::quat::from_axis_angle({0, 1, 0}, 1.57079632679);
+    
+    m3d::quat qCombined = qY * qX;
+    
+    m3d::vec3 v(0, 0, 1); // Z-axis
+    m3d::vec3 res = m3d::rotate(v, qCombined);
+    
+    // Rotation sequence check:
+    // Z rotated 90 around X -> -Y axis (0, -1, 0)
+    // -Y rotated 90 around Y -> -Y axis (no change because it's the axis)
+    ASSERT_APPROX(res, m3d::vec3(0, -1, 0));
+}
+
 TEST_SUITE(
     RUN_TEST(rpy_conversion),
     RUN_TEST(quat_conjugate_normalize),
