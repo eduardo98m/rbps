@@ -5,7 +5,7 @@
 #include <cmath>
 #include <chrono>
 
-namespace m3d::test
+namespace test
 {
     struct TestCase
     {
@@ -13,9 +13,10 @@ namespace m3d::test
         void (*func)();
     };
 
-    inline bool near(double a, double b, double eps = 1e-6)
+    template<typename T1, typename T2, typename T3 = double>
+    inline bool near(T1 a, T2 b, T3 precision = 1e-6)
     {
-        return std::abs(a - b) < eps;
+        return std::abs(static_cast<double>(a) - static_cast<double>(b)) < static_cast<double>(precision);
     }
 }
 
@@ -29,11 +30,12 @@ namespace m3d::test
         throw std::runtime_error("test failed");                                                                \
     }
 
-#define ASSERT_APPROX(a, b)                                                                                                \
-    if (!(a.is_approx(b)))                                                                                                 \
-    {                                                                                                                      \
-        std::cerr << "\n  [FAIL] Expected Approx Equality: " << #a << " approx " << #b << " at line " << __LINE__ << "\n"; \
-        throw std::runtime_error("test failed");                                                                           \
+#define ASSERT_APPROX(a, b, ...)                                                              \
+    if (!(a.is_approx(b, ##__VA_ARGS__)))                                                     \
+    {                                                                                         \
+        std::cerr << "\n  [FAIL] Expected Approx Equality: " << #a << " approx " << #b        \
+                  << " at line " << __LINE__ << "\n";                                         \
+        throw std::runtime_error("test failed");                                              \
     }
 
 #define ASSERT_TRUE(cond)                                                    \
@@ -50,8 +52,9 @@ namespace m3d::test
         throw std::runtime_error("test failed");                                             \
     }
 
-#define ASSERT_NEAR(a, b)                                                                     \
-    if (!m3d::test::near(a, b))                                                               \
+
+#define ASSERT_NEAR(a, b, ...)                                                                \
+    if (!test::near(a, b, ##__VA_ARGS__))                                               \
     {                                                                                         \
         std::cerr << "  FAIL: " << a << " not near " << b << " at line " << __LINE__ << "\n"; \
         throw std::runtime_error("test failed");                                              \
@@ -60,7 +63,7 @@ namespace m3d::test
 #define TEST_SUITE(...)                                                                                                    \
     int main()                                                                                                             \
     {                                                                                                                      \
-        m3d::test::TestCase tests[] = {__VA_ARGS__};                                                                       \
+        test::TestCase tests[] = {__VA_ARGS__};                                                                       \
         int failed = 0;                                                                                                    \
         for (auto &t : tests)                                                                                              \
         {                                                                                                                  \

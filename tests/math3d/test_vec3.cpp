@@ -1,5 +1,5 @@
 #include "math3d/vec3.hpp"
-#include "math3d/test_helper.hpp"
+#include "tests/test_helper.hpp"
 
 using namespace m3d;
 

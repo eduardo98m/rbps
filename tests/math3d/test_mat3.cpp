@@ -1,5 +1,5 @@
 #include "math3d/mat3.hpp"
-#include "math3d/test_helper.hpp"
+#include "tests/test_helper.hpp"
 
 TEST(identity_and_indexing)
 {

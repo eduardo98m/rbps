@@ -1,5 +1,5 @@
 #include "math3d/quat.hpp"
-#include "math3d/test_helper.hpp"
+#include "tests/test_helper.hpp"
 
 TEST(rpy_conversion)
 {
@@ -59,7 +59,7 @@ TEST(quat_drift_stress)
     m3d::scalar mag_sq = total.w * total.w + total.x * total.x + total.y * total.y + total.z * total.z;
 
     // If our mandatory normalization works, this should be effectively 1.0
-    ASSERT_TRUE(m3d::test::near(mag_sq, 1.0, 1e-12))
+    ASSERT_NEAR(mag_sq, 1.0, 1e-12);
 }
 
 TEST(quat_multiplication_logic)
