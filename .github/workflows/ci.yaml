@@ -41,19 +41,14 @@ jobs:
       - name: Generate Coverage Report
         run: |
           lcov --gcov-tool gcov-14 --capture --directory . --output-file coverage.info
-
-          # Build pattern dynamically based on what exists
-          PATTERNS="$(pwd)/include/*"
-          if [ -d "src" ] && [ "$(find src -name '*.cpp' -o -name '*.c' 2>/dev/null)" ]; then
-            PATTERNS="$PATTERNS $(pwd)/src/*"
-          fi
-
-          lcov --extract coverage.info $PATTERNS --output-file coverage_clean.info
+          
+          lcov --extract coverage.info "$(pwd)/include/*" "$(pwd)/src/*" --output-file coverage_clean.info --ignore-errors unused          
+          
           genhtml coverage_clean.info --output-directory coverage_html
-
+          
           COVERAGE=$(lcov --summary coverage_clean.info | grep "lines......" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
           echo "COVERAGE=$COVERAGE" >> $GITHUB_ENV
-
+          
           if (( $(echo "$COVERAGE < 80" | bc -l) )); then
             echo "BADGE_COLOR=red" >> $GITHUB_ENV
           elif (( $(echo "$COVERAGE < 90" | bc -l) )); then
