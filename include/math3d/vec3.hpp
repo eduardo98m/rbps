@@ -33,6 +33,7 @@ namespace m3d
             z += rhs.z;
             return *this;
         }
+
         vec3 &operator-=(const vec3 &rhs)
         {
             x -= rhs.x;
@@ -40,6 +41,7 @@ namespace m3d
             z -= rhs.z;
             return *this;
         }
+        
         vec3 &operator*=(scalar s)
         {
             x *= s;

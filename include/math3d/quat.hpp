@@ -57,6 +57,15 @@ namespace m3d
         // Addition (useful for integration)
         quat operator+(const quat &r) const { return {w + r.w, x + r.x, y + r.y, z + r.z}; }
 
+        quat &operator+=(const quat &rhs)
+        {
+            w += rhs.w;
+            x += rhs.x;
+            y += rhs.y;
+            z += rhs.z;
+            return *this;
+        }
+
         friend std::ostream &operator<<(std::ostream &os, const quat &q)
         {
             return os << "quat(w:" << q.w << ", x:" << q.x << ", y:" << q.y << ", z:" << q.z << ")";

@@ -6,8 +6,6 @@
 namespace m3d
 {
 
-    struct SymMat3; // Forward declaration
-
     struct mat3
     {
         vec3 cols[3]; // Column-major
@@ -61,12 +59,12 @@ namespace m3d
                    cols[2].is_approx(other[2], precision);
         }
 
-        static mat3 transpose(const mat3 &m)
+        mat3 transpose() const
         {
             return mat3(
-                m[0].x, m[0].y, m[0].z,
-                m[1].x, m[1].y, m[1].z,
-                m[2].x, m[2].y, m[2].z);
+                cols[0].x, cols[0].y, cols[0].z,
+                cols[1].x, cols[1].y, cols[1].z,
+                cols[2].x, cols[2].y, cols[2].z);
         }
 
         scalar determinant() const
@@ -76,23 +74,23 @@ namespace m3d
                    cols[2].x * (cols[0].y * cols[1].z - cols[0].z * cols[1].y);
         }
 
-        static mat3 inverse(const mat3 &m)
+        mat3 inverse() const
         {
-            scalar det = m.determinant();
+            scalar det = this->determinant();
             if (std::abs(det) < EPSILON)
                 return mat3(); // Return identity on failure
 
             scalar invDet = 1.0 / det;
             mat3 res;
-            res[0].x = (m[1].y * m[2].z - m[1].z * m[2].y) * invDet;
-            res[0].y = (m[0].z * m[2].y - m[0].y * m[2].z) * invDet;
-            res[0].z = (m[0].y * m[1].z - m[0].z * m[1].y) * invDet;
-            res[1].x = (m[1].z * m[2].x - m[1].x * m[2].z) * invDet;
-            res[1].y = (m[0].x * m[2].z - m[0].z * m[2].x) * invDet;
-            res[1].z = (m[1].x * m[0].z - m[0].x * m[1].z) * invDet;
-            res[2].x = (m[1].x * m[2].y - m[1].y * m[2].x) * invDet;
-            res[2].y = (m[0].y * m[2].x - m[0].x * m[2].y) * invDet;
-            res[2].z = (m[0].x * m[1].y - m[1].x * m[0].y) * invDet;
+            res[0].x = (cols[1].y * cols[2].z - cols[1].z * cols[2].y) * invDet;
+            res[0].y = (cols[0].z * cols[2].y - cols[0].y * cols[2].z) * invDet;
+            res[0].z = (cols[0].y * cols[1].z - cols[0].z * cols[1].y) * invDet;
+            res[1].x = (cols[1].z * cols[2].x - cols[1].x * cols[2].z) * invDet;
+            res[1].y = (cols[0].x * cols[2].z - cols[0].z * cols[2].x) * invDet;
+            res[1].z = (cols[1].x * cols[0].z - cols[0].x * cols[1].z) * invDet;
+            res[2].x = (cols[1].x * cols[2].y - cols[1].y * cols[2].x) * invDet;
+            res[2].y = (cols[0].y * cols[2].x - cols[0].x * cols[2].y) * invDet;
+            res[2].z = (cols[0].x * cols[1].y - cols[1].x * cols[0].y) * invDet;
             return res;
         }
 
@@ -123,14 +121,21 @@ namespace m3d
         return m;
     }
 
-    struct SymMat3
+    struct smat3
     {
         scalar xx, yy, zz;
         scalar xy, xz, yz;
 
-        SymMat3() : xx(0), yy(0), zz(0), xy(0), xz(0), yz(0) {}
-        SymMat3(scalar xx, scalar yy, scalar zz, scalar xy, scalar xz, scalar yz)
+        smat3() : xx(0), yy(0), zz(0), xy(0), xz(0), yz(0) {}
+        smat3(scalar xx, scalar yy, scalar zz, scalar xy, scalar xz, scalar yz)
             : xx(xx), yy(yy), zz(zz), xy(xy), xz(xz), yz(yz) {}
+
+        explicit smat3(const mat3 &m)
+            : xx(m[0].x), yy(m[1].y), zz(m[2].z), xy(0.5 * (m[1].x + m[0].y)) // Average off-diagonal elements
+              ,
+              xz(0.5 * (m[2].x + m[0].z)), yz(0.5 * (m[2].y + m[1].z))
+        {
+        }
 
         vec3 operator*(const vec3 &v) const
         {
@@ -140,16 +145,44 @@ namespace m3d
                 xz * v.x + yz * v.y + zz * v.z};
         }
 
-        bool is_approx(const SymMat3 &o, scalar p = EPSILON) const
+        smat3 operator*(scalar s) const
+        {
+            return smat3(xx * s, yy * s, zz * s, xy * s, xz * s, yz * s);
+        }
+
+        bool is_approx(const smat3 &o, scalar p = EPSILON) const
         {
             return std::abs(xx - o.xx) < p && std::abs(yy - o.yy) < p && std::abs(zz - o.zz) < p &&
                    std::abs(xy - o.xy) < p && std::abs(xz - o.xz) < p && std::abs(yz - o.yz) < p;
         }
 
-        friend std::ostream &operator<<(std::ostream &os, const SymMat3 &m)
+        friend std::ostream &operator<<(std::ostream &os, const smat3 &m)
         {
-            return os << "SymMat3(diag: " << m.xx << "," << m.yy << "," << m.zz
+            return os << "smat3(diag: " << m.xx << "," << m.yy << "," << m.zz
                       << " off: " << m.xy << "," << m.xz << "," << m.yz << ")";
         }
     };
+
+    // Free function for scalar * smat3 (commutative)
+    inline smat3 operator*(scalar s, const smat3 &m)
+    {
+        return m * s;
+    }
+
+    // mat3 * smat3 multiplication
+    inline mat3 operator*(const mat3 &lhs, const smat3 &rhs)
+    {
+        // Expand smat3 to full matrix and multiply
+        // rhs as matrix is:
+        // | xx  xy  xz |
+        // | xy  yy  yz |
+        // | xz  yz  zz |
+
+        mat3 result;
+        // Each column of result = lhs * column of rhs
+        result[0] = lhs * vec3{rhs.xx, rhs.xy, rhs.xz};
+        result[1] = lhs * vec3{rhs.xy, rhs.yy, rhs.yz};
+        result[2] = lhs * vec3{rhs.xz, rhs.yz, rhs.zz};
+        return result;
+    }
 }
