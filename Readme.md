@@ -1,5 +1,5 @@
 # Rigid Body Physics System (RBPS)
 
-[![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/eduardo98m/ac872a97f22cd6fd56bf68d749e55174/raw/coverage.json)](https://eduardo98m.github.io/rbps/)
+[![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/eduardo98m/1a5fc2bac537cce52c590a74d4d192e3/raw/coverage.json)](https://eduardo98m.github.io/rbps/)
 
 **RBPS** is a physics engine...
