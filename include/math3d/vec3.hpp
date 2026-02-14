@@ -48,6 +48,24 @@ namespace m3d
             return *this;
         }
 
+        bool operator==(const vec3 &other) const
+        {
+            return x == other.x && y == other.y && z == other.z;
+        }
+
+        bool operator!=(const vec3 &other) const
+        {
+            return !(*this == other);
+        }
+
+        // For physics-safe comparison
+        bool is_approx(const vec3 &other, scalar precision = EPSILON) const
+        {
+            return std::abs(x - other.x) < precision &&
+                   std::abs(y - other.y) < precision &&
+                   std::abs(z - other.z) < precision;
+        }
+
         // Meber acces via indices
         scalar &operator[](int i)
         {

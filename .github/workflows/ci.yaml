@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to push to gh-pages and update badges
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install LCOV
+        run: sudo apt-get update && sudo apt-get install -y lcov
+
+      - name: Setup C++
+        uses: aminya/setup-cpp@v1
+        with:
+          compiler: gcc
+          cmake: true
+          ninja: true
+
+      - name: Configure CMake
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON 
+        # Ensure you added set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage") in your CMakeLists.txt
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Run Tests
+        working-directory: build
+        run: ctest --output-on-failure
+
+      # --- COVERAGE GENERATION ---
+      - name: Generate Coverage Report
+        run: |
+          # 1. Capture Data
+          lcov --capture --directory . --output-file coverage.info
+          
+          # 2. Filter: Include ONLY src/ and include/ (Your Physics Engine Core)
+          # We define a pattern to extract only files starting with the current directory's include/ or src/
+          lcov --extract coverage.info "$(pwd)/include/*" "$(pwd)/src/*" --output-file coverage_clean.info
+          
+          # 3. Generate HTML Report (for humans)
+          genhtml coverage_clean.info --output-directory coverage_html
+          
+          # 4. Extract Percentage for the Badge (Logic to get the number)
+          # We read the summary, find the "lines" line, and grab the percentage.
+          COVERAGE=$(lcov --summary coverage_clean.info | grep "lines......" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
+          echo "COVERAGE=$COVERAGE" >> $GITHUB_ENV
+          
+          # Color Logic for Badge
+          if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+            echo "BADGE_COLOR=red" >> $GITHUB_ENV
+          elif (( $(echo "$COVERAGE < 90" | bc -l) )); then
+            echo "BADGE_COLOR=orange" >> $GITHUB_ENV
+          else
+            echo "BADGE_COLOR=brightgreen" >> $GITHUB_ENV
+          fi
+
+      # --- BADGE GENERATION (Gist Method) ---
+      # This updates a Gist with the JSON data for shields.io
+      - name: Create Coverage Badge
+        uses: schneegans/dynamic-badges-action@v1.6.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }} # You need to create a Gist and a Token
+          gistID: ac872a97f22cd6fd56bf68d749e55174
+          filename: coverage.json
+          label: Coverage
+          message: ${{ env.COVERAGE }}%
+          color: ${{ env.BADGE_COLOR }}
+          namedLogo: c++
+
+      # --- REPORT DEPLOYMENT ---
+      # This pushes the HTML report to a 'gh-pages' branch so you can view it in browser
+      - name: Deploy Report to GitHub Pages
+        if: github.ref == 'refs/heads/master' # Only deploy on master push
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./coverage_html

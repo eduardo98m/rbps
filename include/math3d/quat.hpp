@@ -59,6 +59,20 @@ namespace m3d
         {
             return os << "quat(w:" << q.w << ", x:" << q.x << ", y:" << q.y << ", z:" << q.z << ")";
         }
+
+        // Inside struct quat
+        bool operator==(const quat &other) const
+        {
+            return w == other.w && x == other.x && y == other.y && z == other.z;
+        }
+
+        bool is_approx(const quat &other, scalar precision = EPSILON) const
+        {
+            return std::abs(w - other.w) < precision &&
+                   std::abs(x - other.x) < precision &&
+                   std::abs(y - other.y) < precision &&
+                   std::abs(z - other.z) < precision;
+        }
     };
 
     inline quat normalize(const quat &q)

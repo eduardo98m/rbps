@@ -22,12 +22,34 @@ namespace m3d::test
 #define TEST(name) static void test_##name()
 #define RUN_TEST(name) {#name, test_##name}
 
+#define ASSERT_EQ(a, b)                                                                                         \
+    if (!(a == b))                                                                                              \
+    {                                                                                                           \
+        std::cerr << "\n  [FAIL] Expected Equality: " << #a << " == " << #b << " at line " << __LINE__ << "\n"; \
+        throw std::runtime_error("test failed");                                                                \
+    }
+
+#define ASSERT_APPROX(a, b)                                                                                                \
+    if (!(a.is_approx(b)))                                                                                                 \
+    {                                                                                                                      \
+        std::cerr << "\n  [FAIL] Expected Approx Equality: " << #a << " approx " << #b << " at line " << __LINE__ << "\n"; \
+        throw std::runtime_error("test failed");                                                                           \
+    }
+
 #define ASSERT_TRUE(cond)                                                    \
     if (!(cond))                                                             \
     {                                                                        \
         std::cerr << "  FAIL: " << #cond << " at line " << __LINE__ << "\n"; \
         throw std::runtime_error("test failed");                             \
     }
+
+#define ASSERT_FALSE(cond)                                                                   \
+    if ((cond))                                                                              \
+    {                                                                                        \
+        std::cerr << "  FAIL: " << #cond << " at line " << __LINE__ << " should be false\n"; \
+        throw std::runtime_error("test failed");                                             \
+    }
+
 #define ASSERT_NEAR(a, b)                                                                     \
     if (!m3d::test::near(a, b))                                                               \
     {                                                                                         \

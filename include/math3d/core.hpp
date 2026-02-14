@@ -7,7 +7,7 @@
 using scalar = double;
 namespace m3d {
     constexpr scalar PI = 3.14159265358979323846;
-    constexpr scalar EPSILON = std::numeric_limits<scalar>::epsilon();
+    constexpr scalar EPSILON = 1e-9; //std::numeric_limits<scalar>::epsilon();
 
     template <typename T>
     inline T clamp(T v, T lo, T hi) {
