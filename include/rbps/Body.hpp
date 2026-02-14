@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
-
 #include <math3d.hpp>
+
 using namespace m3d;
 
 namespace rbps
@@ -26,10 +26,10 @@ namespace rbps
         std::vector<vec3> torque = {};
         std::vector<scalar> mass = {};
         std::vector<scalar> inverse_mass = {};
-        std::vector<mat3> inertia_tensor = {};
-        std::vector<mat3> inverse_inertia_tensor = {};
-        std::vector<mat3> inertia_tensor_world = {};
-        std::vector<mat3> inverse_inertia_tensor_world = {};
+        std::vector<smat3> inertia_tensor = {};
+        std::vector<smat3> inverse_inertia_tensor = {};
+        std::vector<smat3> inertia_tensor_world = {};
+        std::vector<smat3> inverse_inertia_tensor_world = {};
         std::vector<BodyType> type = {};
         std::vector<vec3> position = {};
         std::vector<quat> orientation = {};
