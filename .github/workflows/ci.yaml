@@ -78,3 +78,23 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./coverage_html
+      
+      - name: Extract Test Results
+        run: |
+          # Count passed tests from ctest output (adjusting based on your test runner output)
+          # Assuming your TEST_SUITE prints "X passed, Y failed."
+          PASSED=$(grep -h "passed" build/Testing/Temporary/LastTest.log | awk '{print $1}' | awk '{sum+=$1} END {print sum}')
+          TOTAL=$(grep -h "passed" build/Testing/Temporary/LastTest.log | awk '{print $1+$3}' | awk '{sum+=$1} END {print sum}')
+          echo "TESTS_PASSED=$PASSED/$TOTAL" >> $GITHUB_ENV
+
+      - name: Update Test Badge
+        if: always() # Update even if tests fail so the badge turns red
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: 1a5fc2bac537cce52c590a74d4d192e3
+          filename: tests.json
+          label: Tests
+          # If the 'Run Tests' step succeeded, show 'passing', otherwise 'failing'
+          message: ${{ steps.run_tests.outcome == 'success' && 'passing' || 'failing' }}
+          color: ${{ steps.run_tests.outcome == 'success' && 'brightgreen' || 'red' }}
