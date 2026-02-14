@@ -25,3 +25,8 @@ add_test(NAME test_quat COMMAND test_quat)
 add_executable(test_vec3 tests/math3d/test_vec3.cpp)
 add_test(NAME test_vec3 COMMAND test_vec3)
 
+
+# Body Tests
+add_executable(test_body tests/rbps/test_body.cpp src/rbps/Body.cpp)
+add_test(NAME test_body COMMAND test_body)
+
