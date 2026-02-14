@@ -4,10 +4,11 @@
 #include <cassert>
 #include <iostream>
 
-using scalar = double;
 namespace m3d {
+    using scalar = double;
     constexpr scalar PI = 3.14159265358979323846;
     constexpr scalar EPSILON = 1e-9; //std::numeric_limits<scalar>::epsilon();
+    constexpr scalar ERROR_ULP = 2.107342e-08; //  unit of least precision (or Unit in the last place) for doubles
 
     template <typename T>
     inline T clamp(T v, T lo, T hi) {

@@ -2,7 +2,10 @@
 #include "math3d/vec3.hpp"
 
 namespace m3d
-{
+{   
+    // Forward declarations
+    struct quat;
+    inline quat normalize(const quat &q);
 
     struct quat
     {
@@ -39,14 +42,13 @@ namespace m3d
         }
 
         // Quaternion Multiplication (Hamilton Product)
-        quat operator*(const quat &r) const
-        {
-            return {
-                w * r.w - x * r.x - y * r.y - z * r.z, // new w
-                w * r.x + x * r.w + y * r.z - z * r.y, // new x
-                w * r.y - x * r.z + y * r.w + z * r.x, // new y
-                w * r.z + x * r.y - y * r.x + z * r.w  // new z
-            };
+        quat operator*(const quat &r) const {
+            quat res;
+            res.w = w * r.w - x * r.x - y * r.y - z * r.z;
+            res.x = w * r.x + x * r.w + y * r.z - z * r.y;
+            res.y = w * r.y + y * r.w + z * r.x - x * r.z;
+            res.z = w * r.z + z * r.w + x * r.y - y * r.x;
+            return normalize(res);
         }
 
         // Scaling
@@ -77,11 +79,16 @@ namespace m3d
 
     inline quat normalize(const quat &q)
     {
-        scalar len_sq = q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z;
-        if (len_sq < EPSILON)
-            return {1, 0, 0, 0};
-        scalar inv_len = 1.0 / std::sqrt(len_sq);
-        return q * inv_len;
+        scalar mag_sq = q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z;
+        
+        // Avoid the sqrt call 
+        if (std::abs(1.0 - mag_sq) < 2.107342e-08) { // Typical float precision threshold
+            return q * (2.0 / (1.0 + mag_sq));
+        }
+        
+        if (mag_sq < EPSILON) return {1, 0, 0, 0}; // Avoid zero division
+        
+        return q * (1.0 / std::sqrt(mag_sq));
     }
 
     inline quat conjugate(const quat &q)
@@ -102,4 +109,4 @@ namespace m3d
         return v + ((uv * s) + uuv) * 2.0;
     }
 
-} // namespace math
+} // namespace m3d

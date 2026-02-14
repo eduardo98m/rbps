@@ -37,7 +37,7 @@ TEST(quat_conjugate_normalize) {
     ASSERT_NEAR(c.x, -2);
     
     m3d::quat n = m3d::normalize(q);
-    scalar mag = std::sqrt(n.w*n.w + n.x*n.x + n.y*n.y + n.z*n.z);
+    m3d::scalar mag = std::sqrt(n.w*n.w + n.x*n.x + n.y*n.y + n.z*n.z);
     ASSERT_NEAR(mag, 1.0);
 }
 
