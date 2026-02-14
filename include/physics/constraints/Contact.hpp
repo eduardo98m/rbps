@@ -47,6 +47,7 @@ struct ContactCollection
  * @param inverse_time_step  Inverse of the timestep (1/Δt).
  */
 void apply_constraint_position_level(ContactCollection &cc, size_t i, BodyCollection &bc, scalar inverse_time_step);
+
 /**
  * @brief Solves the non-penetration (normal) constraint for one contact.
  *
@@ -70,6 +71,7 @@ void solve_normal_constraint(ContactCollection &cc,
                              scalar magnitude,
                              vec3 r_1_wc,
                              vec3 r_2_wc);
+
 /**
  * @brief Solves the tangential (friction) constraint for one contact.
  *
@@ -98,12 +100,16 @@ void solve_tangencial_constraint(ContactCollection &cc, size_t i, BodyCollection
  * @param cc         The ContactCollection.
  * @param i          Index of the contact to resolve.
  * @param bc         The BodyCollection holding body velocities.
- * @param time_step  Simulation timestep Δt (used for restitution thresholding).
+ * @param time_step  Simulation timestep Δt.
  */
 void apply_constraint_velocity_level(ContactCollection &cc, size_t i, BodyCollection &bc, scalar time_step);
 
 /**
  * @brief Applies the constraints on all contacts at the velocity level
+ * 
+ * @param cc         The ContactCollection containing all active contacts.
+ * @param bc         The BodyCollection holding body velocities.
+ * @param time_step  Simulation timestep Δt.
  */
 
 void solve_contacts_velocity_level(ContactCollection &cc, BodyCollection &bc, scalar time_step);

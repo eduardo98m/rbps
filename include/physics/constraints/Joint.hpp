@@ -7,7 +7,6 @@
 
 using namespace m3d;
 
-
 enum JointType
 {
     PRISMATIC,
@@ -132,6 +131,7 @@ void compute_revolute_joint_errors(JointCollection &jc,
                                    BodyCollection &bc,
                                    ConstraintCollection &cc,
                                    scalar time_step);
+
 /**
  * @brief Compute the two low-level XPBD constraint errors for a fixed joint.
  *
@@ -224,6 +224,10 @@ void compute_joint_errors(JointCollection &jc,
 
 /**
  * @brief Applies joint damping to all the joints 
+ * 
+ * @param jc JointCollection reference
+ * @param bc BodyCollection reference
+ * @param time_step timestep
  */
 void apply_joint_damping(JointCollection &jc,
                          BodyCollection &bc,

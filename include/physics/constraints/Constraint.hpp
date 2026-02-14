@@ -137,7 +137,6 @@ scalar compute_lagrange_multiplier(BodyCollection &bc, ConstraintCollection &cc,
 /**
  * @brief Solves the constraints by computing impulses of the bodies.
  *
- *
  * @param bc                The BodyCollection containing all bodies.
  * @param cc                The ConstraintCollection containing all constraints.
  * @param inverse_time_step Inverse of the time step (1/Δt).
