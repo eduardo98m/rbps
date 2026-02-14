@@ -31,17 +31,17 @@
             <td class="headerValue">coverage_clean.info</td>
             <td></td>
             <td class="headerItem">Lines:</td>
-            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
-            <td class="headerCovTableEntry">38</td>
+            <td class="headerCovTableEntryMed">88.4&nbsp;%</td>
+            <td class="headerCovTableEntry">43</td>
             <td class="headerCovTableEntry">38</td>
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-02-14 09:54:01</td>
+            <td class="headerValue">2026-02-14 10:05:12</td>
             <td></td>
             <td class="headerItem">Functions:</td>
-            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
-            <td class="headerCovTableEntry">9</td>
+            <td class="headerCovTableEntryHi">90.0&nbsp;%</td>
+            <td class="headerCovTableEntry">10</td>
             <td class="headerCovTableEntry">9</td>
           </tr>
                   <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
@@ -78,15 +78,15 @@
 <span id="L16"><span class="lineNum">      16</span> <span class="tlaGNC">           9 :         quat(scalar _w, scalar _x, scalar _y, scalar _z) : w(_w), x(_x), y(_y), z(_z) {}</span></span>
 <span id="L17"><span class="lineNum">      17</span>              : </span>
 <span id="L18"><span class="lineNum">      18</span>              :         // Construct from axis-angle</span>
-<span id="L19"><span class="lineNum">      19</span>              :         static quat from_axis_angle(const vec3 &amp;axis, scalar angle)</span>
+<span id="L19"><span class="lineNum">      19</span> <span class="tlaUNC tlaBgUNC">           0 :         static quat from_axis_angle(const vec3 &amp;axis, scalar angle)</span></span>
 <span id="L20"><span class="lineNum">      20</span>              :         {</span>
-<span id="L21"><span class="lineNum">      21</span>              :             scalar half_angle = angle * 0.5;</span>
-<span id="L22"><span class="lineNum">      22</span>              :             scalar s = std::sin(half_angle);</span>
-<span id="L23"><span class="lineNum">      23</span>              :             vec3 n = normalize(axis);</span>
-<span id="L24"><span class="lineNum">      24</span>              :             return {std::cos(half_angle), n.x * s, n.y * s, n.z * s};</span>
+<span id="L21"><span class="lineNum">      21</span> <span class="tlaUNC">           0 :             scalar half_angle = angle * 0.5;</span></span>
+<span id="L22"><span class="lineNum">      22</span> <span class="tlaUNC">           0 :             scalar s = std::sin(half_angle);</span></span>
+<span id="L23"><span class="lineNum">      23</span> <span class="tlaUNC">           0 :             vec3 n = normalize(axis);</span></span>
+<span id="L24"><span class="lineNum">      24</span> <span class="tlaUNC">           0 :             return {std::cos(half_angle), n.x * s, n.y * s, n.z * s};</span></span>
 <span id="L25"><span class="lineNum">      25</span>              :         }</span>
 <span id="L26"><span class="lineNum">      26</span>              : </span>
-<span id="L27"><span class="lineNum">      27</span> <span class="tlaGNC">           5 :         static quat from_rpy(scalar roll, scalar pitch, scalar yaw)</span></span>
+<span id="L27"><span class="lineNum">      27</span> <span class="tlaGNC tlaBgGNC">           5 :         static quat from_rpy(scalar roll, scalar pitch, scalar yaw)</span></span>
 <span id="L28"><span class="lineNum">      28</span>              :         {</span>
 <span id="L29"><span class="lineNum">      29</span> <span class="tlaGNC">           5 :             scalar cr = std::cos(roll * 0.5);</span></span>
 <span id="L30"><span class="lineNum">      30</span> <span class="tlaGNC">           5 :             scalar sr = std::sin(roll * 0.5);</span></span>
