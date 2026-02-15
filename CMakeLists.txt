@@ -14,6 +14,7 @@ set(RBPS_SOURCES
     src/rbps/Body.cpp
     src/rbps/constraints/Constraint.cpp
     src/rbps/constraints/Joint.cpp
+    src/rbps/constraints/Contact.cpp
 
 )
 
@@ -48,3 +49,7 @@ add_test(NAME test_constraint COMMAND test_constraint)
 add_executable(test_joint tests/rbps/test_joint.cpp)
 target_link_libraries(test_joint PRIVATE rbps_lib)
 add_test(NAME test_joint COMMAND test_joint)
+
+add_executable(test_contact tests/rbps/test_contact.cpp)
+target_link_libraries(test_contact PRIVATE rbps_lib)
+add_test(NAME test_contact COMMAND test_contact)
