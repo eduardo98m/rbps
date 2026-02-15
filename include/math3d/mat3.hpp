@@ -77,7 +77,7 @@ namespace m3d
         mat3 inverse() const
         {
             scalar det = this->determinant();
-            if (std::abs(det) < EPSILON)
+            if (m3d::abs(det) < EPSILON)
                 return mat3(); // Return identity on failure
 
             scalar invDet = 1.0 / det;
@@ -152,8 +152,8 @@ namespace m3d
 
         bool is_approx(const smat3 &o, scalar p = EPSILON) const
         {
-            return std::abs(xx - o.xx) < p && std::abs(yy - o.yy) < p && std::abs(zz - o.zz) < p &&
-                   std::abs(xy - o.xy) < p && std::abs(xz - o.xz) < p && std::abs(yz - o.yz) < p;
+            return m3d::abs(xx - o.xx) < p && m3d::abs(yy - o.yy) < p && m3d::abs(zz - o.zz) < p &&
+                   m3d::abs(xy - o.xy) < p && m3d::abs(xz - o.xz) < p && m3d::abs(yz - o.yz) < p;
         }
 
         friend std::ostream &operator<<(std::ostream &os, const smat3 &m)

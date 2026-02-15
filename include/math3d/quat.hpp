@@ -19,19 +19,19 @@ namespace m3d
         static quat from_axis_angle(const vec3 &axis, scalar angle)
         {
             scalar half_angle = angle * 0.5;
-            scalar s = std::sin(half_angle);
+            scalar s = m3d::sin(half_angle);
             vec3 n = normalize(axis);
-            return {std::cos(half_angle), n.x * s, n.y * s, n.z * s};
+            return {m3d::cos(half_angle), n.x * s, n.y * s, n.z * s};
         }
 
         static quat from_rpy(scalar roll, scalar pitch, scalar yaw)
         {
-            scalar cr = std::cos(roll * 0.5);
-            scalar sr = std::sin(roll * 0.5);
-            scalar cp = std::cos(pitch * 0.5);
-            scalar sp = std::sin(pitch * 0.5);
-            scalar cy = std::cos(yaw * 0.5);
-            scalar sy = std::sin(yaw * 0.5);
+            scalar cr = m3d::cos(roll * 0.5);
+            scalar sr = m3d::sin(roll * 0.5);
+            scalar cp = m3d::cos(pitch * 0.5);
+            scalar sp = m3d::sin(pitch * 0.5);
+            scalar cy = m3d::cos(yaw * 0.5);
+            scalar sy = m3d::sin(yaw * 0.5);
 
             return {
                 cr * cp * cy + sr * sp * sy, // w
@@ -79,10 +79,10 @@ namespace m3d
 
         bool is_approx(const quat &other, scalar precision = EPSILON) const
         {
-            return std::abs(w - other.w) < precision &&
-                   std::abs(x - other.x) < precision &&
-                   std::abs(y - other.y) < precision &&
-                   std::abs(z - other.z) < precision;
+            return m3d::abs(w - other.w) < precision &&
+                   m3d::abs(x - other.x) < precision &&
+                   m3d::abs(y - other.y) < precision &&
+                   m3d::abs(z - other.z) < precision;
         }
     };
 
@@ -91,13 +91,13 @@ namespace m3d
         scalar mag_sq = q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z;
         
         // Avoid the sqrt call 
-        if (std::abs(1.0 - mag_sq) < 2.107342e-08) { // Typical float precision threshold
+        if (m3d::abs(1.0 - mag_sq) < 2.107342e-08) { // Typical float precision threshold
             return q * (2.0 / (1.0 + mag_sq));
         }
         
         if (mag_sq < EPSILON) return {1, 0, 0, 0}; // Avoid zero division
         
-        return q * (1.0 / std::sqrt(mag_sq));
+        return q * (1.0 / m3d::sqrt(mag_sq));
     }
 
     inline quat conjugate(const quat &q)

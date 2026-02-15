@@ -63,9 +63,9 @@ namespace m3d
         // For physics-safe comparison
         bool is_approx(const vec3 &other, scalar precision = EPSILON) const
         {
-            return std::abs(x - other.x) < precision &&
-                   std::abs(y - other.y) < precision &&
-                   std::abs(z - other.z) < precision;
+            return m3d::abs(x - other.x) < precision &&
+                   m3d::abs(y - other.y) < precision &&
+                   m3d::abs(z - other.z) < precision;
         }
 
         // Meber acces via indices
@@ -112,7 +112,7 @@ namespace m3d
 
     inline scalar length(const vec3 &v)
     {
-        return std::sqrt(length_sq(v));
+        return m3d::sqrt(length_sq(v));
     }
 
     // Alias for magnitude (Its intuitive to call it like that in some contexts)
@@ -126,8 +126,8 @@ namespace m3d
         scalar len_sq = length_sq(v);
         if (len_sq < EPSILON)
             return {0, 0, 0};
-        scalar inv_len = 1.0 / std::sqrt(len_sq);
+        scalar inv_len = 1.0 / m3d::sqrt(len_sq);
         return v * inv_len;
     }
 
-} // namespace math
+} // namespace m3d
