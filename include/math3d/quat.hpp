@@ -117,5 +117,10 @@ namespace m3d
 
         return v + ((uv * s) + uuv) * 2.0;
     }
+    
+    inline vec3 rotate(const quat &q, const vec3 &v)
+    {
+        return rotate(v, q);
+    }
 
 } // namespace m3d
