@@ -41,7 +41,7 @@ namespace m3d
             z -= rhs.z;
             return *this;
         }
-        
+
         vec3 &operator*=(scalar s)
         {
             x *= s;
@@ -113,6 +113,12 @@ namespace m3d
     inline scalar length(const vec3 &v)
     {
         return std::sqrt(length_sq(v));
+    }
+
+    // Alias for magnitude (Its intuitive to call it like that in some contexts)
+    inline scalar magnitude(const vec3 &v)
+    {
+        return length(v);
     }
 
     inline vec3 normalize(const vec3 &v)
