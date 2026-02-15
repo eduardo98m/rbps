@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-02-15 03:32:43</td>
+            <td class="headerValue">2026-02-15 04:04:48</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryLo">66.7&nbsp;%</td>
@@ -64,14 +64,14 @@
 <span id="L2"><span class="lineNum">       2</span>              : </span>
 <span id="L3"><span class="lineNum">       3</span>              : namespace rbps</span>
 <span id="L4"><span class="lineNum">       4</span>              : {</span>
-<span id="L5"><span class="lineNum">       5</span> <span class="tlaGNC tlaBgGNC">           4 :     void set_value(ConstraintCollection &amp;cc, size_t i, vec3 value)</span></span>
+<span id="L5"><span class="lineNum">       5</span> <span class="tlaGNC tlaBgGNC">          81 :     void set_value(ConstraintCollection &amp;cc, size_t i, vec3 value)</span></span>
 <span id="L6"><span class="lineNum">       6</span>              :     {</span>
-<span id="L7"><span class="lineNum">       7</span> <span class="tlaGNC">           4 :         cc.magnitude[i] = m3d::magnitude(value);</span></span>
+<span id="L7"><span class="lineNum">       7</span> <span class="tlaGNC">          81 :         cc.magnitude[i] = m3d::magnitude(value);</span></span>
 <span id="L8"><span class="lineNum">       8</span>              : </span>
-<span id="L9"><span class="lineNum">       9</span> <span class="tlaGNC">           8 :         cc.direction[i] = (cc.magnitude[i] &gt; EPSILON)</span></span>
-<span id="L10"><span class="lineNum">      10</span> <span class="tlaGNC">           4 :                               ? m3d::normalize(value)</span></span>
+<span id="L9"><span class="lineNum">       9</span> <span class="tlaGNC">         162 :         cc.direction[i] = (cc.magnitude[i] &gt; EPSILON)</span></span>
+<span id="L10"><span class="lineNum">      10</span> <span class="tlaGNC">          81 :                               ? m3d::normalize(value)</span></span>
 <span id="L11"><span class="lineNum">      11</span>              :                               : vec3{1.0, 0.0, 0.0}; // Needs to be a unit vector</span>
-<span id="L12"><span class="lineNum">      12</span> <span class="tlaGNC">           4 :     };</span></span>
+<span id="L12"><span class="lineNum">      12</span> <span class="tlaGNC">          81 :     };</span></span>
 <span id="L13"><span class="lineNum">      13</span>              : </span>
 <span id="L14"><span class="lineNum">      14</span> <span class="tlaGNC">           6 :     scalar compute_delta_lambda(const ConstraintCollection &amp;cc, size_t i, scalar w_1, scalar w_2, scalar inverse_time_step)</span></span>
 <span id="L15"><span class="lineNum">      15</span>              :     {</span>
