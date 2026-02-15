@@ -4,7 +4,6 @@
 using namespace rbps;
 using namespace m3d;
 
-// Helper function to create a simple body collection
 BodyCollection create_test_bodies(size_t n)
 {
     BodyCollection bc;
@@ -111,6 +110,7 @@ TEST(update_position_and_orientation_angular)
                            bc.orientation[0].x * bc.orientation[0].x +
                            bc.orientation[0].y * bc.orientation[0].y +
                            bc.orientation[0].z * bc.orientation[0].z);
+                           
     ASSERT_NEAR(mag, 1.0, 0.001);
 }
 
