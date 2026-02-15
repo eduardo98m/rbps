@@ -13,6 +13,8 @@ include_directories(include)
 set(RBPS_SOURCES
     src/rbps/Body.cpp
     src/rbps/constraints/Constraint.cpp
+    src/rbps/constraints/Joint.cpp
+
 )
 
 add_library(rbps_lib ${RBPS_SOURCES})
@@ -42,3 +44,7 @@ add_test(NAME test_body COMMAND test_body)
 add_executable(test_constraint tests/rbps/test_constraint.cpp)
 target_link_libraries(test_constraint PRIVATE rbps_lib)
 add_test(NAME test_constraint COMMAND test_constraint)
+
+add_executable(test_joint tests/rbps/test_joint.cpp)
+target_link_libraries(test_joint PRIVATE rbps_lib)
+add_test(NAME test_joint COMMAND test_joint)

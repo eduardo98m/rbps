@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 
-#include <math3d.hpp>
+#include <math3d/math3d.hpp>
 #include <rbps/Body.hpp>
 #include <rbps/constraints/Constraint.hpp>
 
