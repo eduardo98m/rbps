@@ -22,6 +22,16 @@ namespace m3d
         return degrees * (PI / 180.0);
     }
 
+    inline scalar min(scalar x, scalar y)
+    {
+        return std::min(x, y);
+    }
+
+    inline scalar max(scalar x, scalar y)
+    {
+        return std::max(x, y);
+    }
+
     inline scalar abs(scalar x)
     {
         return std::abs(x);
