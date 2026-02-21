@@ -37,6 +37,11 @@ add_test(NAME test_quat COMMAND test_quat)
 add_executable(test_vec3 tests/math3d/test_vec3.cpp)
 add_test(NAME test_vec3 COMMAND test_vec3)
 
+add_executable(test_vec2i tests/math3d/test_vec2i.cpp)
+add_test(NAME test_vec2i COMMAND test_vec2i)
+
+
+# Physics Tests
 
 add_executable(test_body tests/rbps/test_body.cpp)
 target_link_libraries(test_body PRIVATE rbps_lib)
