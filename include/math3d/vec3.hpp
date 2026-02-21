@@ -11,6 +11,7 @@ namespace m3d
         // Constructors
         vec3() : x(0), y(0), z(0) {}
         vec3(scalar _x, scalar _y, scalar _z) : x(_x), y(_y), z(_z) {}
+        vec3(scalar _d) : x(_d), y(_d), z(_d) {}
 
         // Operator Overloading for clean syntax
         vec3 operator+(const vec3 &rhs) const { return {x + rhs.x, y + rhs.y, z + rhs.z}; }
