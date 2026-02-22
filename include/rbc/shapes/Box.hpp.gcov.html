@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - coverage_clean.info - include/rbc/shapes/Box.hpp</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../../index.html">top level</a> - <a href="index.html">include/rbc/shapes</a> - Box.hpp<span style="font-size: 80%;"> (source / <a href="Box.hpp.func-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">coverage_clean.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">5</td>
+            <td class="headerCovTableEntry">5</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2026-02-22 13:37:02</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">2</td>
+          </tr>
+                  <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">            Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>              : #pragma once</span>
+<span id="L2"><span class="lineNum">       2</span>              : #include &lt;math3d/math3d.hpp&gt;</span>
+<span id="L3"><span class="lineNum">       3</span>              : #include &quot;CollisionShape.hpp&quot;</span>
+<span id="L4"><span class="lineNum">       4</span>              : </span>
+<span id="L5"><span class="lineNum">       5</span>              : namespace rbc</span>
+<span id="L6"><span class="lineNum">       6</span>              : {</span>
+<span id="L7"><span class="lineNum">       7</span>              :     struct Box : public CollisionShape</span>
+<span id="L8"><span class="lineNum">       8</span>              :     {</span>
+<span id="L9"><span class="lineNum">       9</span>              :         m3d::vec3 half_extents;</span>
+<span id="L10"><span class="lineNum">      10</span>              :         // Constructors</span>
+<span id="L11"><span class="lineNum">      11</span>              :         Box() : half_extents(0.5, 0.5, 0.5) {}</span>
+<span id="L12"><span class="lineNum">      12</span> <span class="tlaGNC tlaBgGNC">           2 :         Box(const m3d::vec3 &amp;half_extents) : half_extents(half_extents) {}</span></span>
+<span id="L13"><span class="lineNum">      13</span>              : </span>
+<span id="L14"><span class="lineNum">      14</span>              :         inline bool operator==(const Box &amp;other) const</span>
+<span id="L15"><span class="lineNum">      15</span>              :         {</span>
+<span id="L16"><span class="lineNum">      16</span>              :             return half_extents == other.half_extents;</span>
+<span id="L17"><span class="lineNum">      17</span>              :         }</span>
+<span id="L18"><span class="lineNum">      18</span>              : </span>
+<span id="L19"><span class="lineNum">      19</span>              :         inline bool operator!=(const Box &amp;other) const</span>
+<span id="L20"><span class="lineNum">      20</span>              :         {</span>
+<span id="L21"><span class="lineNum">      21</span>              :             return !(*this == other);</span>
+<span id="L22"><span class="lineNum">      22</span>              :         }</span>
+<span id="L23"><span class="lineNum">      23</span>              : </span>
+<span id="L24"><span class="lineNum">      24</span> <span class="tlaGNC">           7 :         inline m3d::vec3 support(const m3d::vec3 &amp;dir) const override</span></span>
+<span id="L25"><span class="lineNum">      25</span>              :         {</span>
+<span id="L26"><span class="lineNum">      26</span>              :             // The furthest point of a box maps to its corners based on the sign of the direction</span>
+<span id="L27"><span class="lineNum">      27</span>              :             return m3d::vec3(</span>
+<span id="L28"><span class="lineNum">      28</span> <span class="tlaGNC">          10 :                 (dir.x &gt; 0) ? half_extents.x : -half_extents.x,</span></span>
+<span id="L29"><span class="lineNum">      29</span> <span class="tlaGNC">          11 :                 (dir.y &gt; 0) ? half_extents.y : -half_extents.y,</span></span>
+<span id="L30"><span class="lineNum">      30</span> <span class="tlaGNC">           7 :                 (dir.z &gt; 0) ? half_extents.z : -half_extents.z);</span></span>
+<span id="L31"><span class="lineNum">      31</span>              :         }</span>
+<span id="L32"><span class="lineNum">      32</span>              : </span>
+<span id="L33"><span class="lineNum">      33</span>              :         inline m3d::scalar compute_volume() const</span>
+<span id="L34"><span class="lineNum">      34</span>              :         {</span>
+<span id="L35"><span class="lineNum">      35</span>              :             return 8.0 * half_extents.x * half_extents.y * half_extents.z; // Volume of the box</span>
+<span id="L36"><span class="lineNum">      36</span>              :         }</span>
+<span id="L37"><span class="lineNum">      37</span>              : </span>
+<span id="L38"><span class="lineNum">      38</span>              :         inline m3d::smat3 compute_inertia_tensor() const</span>
+<span id="L39"><span class="lineNum">      39</span>              :         {</span>
+<span id="L40"><span class="lineNum">      40</span>              :             m3d::scalar x2 = 4.0 * half_extents.x * half_extents.x;</span>
+<span id="L41"><span class="lineNum">      41</span>              :             m3d::scalar y2 = 4.0 * half_extents.y * half_extents.y;</span>
+<span id="L42"><span class="lineNum">      42</span>              :             m3d::scalar z2 = 4.0 * half_extents.z * half_extents.z;</span>
+<span id="L43"><span class="lineNum">      43</span>              :             m3d::scalar mass = compute_volume(); // Assuming unit density for simplicity (How we should ahndle this? Should we add a density parameter to the box struct?)</span>
+<span id="L44"><span class="lineNum">      44</span>              :             return m3d::smat3(</span>
+<span id="L45"><span class="lineNum">      45</span>              :                 (1.0 / 12.0) * mass * (y2 + z2), // Ixx</span>
+<span id="L46"><span class="lineNum">      46</span>              :                 (1.0 / 12.0) * mass * (x2 + z2), // Iyy</span>
+<span id="L47"><span class="lineNum">      47</span>              :                 (1.0 / 12.0) * mass * (x2 + y2), // Izz</span>
+<span id="L48"><span class="lineNum">      48</span>              :                 0,                               // Ixy</span>
+<span id="L49"><span class="lineNum">      49</span>              :                 0,                               // Ixz</span>
+<span id="L50"><span class="lineNum">      50</span>              :                 0                                // Iyz</span>
+<span id="L51"><span class="lineNum">      51</span>              :             );</span>
+<span id="L52"><span class="lineNum">      52</span>              :         }</span>
+<span id="L53"><span class="lineNum">      53</span>              :     };</span>
+<span id="L54"><span class="lineNum">      54</span>              : }</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com//linux-test-project/lcov" target="_parent">LCOV version 2.0-1</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>
