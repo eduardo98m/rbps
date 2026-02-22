@@ -81,6 +81,11 @@ namespace rbc
         {
             f->n = f->n / l;
             f->d = m3d::dot(a->w, f->n); // distance from origin to face plane
+            if (f->d < -m3d::EPSILON)
+            {
+                f->n = -f->n;
+                f->d = -f->d;
+            }
         }
         else
         {
@@ -106,12 +111,18 @@ namespace rbc
         {
             if (faces[i]->obsolete)
                 continue;
-            // Use squared distance so that faces with d ≈ 0 are still found correctly
-            // and a face with d=-ε (numerical noise) does not win over a valid face.
+
             m3d::scalar d = faces[i]->d;
-            if (d < best_d)
+
+            // Skip clearly invalid (back-facing) faces caused by FP noise.
+            // 10*EPSILON is conservative but safe for double/float.
+            if (d < -m3d::EPSILON * 10.0)
+                continue;
+
+            m3d::scalar sqd = d * d; // squared distance to origin
+            if (sqd < best_d)
             {
-                best_d = d;
+                best_d = sqd;
                 best = faces[i];
             }
         }
@@ -188,55 +199,60 @@ namespace rbc
     {
         const Simplex &simplex = *gjk_solver.active_simplex;
 
-        if (simplex.rank < 4)
+        if (simplex.rank < 3)
             return Failed;
 
         initialize();
 
-        // --- 1. Copy the GJK tetrahedron vertices into EPA's vertex pool ----------
-
-        for (int i = 0; i < 4; ++i)
+        // --- 1. Copy GJK simplex into our vertex pool -------------------------
+        unsigned int n = (simplex.rank == 3) ? 3 : 4;
+        for (unsigned int i = 0; i < n; ++i)
         {
             *vertices[num_vertices] = *simplex.vertex[i];
             ++num_vertices;
         }
 
-        // Ensure CCW winding (origin inside the tetrahedron on the positive side of every face).
-        // The test: dot( v0-v3, (v1-v3) × (v2-v3) ) must be > 0.
-        // If it is < 0 the winding is reversed; swap v0 and v1 to fix it.
-        if (m3d::dot(vertices[0]->w - vertices[3]->w,
-                     m3d::cross(vertices[1]->w - vertices[3]->w,
-                                vertices[2]->w - vertices[3]->w)) < 0)
+        // For rank == 3 we build one face; for rank == 4 we build the tetrahedron
+        if (simplex.rank == 3)
         {
-            std::swap(vertices[0], vertices[1]);
+            EPAFace *f = new_face(vertices[0], vertices[1], vertices[2]);
+            if (!f)
+                return Failed;
+
+            // We will let the main loop run – it will immediately add the 4th vertex
+        }
+        else // rank == 4
+        {
+            // Ensure consistent CCW winding (origin inside, normals outward)
+            if (m3d::dot(vertices[0]->w - vertices[3]->w,
+                         m3d::cross(vertices[1]->w - vertices[3]->w,
+                                    vertices[2]->w - vertices[3]->w)) < 0)
+            {
+                std::swap(vertices[0], vertices[1]);
+            }
+
+            EPAFace *f0 = new_face(vertices[0], vertices[1], vertices[2]);
+            EPAFace *f1 = new_face(vertices[1], vertices[0], vertices[3]);
+            EPAFace *f2 = new_face(vertices[2], vertices[1], vertices[3]);
+            EPAFace *f3 = new_face(vertices[0], vertices[2], vertices[3]);
+
+            if (!f0 || !f1 || !f2 || !f3)
+                return Failed;
+
+            bind_faces(f0, 0, f1, 0);
+            bind_faces(f0, 1, f2, 0);
+            bind_faces(f0, 2, f3, 0);
+            bind_faces(f1, 1, f3, 2);
+            bind_faces(f1, 2, f2, 1);
+            bind_faces(f2, 2, f3, 1);
         }
 
-        // --- 2. Build the initial 4 faces ------------------------------------------
-        // Face winding mirrors hpp-fcl so that every normal points outward.
-
-        EPAFace *f0 = new_face(vertices[0], vertices[1], vertices[2]);
-        EPAFace *f1 = new_face(vertices[1], vertices[0], vertices[3]);
-        EPAFace *f2 = new_face(vertices[2], vertices[1], vertices[3]);
-        EPAFace *f3 = new_face(vertices[0], vertices[2], vertices[3]);
-
-        if (!f0 || !f1 || !f2 || !f3)
-            return Failed;
-
-        bind_faces(f0, 0, f1, 0);
-        bind_faces(f0, 1, f2, 0);
-        bind_faces(f0, 2, f3, 0);
-        bind_faces(f1, 1, f3, 2);
-        bind_faces(f1, 2, f2, 1);
-        bind_faces(f2, 2, f3, 1);
-
-        // --- 3. Expansion loop -----------------------------------------------------
-
+        // --- 2. Expansion loop ------------------------------------------------
         EPAFace *best_face = nullptr;
         unsigned int pass = 0;
 
         for (unsigned int iteration = 0; iteration < max_iterations; ++iteration)
         {
-
             best_face = find_closest_face();
             if (!best_face)
             {
@@ -250,7 +266,6 @@ namespace rbc
                 break;
             }
 
-            // Query the support point along the closest face's outward normal.
             SimplexVertex *w = vertices[num_vertices];
 
             m3d::vec3 local_dir_a = shape.tf_a.inverse_rotate_vector(best_face->n);
@@ -259,16 +274,13 @@ namespace rbc
             w->w1 = shape.tf_b.transform_point(shape.shape_b->support(local_dir_b));
             w->w = w->w0 - w->w1;
 
-            // Convergence check: how much further beyond the current face is w?
             m3d::scalar w_dist = m3d::dot(best_face->n, w->w) - best_face->d;
             if (w_dist <= tolerance)
             {
-                // The polytope face is as close to the CSO boundary as the tolerance allows.
                 status = Valid;
                 break;
             }
 
-            // w extends the polytope → commit it and expand.
             ++num_vertices;
 
             EPAHorizon horizon;
@@ -280,35 +292,23 @@ namespace rbc
 
             if (!valid || horizon.nf < 3)
             {
-                // Expansion failed – hull became invalid. Accept best result so far.
-                status = Valid;
+                status = Valid; // accept best we have
                 break;
             }
 
-            // Close the horizon ring: connect the last face's edge-1 to the first face's edge-2.
             bind_faces(horizon.ff, 2, horizon.cf, 1);
-
-            // Retire the face we just replaced.
             best_face->obsolete = true;
-
             status = Valid;
         }
 
-        // --- 4. Extract results ----------------------------------------------------
-
+        // --- 3. Extract results -----------------------------------------------
         if (status != Valid || !best_face)
             return status;
 
         normal = best_face->n;
         depth = best_face->d;
 
-        // Compute the contact point as the barycentric projection of the origin
-        // onto the closest face (in Minkowski-difference space), then map those
-        // same barycentric weights onto the support points of shape A.
-        //
-        // The projection of the origin onto the face plane is: p = depth * normal
-        // Solve for barycentric coords (u, v, w) of p in triangle (a, b, c):
-        //   p = u*a + v*b + w*c,  u+v+w = 1
+        // (your existing barycentric contact_point code – unchanged)
         {
             const m3d::vec3 &a = best_face->v[0]->w;
             const m3d::vec3 &b = best_face->v[1]->w;
@@ -317,7 +317,7 @@ namespace rbc
             const m3d::vec3 &b0 = best_face->v[1]->w0;
             const m3d::vec3 &c0 = best_face->v[2]->w0;
 
-            m3d::vec3 p = best_face->n * depth; // origin projected onto face plane
+            m3d::vec3 p = best_face->n * depth;
             m3d::vec3 ab = b - a;
             m3d::vec3 ac = c - a;
             m3d::vec3 ap = p - a;
@@ -339,7 +339,6 @@ namespace rbc
             }
             else
             {
-                // Degenerate triangle – fall back to centroid
                 contact_point = (a0 + b0 + c0) * (1.0f / 3.0f);
             }
         }

@@ -18,9 +18,15 @@ TEST(epa_sphere_penetration)
     
     // GJK must detect the collision first
     gjk.evaluate(md, m3d::vec3(1, 0, 0));
+    std::cout << "GJK rank: " << gjk.active_simplex->rank << "\n";
+
     
     rbc::EPA epa;
     rbc::EPA::Status status = epa.evaluate(gjk, md);
+
+    std::cout << "EPA status: " << (int)status 
+            << " depth=" << epa.depth 
+            << " normal=" << epa.normal.x << "," << epa.normal.y << "," << epa.normal.z << "\n";
 
     ASSERT_TRUE(status == rbc::EPA::Valid);
     
