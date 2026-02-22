@@ -58,11 +58,6 @@ TEST(epa_box_box_face)
     rbc::EPA epa;
     rbc::EPA::Status status = epa.evaluate(gjk, md);
 
-    std::cout << "GJK rank: " << gjk.active_simplex->rank << "\n";
-    std::cout << "EPA status: " << (int)status 
-            << " depth=" << epa.depth 
-            << " normal=" << epa.normal.x << "," << epa.normal.y << "," << epa.normal.z << "\n";
-
     ASSERT_TRUE(status == rbc::EPA::Valid);
     ASSERT_NEAR(epa.depth, 0.4, 0.01);
     ASSERT_NEAR(std::abs(epa.normal.x), 1.0, 0.01);
