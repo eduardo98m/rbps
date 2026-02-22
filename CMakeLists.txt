@@ -15,11 +15,20 @@ set(RBPS_SOURCES
     src/rbps/constraints/Constraint.cpp
     src/rbps/constraints/Joint.cpp
     src/rbps/constraints/Contact.cpp
-
 )
+
+set(RBC_SOURCES
+    src/rbc/narrow_phase.cpp
+    src/rbc/gjk/GJK.cpp
+    src/rbc/gjk/EPA.cpp
+)
+
 
 add_library(rbps_lib ${RBPS_SOURCES})
 target_include_directories(rbps_lib PUBLIC include)
+
+add_library(rbc_lib ${RBC_SOURCES}) 
+target_include_directories(rbc_lib PUBLIC include)
 
 # Enable Testing
 enable_testing()
@@ -40,6 +49,14 @@ add_test(NAME test_vec3 COMMAND test_vec3)
 add_executable(test_vec2i tests/math3d/test_vec2i.cpp)
 add_test(NAME test_vec2i COMMAND test_vec2i)
 
+# Collision Tests
+add_executable(test_gjk tests/rbc/test_gjk.cpp)
+target_link_libraries(test_gjk PRIVATE rbc_lib)
+add_test(NAME test_gjk COMMAND test_gjk)
+
+add_executable(test_epa tests/rbc/test_epa.cpp)
+target_link_libraries(test_epa PRIVATE rbc_lib)
+add_test(NAME test_epa COMMAND test_epa)
 
 # Physics Tests
 
