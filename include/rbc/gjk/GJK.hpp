@@ -20,7 +20,7 @@ namespace rbc {
 
         // Configuration
         unsigned int max_iterations = 128;
-        m3d::scalar tolerance = 1e-8;
+        m3d::scalar tolerance = 1e-6;
 
         // Results / State
         const MinkowskiDiff* current_shape;

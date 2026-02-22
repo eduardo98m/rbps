@@ -149,9 +149,10 @@ namespace rbc
     bool EPA::expand(unsigned int pass, SimplexVertex *w,
                      EPAFace *f, int e, EPAHorizon &horizon)
     {
-        // If we reach a face we've already processed this pass the hull is broken.
+        //If we hit a face already visited in this pass, it's just an internal 
+        // edge of the visible region. We return TRUE to continue safely.
         if (f->pass == pass)
-            return false;
+            return true;
 
         const int e1 = (e + 1) % 3;
         const int e2 = (e + 2) % 3;

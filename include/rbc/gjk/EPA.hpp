@@ -41,8 +41,8 @@ namespace rbc
         // Configuration
         unsigned int max_faces     = 256;
         unsigned int max_vertices  = 128;
-        unsigned int max_iterations = 512;
-        m3d::scalar  tolerance     = 1e-10;
+        unsigned int max_iterations = 128;
+        m3d::scalar  tolerance     = 1e-6;
 
         // Results
         m3d::vec3   normal;
