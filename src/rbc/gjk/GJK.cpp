@@ -197,6 +197,15 @@ namespace rbc
         } while (status == Valid);
 
         active_simplex = &simplices[current];
+        if (status == Inside && active_simplex->rank < 4)
+        {
+            // Attempt to build a tetrahedron that still contains the origin
+            if (!enclose_origin())
+            {
+                // If it fails, we keep the current simplex (origin is inside a triangle/edge)
+                // but EPA will have to handle it (we'll also modify EPA to accept triangles).
+            }
+        }
 
         return status;
     }
