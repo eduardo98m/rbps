@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-02-22 13:37:02</td>
+            <td class="headerValue">2026-02-22 14:55:17</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -83,13 +83,13 @@
 <span id="L21"><span class="lineNum">      21</span>              :             return !(*this == other);</span>
 <span id="L22"><span class="lineNum">      22</span>              :         }</span>
 <span id="L23"><span class="lineNum">      23</span>              : </span>
-<span id="L24"><span class="lineNum">      24</span> <span class="tlaGNC">           7 :         inline m3d::vec3 support(const m3d::vec3 &amp;dir) const override</span></span>
+<span id="L24"><span class="lineNum">      24</span> <span class="tlaGNC">          19 :         inline m3d::vec3 support(const m3d::vec3 &amp;dir) const override</span></span>
 <span id="L25"><span class="lineNum">      25</span>              :         {</span>
 <span id="L26"><span class="lineNum">      26</span>              :             // The furthest point of a box maps to its corners based on the sign of the direction</span>
 <span id="L27"><span class="lineNum">      27</span>              :             return m3d::vec3(</span>
-<span id="L28"><span class="lineNum">      28</span> <span class="tlaGNC">          10 :                 (dir.x &gt; 0) ? half_extents.x : -half_extents.x,</span></span>
-<span id="L29"><span class="lineNum">      29</span> <span class="tlaGNC">          11 :                 (dir.y &gt; 0) ? half_extents.y : -half_extents.y,</span></span>
-<span id="L30"><span class="lineNum">      30</span> <span class="tlaGNC">           7 :                 (dir.z &gt; 0) ? half_extents.z : -half_extents.z);</span></span>
+<span id="L28"><span class="lineNum">      28</span> <span class="tlaGNC">          29 :                 (dir.x &gt; 0) ? half_extents.x : -half_extents.x,</span></span>
+<span id="L29"><span class="lineNum">      29</span> <span class="tlaGNC">          26 :                 (dir.y &gt; 0) ? half_extents.y : -half_extents.y,</span></span>
+<span id="L30"><span class="lineNum">      30</span> <span class="tlaGNC">          19 :                 (dir.z &gt; 0) ? half_extents.z : -half_extents.z);</span></span>
 <span id="L31"><span class="lineNum">      31</span>              :         }</span>
 <span id="L32"><span class="lineNum">      32</span>              : </span>
 <span id="L33"><span class="lineNum">      33</span>              :         inline m3d::scalar compute_volume() const</span>
