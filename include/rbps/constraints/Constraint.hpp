@@ -3,6 +3,7 @@
 #include <vector>
 #include <tuple>
 
+#include <ivc/ivc.hpp>
 #include <math3d/math3d.hpp>
 #include <rbps/Body.hpp>
 
@@ -17,6 +18,20 @@ namespace rbps
         ROTATIONAL  // Constraint enforcing rotational relationships
     };
 
+#define CONSTRAINT_FIELDS(X) \
+    X(size_t, body_1)        \
+    X(size_t, body_2)        \
+    X(vec3, r_1)             \
+    X(vec3, r_2)             \
+    X(vec3, direction)       \
+    X(scalar, magnitude)     \
+    X(scalar, lambda)        \
+    X(vec3, force)           \
+    X(vec3, torque)          \
+    X(scalar, compliance)    \
+    X(ConstraintType, type)  \
+    X(vec3, impulse)
+
     /**
      * @brief Collection of per-constraint data used by the physics solver.
      *
@@ -25,19 +40,12 @@ namespace rbps
      */
     struct ConstraintCollection
     {
-        size_t n_constraints = 0;         // Number of constraints in the collection
-        std::vector<size_t> body_1;       // Index of the first body in each constraint
-        std::vector<size_t> body_2;       // Index of the second body in each constraint
-        std::vector<vec3> r_1;            // Local contact point on body 1
-        std::vector<vec3> r_2;            // Local contact point on body 2
-        std::vector<vec3> direction;      // Constraint direction (unit vector)
-        std::vector<scalar> magnitude;    // Current constraint magnitude
-        std::vector<scalar> lambda;       // Lagrange multiplier per constraint
-        std::vector<vec3> force;          // Positional constraint force
-        std::vector<vec3> torque;         // Rotational constraint torque
-        std::vector<scalar> compliance;   // Constraint compliance (softness)
-        std::vector<ConstraintType> type; // Position vs. rotation constraint
-        std::vector<vec3> impulse;        // Constraint impulse applied
+        IVC_CORE;                             // embeds _ivc  (stable ID bookkeeping)
+        size_t &n_constraints = _ivc.n_items; // Number of constraints in the collection (Alias for convenience)
+
+#define DECLARE_VEC(type, name) std::vector<type> name;
+        CONSTRAINT_FIELDS(DECLARE_VEC)
+#undef DECLARE_VEC
     };
 
     /**

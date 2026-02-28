@@ -100,3 +100,7 @@ add_test(NAME test_contact COMMAND test_contact)
 add_executable(test_bodyAPI tests/rbps/API/test_bodyAPI.cpp)
 target_link_libraries(test_bodyAPI PRIVATE rbps_lib)
 add_test(NAME test_bodyAPI COMMAND test_bodyAPI)
+
+add_executable(test_constraintAPI tests/rbps/API/test_constraintAPI.cpp)
+target_link_libraries(test_constraintAPI PRIVATE rbps_lib)
+add_test(NAME test_constraintAPI COMMAND test_constraintAPI)
