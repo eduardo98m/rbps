@@ -9,7 +9,7 @@
 namespace rbc
 {
 
-    // ── Primary template: GJK/EPA fallback for any unspecialised pair ─────────────
+    //  Primary template: GJK/EPA fallback for any unspecialised pair
     template <typename A, typename B>
     struct CollisionAlgorithm
     {
@@ -40,7 +40,7 @@ namespace rbc
         }
     };
 
-    // ── Symmetric helper: (B,A) reuses (A,B) and flips normal ────────────────────
+    // Symmetric helper: (B,A) reuses (A,B) and flips normal
     template <typename A, typename B>
     struct CollisionAlgorithmSym
     {
@@ -91,10 +91,6 @@ namespace rbc
 
     static constexpr CollisionFunc DispatchTable[static_cast<int>(ShapeType::Count)][static_cast<int>(ShapeType::Count)] = {
         RBC_SHAPE_LIST(GENERATE_MATRIX_LINE)};
-
-    static_assert(
-        sizeof(DispatchTable) / sizeof(DispatchTable[0]) == static_cast<size_t>(ShapeType::Count),
-        "CRITICAL: DispatchTable row count mismatch! Check if RBC_SHAPE_LIST and RBC_SHAPE_LIST_INNER are synced.");
 
     inline bool dispatch(const Shape &a, const m3d::tf &tf_a,
                          const Shape &b, const m3d::tf &tf_b,
