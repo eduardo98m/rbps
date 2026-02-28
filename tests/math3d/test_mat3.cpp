@@ -245,6 +245,89 @@ TEST(mat3_const_indexing)
     ASSERT_NEAR(m[2].z, 9.0);
 }
 
+TEST(smat3_determinant_matches_mat3)
+{
+    m3d::smat3 s(2.0, 3.0, 4.0,
+                 0.5, 0.7, 0.9);
+
+    // Expand to full mat3
+    m3d::mat3 full(
+        s.xx, s.xy, s.xz,
+        s.xy, s.yy, s.yz,
+        s.xz, s.yz, s.zz
+    );
+
+    ASSERT_NEAR(s.determinant(), full.determinant());
+}
+
+TEST(smat3_inverse_matches_mat3)
+{
+    m3d::smat3 s(4.0, 5.0, 6.0,
+                 0.5, 0.3, 0.2);
+
+    m3d::mat3 full(
+        s.xx, s.xy, s.xz,
+        s.xy, s.yy, s.yz,
+        s.xz, s.yz, s.zz
+    );
+
+    m3d::smat3 s_inv = s.inverse();
+    m3d::mat3 full_inv = full.inverse();
+
+    // Compare entries
+    ASSERT_NEAR(s_inv.xx, full_inv[0].x);
+    ASSERT_NEAR(s_inv.yy, full_inv[1].y);
+    ASSERT_NEAR(s_inv.zz, full_inv[2].z);
+
+    ASSERT_NEAR(s_inv.xy, full_inv[1].x);
+    ASSERT_NEAR(s_inv.xz, full_inv[2].x);
+    ASSERT_NEAR(s_inv.yz, full_inv[2].y);
+}
+
+TEST(smat3_inverse_identity_check)
+{
+    m3d::smat3 s(5.0, 6.0, 7.0,
+                 1.0, 0.5, 0.8);
+
+    m3d::smat3 s_inv = s.inverse();
+
+    // Expand both to full mat3
+    m3d::mat3 A(
+        s.xx, s.xy, s.xz,
+        s.xy, s.yy, s.yz,
+        s.xz, s.yz, s.zz
+    );
+
+    m3d::mat3 Ainv(
+        s_inv.xx, s_inv.xy, s_inv.xz,
+        s_inv.xy, s_inv.yy, s_inv.yz,
+        s_inv.xz, s_inv.yz, s_inv.zz
+    );
+
+    m3d::mat3 identity = A * Ainv;
+
+    ASSERT_TRUE(identity.is_approx(m3d::mat3(), 1e-5));
+}
+
+TEST(smat3_inverse_singular)
+{
+    // Rank-deficient symmetric matrix
+    m3d::smat3 s(1, 4, 9,
+                 2, 3, 6);
+
+    ASSERT_NEAR(s.determinant(), 0.0);
+
+    m3d::smat3 inv = s.inverse();
+
+    // Should return zero matrix (based on implementation)
+    ASSERT_NEAR(inv.xx, 0.0);
+    ASSERT_NEAR(inv.yy, 0.0);
+    ASSERT_NEAR(inv.zz, 0.0);
+    ASSERT_NEAR(inv.xy, 0.0);
+    ASSERT_NEAR(inv.xz, 0.0);
+    ASSERT_NEAR(inv.yz, 0.0);
+}
+
 TEST_SUITE(
     RUN_TEST(identity_and_indexing),
     RUN_TEST(matrix_vector_mult),
@@ -264,5 +347,9 @@ TEST_SUITE(
     RUN_TEST(smat3_from_symmetric_mat3),
     RUN_TEST(mat3_quat_cast_and_inverse),
     RUN_TEST(smat3_default_constructor),
-    RUN_TEST(mat3_const_indexing)
+    RUN_TEST(mat3_const_indexing),
+    RUN_TEST(smat3_determinant_matches_mat3),
+    RUN_TEST(smat3_inverse_matches_mat3),
+    RUN_TEST(smat3_inverse_identity_check),
+    RUN_TEST(smat3_inverse_singular)
 )

@@ -150,6 +150,35 @@ namespace m3d
             return smat3(xx * s, yy * s, zz * s, xy * s, xz * s, yz * s);
         }
 
+        scalar determinant() const
+        {
+            return xx * yy * zz + 2 * xy * xz * yz - xx * yz * yz - yy * xz * xz - zz * xy * xy;
+        }
+
+        smat3 inverse() const
+        {
+            scalar det = determinant();
+
+            if (m3d::abs(det) < EPSILON)
+                return smat3(); // return zero matrix on failure
+
+            scalar invDet = 1.0 / det;
+
+            smat3 result;
+
+            // Diagonal cofactors
+            result.xx = (yy * zz - yz * yz) * invDet;
+            result.yy = (xx * zz - xz * xz) * invDet;
+            result.zz = (xx * yy - xy * xy) * invDet;
+
+            // Off-diagonal cofactors (note symmetry preserved)
+            result.xy = (xz * yz - xy * zz) * invDet;
+            result.xz = (xy * yz - xz * yy) * invDet;
+            result.yz = (xy * xz - xx * yz) * invDet;
+
+            return result;
+        }
+
         bool is_approx(const smat3 &o, scalar p = EPSILON) const
         {
             return m3d::abs(xx - o.xx) < p && m3d::abs(yy - o.yy) < p && m3d::abs(zz - o.zz) < p &&
@@ -185,4 +214,5 @@ namespace m3d
         result[2] = lhs * vec3{rhs.xz, rhs.yz, rhs.zz};
         return result;
     }
+
 }
