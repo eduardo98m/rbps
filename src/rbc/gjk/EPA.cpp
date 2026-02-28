@@ -1,4 +1,5 @@
 #include "rbc/gjk/EPA.hpp"
+#include "rbc/shapes/ShapeTypes.hpp"
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -271,8 +272,8 @@ namespace rbc
 
             m3d::vec3 local_dir_a = shape.tf_a.inverse_rotate_vector(best_face->n);
             m3d::vec3 local_dir_b = shape.tf_b.inverse_rotate_vector(-best_face->n);
-            w->w0 = shape.tf_a.transform_point(shape.shape_a->support(local_dir_a));
-            w->w1 = shape.tf_b.transform_point(shape.shape_b->support(local_dir_b));
+            w->w0 = shape.tf_a.transform_point(shape_support(*shape.shape_a, local_dir_a));
+            w->w1 = shape.tf_b.transform_point(shape_support(*shape.shape_b, local_dir_b));
             w->w = w->w0 - w->w1;
 
             m3d::scalar w_dist = m3d::dot(best_face->n, w->w) - best_face->d;

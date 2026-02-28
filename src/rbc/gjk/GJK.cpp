@@ -1,4 +1,5 @@
 #include "rbc/gjk/GJK.hpp"
+#include "rbc/shapes/ShapeTypes.hpp"
 #include <algorithm>
 #include <cmath>
 
@@ -36,10 +37,10 @@ namespace rbc
 
         // Compute support points in local space, then transform to world space
         m3d::vec3 local_dir_a = current_shape->tf_a.inverse_rotate_vector(v);
-        s.vertex[s.rank]->w0 = current_shape->tf_a.transform_point(current_shape->shape_a->support(local_dir_a));
+        s.vertex[s.rank]->w0 = current_shape->tf_a.transform_point(shape_support(*current_shape->shape_a, local_dir_a));
 
         m3d::vec3 local_dir_b = current_shape->tf_b.inverse_rotate_vector(-v);
-        s.vertex[s.rank]->w1 = current_shape->tf_b.transform_point(current_shape->shape_b->support(local_dir_b));
+        s.vertex[s.rank]->w1 = current_shape->tf_b.transform_point(shape_support(*current_shape->shape_b, local_dir_b));
 
         // Minkowski difference vertex
         s.vertex[s.rank]->w = s.vertex[s.rank]->w0 - s.vertex[s.rank]->w1;

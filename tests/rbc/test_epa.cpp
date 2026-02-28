@@ -8,7 +8,8 @@
 // --- Existing Tests ---
 TEST(epa_sphere_penetration)
 {
-    rbc::Sphere sA(1.0); rbc::Sphere sB(1.0); 
+    rbc::Shape sA = rbc::Sphere(1.0); 
+    rbc::Shape sB = rbc::Sphere(1.0); 
     m3d::tf tfA; tfA.pos = m3d::vec3(0, 0, 0);
     m3d::tf tfB; tfB.pos = m3d::vec3(1.5, 0, 0); 
 
@@ -26,8 +27,8 @@ TEST(epa_sphere_penetration)
 
 TEST(epa_box_sphere_penetration)
 {
-    rbc::Box boxA(m3d::vec3(1, 1, 1)); 
-    rbc::Sphere sphereB(1.0);
+    rbc::Shape boxA = rbc::Box(m3d::vec3(1, 1, 1)); 
+    rbc::Shape sphereB = rbc::Sphere(1.0);
     m3d::tf tfA; tfA.pos = m3d::vec3(0, 0, 0);
     m3d::tf tfB; tfB.pos = m3d::vec3(0, 1.7, 0); 
 
@@ -45,8 +46,8 @@ TEST(epa_box_sphere_penetration)
 
 TEST(epa_box_box_face)
 {
-    rbc::Box bA(m3d::vec3(1, 1, 1)); 
-    rbc::Box bB(m3d::vec3(1, 1, 1)); 
+    rbc::Shape bA = rbc::Box(m3d::vec3(1, 1, 1)); 
+    rbc::Shape bB = rbc::Box(m3d::vec3(1, 1, 1)); 
     
     m3d::tf tfA; tfA.pos = m3d::vec3(0, 0, 0);
     m3d::tf tfB; tfB.pos = m3d::vec3(1.6, 0, 0); // Overlap of 0.4 on X axis
@@ -65,8 +66,8 @@ TEST(epa_box_box_face)
 
 TEST(epa_box_box_corner_offset)
 {
-    rbc::Box bA(m3d::vec3(1, 1, 1)); 
-    rbc::Box bB(m3d::vec3(1, 1, 1)); 
+    rbc::Shape bA = rbc::Box(m3d::vec3(1, 1, 1)); 
+    rbc::Shape bB = rbc::Box(m3d::vec3(1, 1, 1)); 
     
     m3d::tf tfA; tfA.pos = m3d::vec3(0, 0, 0);
     // B is offset heavily on Y and Z, but only slightly on X.
@@ -88,8 +89,8 @@ TEST(epa_box_box_corner_offset)
 
 TEST(epa_diagonal_spheres)
 {
-    rbc::Sphere sA(1.0); 
-    rbc::Sphere sB(1.0); 
+    rbc::Shape sA = rbc::Sphere(1.0); 
+    rbc::Shape sB = rbc::Sphere(1.0); 
     
     m3d::tf tfA; tfA.pos = m3d::vec3(0, 0, 0);
     // Sphere B is offset diagonally.
