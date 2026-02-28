@@ -58,6 +58,22 @@ add_executable(test_epa tests/rbc/test_epa.cpp)
 target_link_libraries(test_epa PRIVATE rbc_lib)
 add_test(NAME test_epa COMMAND test_epa)
 
+add_executable(test_sphere_sphere tests/rbc/analytic/test_sphere_sphere.cpp)
+target_link_libraries(test_sphere_sphere PRIVATE rbc_lib)
+add_test(NAME test_sphere_sphere COMMAND test_sphere_sphere)
+
+add_executable(test_box_box tests/rbc/analytic/test_box_box.cpp)
+target_link_libraries(test_box_box PRIVATE rbc_lib)
+add_test(NAME test_box_box COMMAND test_box_box)
+
+add_executable(test_sphere_box tests/rbc/analytic/test_sphere_box.cpp)
+target_link_libraries(test_sphere_box PRIVATE rbc_lib)
+add_test(NAME test_sphere_box COMMAND test_sphere_box)
+
+add_executable(test_dispatcher tests/rbc/test_dispatcher.cpp)
+target_link_libraries(test_dispatcher PRIVATE rbc_lib)
+add_test(NAME test_dispatcher COMMAND test_dispatcher)
+
 # Physics Tests
 
 add_executable(test_body tests/rbps/test_body.cpp)
