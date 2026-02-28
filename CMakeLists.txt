@@ -104,3 +104,7 @@ add_test(NAME test_bodyAPI COMMAND test_bodyAPI)
 add_executable(test_constraintAPI tests/rbps/API/test_constraintAPI.cpp)
 target_link_libraries(test_constraintAPI PRIVATE rbps_lib)
 add_test(NAME test_constraintAPI COMMAND test_constraintAPI)
+
+add_executable(test_jointAPI tests/rbps/API/test_jointAPI.cpp)
+target_link_libraries(test_jointAPI PRIVATE rbps_lib)
+add_test(NAME test_jointAPI COMMAND test_jointAPI)

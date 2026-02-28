@@ -23,36 +23,37 @@ namespace rbps
         SPEED,
     };
 
+// ─── Field list — ONE place to add / remove joint properties ─────────────────
+//
+// X(ValueType, field_name)
+//
+#define JOINT_FIELDS(X)                   \
+    X(JointType, type)                    \
+    X(JointActuationType, actuation_type) \
+    X(size_t, body_1)                     \
+    X(size_t, body_2)                     \
+    X(vec3, r_1)                          \
+    X(vec3, r_2)                          \
+    X(vec3, main_axis)                    \
+    X(bool, limited)                      \
+    X(scalar, lower_limit)                \
+    X(scalar, upper_limit)                \
+    X(scalar, target_position)            \
+    X(scalar, target_speed)               \
+    X(scalar, current_position)           \
+    X(scalar, damping)                    \
+    X(vec3, limit_axis)                   \
+    X(size_t, constraint_start)           \
+    X(u_short, constraint_count)
+
     struct JointCollection
     {
-        size_t n_joints = 0;
-        std::vector<JointType> type = {};
-        std::vector<JointActuationType> actuation_type = {};
+        IVC_CORE;                        // embeds _ivc (stable ID bookkeeping)
+        size_t &n_joints = _ivc.n_items; // convenient alias
 
-        // bodies
-        std::vector<size_t> body_1 = {};
-        std::vector<size_t> body_2 = {};
-
-        std::vector<vec3> r_1 = {}; // First body attachement point
-        std::vector<vec3> r_2 = {}; // Second body attachement point
-
-        // Common Prismatic and Revolute
-        std::vector<vec3> main_axis = {};          // Moving axis for prismatic Aligned axis for revolute
-        std::vector<bool> limited = {};            // Boolean idnicating if the joint is limited
-        std::vector<scalar> lower_limit = {};      // [min angle or min distance]
-        std::vector<scalar> upper_limit = {};      // [max angle or max distance]
-        std::vector<scalar> target_position = {};  // Target position or Target angle
-        std::vector<scalar> target_speed = {};     // target linear speed or target angular speed
-        std::vector<scalar> current_position = {}; // Target position or Target angle
-        std::vector<scalar> damping = {};
-
-        // Revolute-only:
-        std::vector<vec3> limit_axis = {};
-
-        // Per-joint “child constraints” in the global CC:
-        // (we reserve 3 per prismatic, 4 per revolute, etc.)
-        std::vector<size_t> constraint_start = {};  // index in CC where this joint’s constraints begin
-        std::vector<u_short> constraint_count = {}; // how many low-level constraints
+#define DECLARE_VEC(type, name) std::vector<type> name;
+        JOINT_FIELDS(DECLARE_VEC)
+#undef DECLARE_VEC
     };
 
     /**
