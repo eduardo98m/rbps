@@ -1,0 +1,491 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - coverage_clean.info - include/ivc/ivc.hpp</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">include/ivc</a> - ivc.hpp<span style="font-size: 80%;"> (source / <a href="ivc.hpp.func-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">coverage_clean.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryHi">97.2&nbsp;%</td>
+            <td class="headerCovTableEntry">72</td>
+            <td class="headerCovTableEntry">70</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2026-02-28 07:49:15</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">17</td>
+            <td class="headerCovTableEntry">17</td>
+          </tr>
+                  <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">            Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>              : #pragma once</span>
+<span id="L2"><span class="lineNum">       2</span>              : /**</span>
+<span id="L3"><span class="lineNum">       3</span>              :  * @file ivc.hpp</span>
+<span id="L4"><span class="lineNum">       4</span>              :  * @brief Index Vector Core (IVC) — stable ID management for Struct-of-Arrays collections.</span>
+<span id="L5"><span class="lineNum">       5</span>              :  *</span>
+<span id="L6"><span class="lineNum">       6</span>              :  * This is the SoA equivalent of siv::Vector.  Instead of owning the data, it</span>
+<span id="L7"><span class="lineNum">       7</span>              :  * only owns the two bookkeeping tables (indexes + metadata) that make IDs</span>
+<span id="L8"><span class="lineNum">       8</span>              :  * stable across insertions and deletions.  Your collection owns its own data</span>
+<span id="L9"><span class="lineNum">       9</span>              :  * arrays and calls the IVC helpers to keep them in sync.</span>
+<span id="L10"><span class="lineNum">      10</span>              :  *</span>
+<span id="L11"><span class="lineNum">      11</span>              :  * ── Core idea ────────────────────────────────────────────────────────────────</span>
+<span id="L12"><span class="lineNum">      12</span>              :  *</span>
+<span id="L13"><span class="lineNum">      13</span>              :  *  indexes[id]        → data_index   (stable ID  → current position in arrays)</span>
+<span id="L14"><span class="lineNum">      14</span>              :  *  metadata[data_idx] → {rid, vid}   (position   → {its ID, validity counter})</span>
+<span id="L15"><span class="lineNum">      15</span>              :  *</span>
+<span id="L16"><span class="lineNum">      16</span>              :  *  On erase(id):</span>
+<span id="L17"><span class="lineNum">      17</span>              :  *    1. Increment metadata[data_idx].validity_id  (invalidates all Handles)</span>
+<span id="L18"><span class="lineNum">      18</span>              :  *    2. Swap-and-pop:  move last element into the freed slot.</span>
+<span id="L19"><span class="lineNum">      19</span>              :  *       User does the same swap on their own data arrays, then pop_back.</span>
+<span id="L20"><span class="lineNum">      20</span>              :  *    3. Decrement n_items.</span>
+<span id="L21"><span class="lineNum">      21</span>              :  *</span>
+<span id="L22"><span class="lineNum">      22</span>              :  *  Free slots are reused automatically (metadata + indexes arrays grow</span>
+<span id="L23"><span class="lineNum">      23</span>              :  *  monotonically, never shrink).</span>
+<span id="L24"><span class="lineNum">      24</span>              :  *</span>
+<span id="L25"><span class="lineNum">      25</span>              :  * ── Usage ────────────────────────────────────────────────────────────────────</span>
+<span id="L26"><span class="lineNum">      26</span>              :  *</span>
+<span id="L27"><span class="lineNum">      27</span>              :  *  struct BodyCollection {</span>
+<span id="L28"><span class="lineNum">      28</span>              :  *      IVC_CORE;                         // embeds ivc::Core _ivc</span>
+<span id="L29"><span class="lineNum">      29</span>              :  *      std::vector&lt;vec3&gt;  position;</span>
+<span id="L30"><span class="lineNum">      30</span>              :  *      std::vector&lt;quat&gt;  orientation;</span>
+<span id="L31"><span class="lineNum">      31</span>              :  *      // ...</span>
+<span id="L32"><span class="lineNum">      32</span>              :  *  };</span>
+<span id="L33"><span class="lineNum">      33</span>              :  *</span>
+<span id="L34"><span class="lineNum">      34</span>              :  *  // --- Adding ---</span>
+<span id="L35"><span class="lineNum">      35</span>              :  *  ivc::ID id = ivc::add(bc._ivc);      // reserve a stable ID</span>
+<span id="L36"><span class="lineNum">      36</span>              :  *  bc.position.push_back(p);            // keep all arrays in sync</span>
+<span id="L37"><span class="lineNum">      37</span>              :  *  bc.orientation.push_back(q);</span>
+<span id="L38"><span class="lineNum">      38</span>              :  *</span>
+<span id="L39"><span class="lineNum">      39</span>              :  *  // --- Accessing ---</span>
+<span id="L40"><span class="lineNum">      40</span>              :  *  size_t idx = ivc::index(bc._ivc, id);</span>
+<span id="L41"><span class="lineNum">      41</span>              :  *  bc.position[idx].x = 1.0f;</span>
+<span id="L42"><span class="lineNum">      42</span>              :  *</span>
+<span id="L43"><span class="lineNum">      43</span>              :  *  // --- Handles (safe references) ---</span>
+<span id="L44"><span class="lineNum">      44</span>              :  *  ivc::Handle h = ivc::make_handle(bc._ivc, id);</span>
+<span id="L45"><span class="lineNum">      45</span>              :  *  if (h) { auto idx = h.index(); }     // checks validity automatically</span>
+<span id="L46"><span class="lineNum">      46</span>              :  *</span>
+<span id="L47"><span class="lineNum">      47</span>              :  *  // --- Erasing ---</span>
+<span id="L48"><span class="lineNum">      48</span>              :  *  ivc::erase(bc._ivc, id, [&amp;](size_t a, size_t b) {</span>
+<span id="L49"><span class="lineNum">      49</span>              :  *      std::swap(bc.position[a],    bc.position[b]);</span>
+<span id="L50"><span class="lineNum">      50</span>              :  *      std::swap(bc.orientation[a], bc.orientation[b]);</span>
+<span id="L51"><span class="lineNum">      51</span>              :  *      // ... every array in the collection</span>
+<span id="L52"><span class="lineNum">      52</span>              :  *  });</span>
+<span id="L53"><span class="lineNum">      53</span>              :  *  bc.position.pop_back();              // after erase, pop all arrays</span>
+<span id="L54"><span class="lineNum">      54</span>              :  *  bc.orientation.pop_back();</span>
+<span id="L55"><span class="lineNum">      55</span>              :  *</span>
+<span id="L56"><span class="lineNum">      56</span>              :  * ── Fixed-size arrays ────────────────────────────────────────────────────────</span>
+<span id="L57"><span class="lineNum">      57</span>              :  *</span>
+<span id="L58"><span class="lineNum">      58</span>              :  *  If Capacity &gt; 0 the bookkeeping tables are stack-allocated and no dynamic</span>
+<span id="L59"><span class="lineNum">      59</span>              :  *  allocation occurs.  Your own data arrays must also be fixed-size then.</span>
+<span id="L60"><span class="lineNum">      60</span>              :  *  Use IVC_CORE_FIXED(N) in the struct and the same free functions work.</span>
+<span id="L61"><span class="lineNum">      61</span>              :  *</span>
+<span id="L62"><span class="lineNum">      62</span>              :  *      struct BodyCollection {</span>
+<span id="L63"><span class="lineNum">      63</span>              :  *          IVC_CORE_FIXED(256);</span>
+<span id="L64"><span class="lineNum">      64</span>              :  *          vec3 position[256];</span>
+<span id="L65"><span class="lineNum">      65</span>              :  *          // ...</span>
+<span id="L66"><span class="lineNum">      66</span>              :  *      };</span>
+<span id="L67"><span class="lineNum">      67</span>              :  */</span>
+<span id="L68"><span class="lineNum">      68</span>              : </span>
+<span id="L69"><span class="lineNum">      69</span>              : #include &lt;cstdint&gt;</span>
+<span id="L70"><span class="lineNum">      70</span>              : #include &lt;cstddef&gt;</span>
+<span id="L71"><span class="lineNum">      71</span>              : #include &lt;cassert&gt;</span>
+<span id="L72"><span class="lineNum">      72</span>              : #include &lt;limits&gt;</span>
+<span id="L73"><span class="lineNum">      73</span>              : #include &lt;algorithm&gt;   // std::swap</span>
+<span id="L74"><span class="lineNum">      74</span>              : #include &lt;vector&gt;</span>
+<span id="L75"><span class="lineNum">      75</span>              : </span>
+<span id="L76"><span class="lineNum">      76</span>              : namespace ivc</span>
+<span id="L77"><span class="lineNum">      77</span>              : {</span>
+<span id="L78"><span class="lineNum">      78</span>              : </span>
+<span id="L79"><span class="lineNum">      79</span>              : // ─── Types ────────────────────────────────────────────────────────────────────</span>
+<span id="L80"><span class="lineNum">      80</span>              : </span>
+<span id="L81"><span class="lineNum">      81</span>              : using ID = uint64_t;</span>
+<span id="L82"><span class="lineNum">      82</span>              : static constexpr ID InvalidID = std::numeric_limits&lt;ID&gt;::max();</span>
+<span id="L83"><span class="lineNum">      83</span>              : </span>
+<span id="L84"><span class="lineNum">      84</span>              : struct Metadata {</span>
+<span id="L85"><span class="lineNum">      85</span>              :     ID rid         = 0; ///&lt; reverse-ID: data_index → the ID that owns this slot</span>
+<span id="L86"><span class="lineNum">      86</span>              :     ID validity_id = 0; ///&lt; bumped on every erase; used to detect stale Handles</span>
+<span id="L87"><span class="lineNum">      87</span>              : };</span>
+<span id="L88"><span class="lineNum">      88</span>              : </span>
+<span id="L89"><span class="lineNum">      89</span>              : // ─── Core struct (two flavours) ───────────────────────────────────────────────</span>
+<span id="L90"><span class="lineNum">      90</span>              : </span>
+<span id="L91"><span class="lineNum">      91</span>              : /**</span>
+<span id="L92"><span class="lineNum">      92</span>              :  * @brief Dynamic bookkeeping tables (heap-allocated, unlimited capacity).</span>
+<span id="L93"><span class="lineNum">      93</span>              :  *</span>
+<span id="L94"><span class="lineNum">      94</span>              :  * Embed via the IVC_CORE macro.</span>
+<span id="L95"><span class="lineNum">      95</span>              :  */</span>
+<span id="L96"><span class="lineNum">      96</span>              : struct Core</span>
+<span id="L97"><span class="lineNum">      97</span>              : {</span>
+<span id="L98"><span class="lineNum">      98</span>              :     size_t              n_items  = 0; ///&lt; number of live items</span>
+<span id="L99"><span class="lineNum">      99</span>              :     std::vector&lt;ID&gt;     indexes;      ///&lt; indexes[id]       → data_index</span>
+<span id="L100"><span class="lineNum">     100</span>              :     std::vector&lt;Metadata&gt; metadata;   ///&lt; metadata[data_idx] → {rid, validity_id}</span>
+<span id="L101"><span class="lineNum">     101</span>              : };</span>
+<span id="L102"><span class="lineNum">     102</span>              : </span>
+<span id="L103"><span class="lineNum">     103</span>              : /**</span>
+<span id="L104"><span class="lineNum">     104</span>              :  * @brief Fixed-size bookkeeping tables (stack-allocated, compile-time capacity).</span>
+<span id="L105"><span class="lineNum">     105</span>              :  *</span>
+<span id="L106"><span class="lineNum">     106</span>              :  * Embed via the IVC_CORE_FIXED(N) macro.</span>
+<span id="L107"><span class="lineNum">     107</span>              :  * @tparam Capacity  Maximum number of live items at any one time.</span>
+<span id="L108"><span class="lineNum">     108</span>              :  */</span>
+<span id="L109"><span class="lineNum">     109</span>              : template&lt;size_t Capacity&gt;</span>
+<span id="L110"><span class="lineNum">     110</span>              : struct CoreFixed</span>
+<span id="L111"><span class="lineNum">     111</span>              : {</span>
+<span id="L112"><span class="lineNum">     112</span>              :     size_t   n_items             = 0;</span>
+<span id="L113"><span class="lineNum">     113</span>              :     size_t   n_slots             = 0; ///&lt; total allocated slots (≥ n_items)</span>
+<span id="L114"><span class="lineNum">     114</span>              :     ID       indexes[Capacity]   = {};</span>
+<span id="L115"><span class="lineNum">     115</span>              :     Metadata metadata[Capacity]  = {};</span>
+<span id="L116"><span class="lineNum">     116</span>              : };</span>
+<span id="L117"><span class="lineNum">     117</span>              : </span>
+<span id="L118"><span class="lineNum">     118</span>              : // ─── Handle ───────────────────────────────────────────────────────────────────</span>
+<span id="L119"><span class="lineNum">     119</span>              : </span>
+<span id="L120"><span class="lineNum">     120</span>              : /**</span>
+<span id="L121"><span class="lineNum">     121</span>              :  * @brief A safe, stable reference to an item inside a Core-bearing collection.</span>
+<span id="L122"><span class="lineNum">     122</span>              :  *</span>
+<span id="L123"><span class="lineNum">     123</span>              :  * Stores (id, validity_id, Core*).  Checking the handle re-reads the current</span>
+<span id="L124"><span class="lineNum">     124</span>              :  * validity counter from the Core, so it automatically becomes invalid after</span>
+<span id="L125"><span class="lineNum">     125</span>              :  * the item is erased.</span>
+<span id="L126"><span class="lineNum">     126</span>              :  *</span>
+<span id="L127"><span class="lineNum">     127</span>              :  * The handle does NOT know about your data arrays; call ivc::index(h) to get</span>
+<span id="L128"><span class="lineNum">     128</span>              :  * the current data_index and then index into your arrays yourself.</span>
+<span id="L129"><span class="lineNum">     129</span>              :  */</span>
+<span id="L130"><span class="lineNum">     130</span>              : struct Handle</span>
+<span id="L131"><span class="lineNum">     131</span>              : {</span>
+<span id="L132"><span class="lineNum">     132</span>              :     ID    id          = InvalidID;</span>
+<span id="L133"><span class="lineNum">     133</span>              :     ID    validity_id = 0;</span>
+<span id="L134"><span class="lineNum">     134</span>              :     Core* core        = nullptr;</span>
+<span id="L135"><span class="lineNum">     135</span>              : </span>
+<span id="L136"><span class="lineNum">     136</span>              :     /// True iff the item still exists in the collection.</span>
+<span id="L137"><span class="lineNum">     137</span> <span class="tlaGNC tlaBgGNC">          10 :     [[nodiscard]] bool isValid() const</span></span>
+<span id="L138"><span class="lineNum">     138</span>              :     {</span>
+<span id="L139"><span class="lineNum">     139</span> <span class="tlaGNC">          10 :         return core</span></span>
+<span id="L140"><span class="lineNum">     140</span> <span class="tlaGNC">          10 :             &amp;&amp; id &lt; core-&gt;indexes.size()</span></span>
+<span id="L141"><span class="lineNum">     141</span> <span class="tlaGNC">          20 :             &amp;&amp; core-&gt;metadata[core-&gt;indexes[id]].validity_id == validity_id;</span></span>
+<span id="L142"><span class="lineNum">     142</span>              :     }</span>
+<span id="L143"><span class="lineNum">     143</span>              : </span>
+<span id="L144"><span class="lineNum">     144</span> <span class="tlaGNC">           2 :     explicit operator bool() const { return isValid(); }</span></span>
+<span id="L145"><span class="lineNum">     145</span>              : </span>
+<span id="L146"><span class="lineNum">     146</span>              :     /// Current data_index.  Only call when isValid() == true.</span>
+<span id="L147"><span class="lineNum">     147</span> <span class="tlaGNC">           1 :     [[nodiscard]] size_t index() const</span></span>
+<span id="L148"><span class="lineNum">     148</span>              :     {</span>
+<span id="L149"><span class="lineNum">     149</span> <span class="tlaGNC">           1 :         assert(isValid());</span></span>
+<span id="L150"><span class="lineNum">     150</span> <span class="tlaGNC">           1 :         return static_cast&lt;size_t&gt;(core-&gt;indexes[id]);</span></span>
+<span id="L151"><span class="lineNum">     151</span>              :     }</span>
+<span id="L152"><span class="lineNum">     152</span>              : </span>
+<span id="L153"><span class="lineNum">     153</span> <span class="tlaGNC">           1 :     [[nodiscard]] ID getID() const { return id; }</span></span>
+<span id="L154"><span class="lineNum">     154</span>              : };</span>
+<span id="L155"><span class="lineNum">     155</span>              : </span>
+<span id="L156"><span class="lineNum">     156</span>              : // ─── Internal helpers (not part of the public API) ───────────────────────────</span>
+<span id="L157"><span class="lineNum">     157</span>              : </span>
+<span id="L158"><span class="lineNum">     158</span>              : namespace detail</span>
+<span id="L159"><span class="lineNum">     159</span>              : {</span>
+<span id="L160"><span class="lineNum">     160</span>              :     /** Obtain a free ID, reusing freed slots when available.</span>
+<span id="L161"><span class="lineNum">     161</span>              :      *  Grows the bookkeeping tables by one slot when needed.</span>
+<span id="L162"><span class="lineNum">     162</span>              :      *  Does NOT touch n_items. */</span>
+<span id="L163"><span class="lineNum">     163</span> <span class="tlaGNC">          51 :     inline ID get_free_id(Core&amp; c)</span></span>
+<span id="L164"><span class="lineNum">     164</span>              :     {</span>
+<span id="L165"><span class="lineNum">     165</span> <span class="tlaGNC">          51 :         if (c.metadata.size() &gt; c.n_items)</span></span>
+<span id="L166"><span class="lineNum">     166</span>              :         {</span>
+<span id="L167"><span class="lineNum">     167</span>              :             // A previously freed slot is available; bump its validity_id so</span>
+<span id="L168"><span class="lineNum">     168</span>              :             // any old handles to the same ID are invalidated immediately.</span>
+<span id="L169"><span class="lineNum">     169</span> <span class="tlaGNC">           7 :             ++c.metadata[c.n_items].validity_id;</span></span>
+<span id="L170"><span class="lineNum">     170</span> <span class="tlaGNC">           7 :             return c.metadata[c.n_items].rid;</span></span>
+<span id="L171"><span class="lineNum">     171</span>              :         }</span>
+<span id="L172"><span class="lineNum">     172</span>              :         // No free slot — allocate a brand-new one.</span>
+<span id="L173"><span class="lineNum">     173</span> <span class="tlaGNC">          44 :         const ID new_id = static_cast&lt;ID&gt;(c.n_items);</span></span>
+<span id="L174"><span class="lineNum">     174</span> <span class="tlaGNC">          44 :         c.metadata.push_back({new_id, 0});</span></span>
+<span id="L175"><span class="lineNum">     175</span> <span class="tlaGNC">          44 :         c.indexes.push_back(new_id);</span></span>
+<span id="L176"><span class="lineNum">     176</span> <span class="tlaGNC">          44 :         return new_id;</span></span>
+<span id="L177"><span class="lineNum">     177</span>              :     }</span>
+<span id="L178"><span class="lineNum">     178</span>              : </span>
+<span id="L179"><span class="lineNum">     179</span>              :     template&lt;size_t Capacity&gt;</span>
+<span id="L180"><span class="lineNum">     180</span> <span class="tlaGNC">           5 :     inline ID get_free_id(CoreFixed&lt;Capacity&gt;&amp; c)</span></span>
+<span id="L181"><span class="lineNum">     181</span>              :     {</span>
+<span id="L182"><span class="lineNum">     182</span> <span class="tlaGNC">           5 :         assert(c.n_items &lt; Capacity &amp;&amp; &quot;CoreFixed capacity exceeded&quot;);</span></span>
+<span id="L183"><span class="lineNum">     183</span> <span class="tlaGNC">           5 :         if (c.n_slots &gt; c.n_items)</span></span>
+<span id="L184"><span class="lineNum">     184</span>              :         {</span>
+<span id="L185"><span class="lineNum">     185</span> <span class="tlaUNC tlaBgUNC">           0 :             ++c.metadata[c.n_items].validity_id;</span></span>
+<span id="L186"><span class="lineNum">     186</span> <span class="tlaUNC">           0 :             return c.metadata[c.n_items].rid;</span></span>
+<span id="L187"><span class="lineNum">     187</span>              :         }</span>
+<span id="L188"><span class="lineNum">     188</span> <span class="tlaGNC tlaBgGNC">           5 :         const ID new_id = static_cast&lt;ID&gt;(c.n_items);</span></span>
+<span id="L189"><span class="lineNum">     189</span> <span class="tlaGNC">           5 :         c.indexes[new_id]  = new_id;</span></span>
+<span id="L190"><span class="lineNum">     190</span> <span class="tlaGNC">           5 :         c.metadata[new_id] = {new_id, 0};</span></span>
+<span id="L191"><span class="lineNum">     191</span> <span class="tlaGNC">           5 :         ++c.n_slots;</span></span>
+<span id="L192"><span class="lineNum">     192</span> <span class="tlaGNC">           5 :         return new_id;</span></span>
+<span id="L193"><span class="lineNum">     193</span>              :     }</span>
+<span id="L194"><span class="lineNum">     194</span>              : </span>
+<span id="L195"><span class="lineNum">     195</span>              :     /** Core erase logic — works for both Core (dynamic) and CoreFixed (fixed). */</span>
+<span id="L196"><span class="lineNum">     196</span>              :     template&lt;typename TCore, typename TSwapFn&gt;</span>
+<span id="L197"><span class="lineNum">     197</span> <span class="tlaGNC">          20 :     inline void erase_impl(TCore&amp; c, ID id, TSwapFn&amp;&amp; swap_fn)</span></span>
+<span id="L198"><span class="lineNum">     198</span>              :     {</span>
+<span id="L199"><span class="lineNum">     199</span> <span class="tlaGNC">          20 :         assert(c.n_items &gt; 0 &amp;&amp; &quot;erase called on empty collection&quot;);</span></span>
+<span id="L200"><span class="lineNum">     200</span> <span class="tlaGNC">          20 :         const size_t data_idx = static_cast&lt;size_t&gt;(c.indexes[id]);</span></span>
+<span id="L201"><span class="lineNum">     201</span> <span class="tlaGNC">          20 :         const size_t last_idx = c.n_items - 1;</span></span>
+<span id="L202"><span class="lineNum">     202</span>              : </span>
+<span id="L203"><span class="lineNum">     203</span>              :         // Invalidate the erased slot *before* the swap so that the</span>
+<span id="L204"><span class="lineNum">     204</span>              :         // incremented validity_id ends up in the free-slot position.</span>
+<span id="L205"><span class="lineNum">     205</span> <span class="tlaGNC">          20 :         ++c.metadata[data_idx].validity_id;</span></span>
+<span id="L206"><span class="lineNum">     206</span>              : </span>
+<span id="L207"><span class="lineNum">     207</span> <span class="tlaGNC">          20 :         if (data_idx != last_idx)</span></span>
+<span id="L208"><span class="lineNum">     208</span>              :         {</span>
+<span id="L209"><span class="lineNum">     209</span> <span class="tlaGNC">          13 :             const ID last_rid = c.metadata[last_idx].rid;</span></span>
+<span id="L210"><span class="lineNum">     210</span>              : </span>
+<span id="L211"><span class="lineNum">     211</span>              :             // 1. User swaps their data arrays (swap-and-pop pattern).</span>
+<span id="L212"><span class="lineNum">     212</span> <span class="tlaGNC">          13 :             swap_fn(data_idx, last_idx);</span></span>
+<span id="L213"><span class="lineNum">     213</span>              : </span>
+<span id="L214"><span class="lineNum">     214</span>              :             // 2. Update bookkeeping so the moved item is still reachable.</span>
+<span id="L215"><span class="lineNum">     215</span> <span class="tlaGNC">          13 :             std::swap(c.metadata[data_idx], c.metadata[last_idx]);</span></span>
+<span id="L216"><span class="lineNum">     216</span> <span class="tlaGNC">          13 :             std::swap(c.indexes[id],        c.indexes[last_rid]);</span></span>
+<span id="L217"><span class="lineNum">     217</span>              :         }</span>
+<span id="L218"><span class="lineNum">     218</span>              : </span>
+<span id="L219"><span class="lineNum">     219</span> <span class="tlaGNC">          20 :         --c.n_items;</span></span>
+<span id="L220"><span class="lineNum">     220</span>              :         // NOTE: metadata and indexes arrays keep their allocated size;</span>
+<span id="L221"><span class="lineNum">     221</span>              :         //       the freed slot at position n_items is reused on next add().</span>
+<span id="L222"><span class="lineNum">     222</span>              :         //       Caller must pop_back on every SoA data array.</span>
+<span id="L223"><span class="lineNum">     223</span> <span class="tlaGNC">          20 :     }</span></span>
+<span id="L224"><span class="lineNum">     224</span>              : }</span>
+<span id="L225"><span class="lineNum">     225</span>              : </span>
+<span id="L226"><span class="lineNum">     226</span>              : // ─── Public API ───────────────────────────────────────────────────────────────</span>
+<span id="L227"><span class="lineNum">     227</span>              : </span>
+<span id="L228"><span class="lineNum">     228</span>              : // ----- reserve / capacity ----------------------------------------------------</span>
+<span id="L229"><span class="lineNum">     229</span>              : </span>
+<span id="L230"><span class="lineNum">     230</span>              : inline void reserve(Core&amp; c, size_t n)</span>
+<span id="L231"><span class="lineNum">     231</span>              : {</span>
+<span id="L232"><span class="lineNum">     232</span>              :     c.indexes.reserve(n);</span>
+<span id="L233"><span class="lineNum">     233</span>              :     c.metadata.reserve(n);</span>
+<span id="L234"><span class="lineNum">     234</span>              : }</span>
+<span id="L235"><span class="lineNum">     235</span>              : </span>
+<span id="L236"><span class="lineNum">     236</span>              : template&lt;size_t Capacity&gt;</span>
+<span id="L237"><span class="lineNum">     237</span>              : inline void reserve(CoreFixed&lt;Capacity&gt;&amp;, size_t) { /* no-op */ }</span>
+<span id="L238"><span class="lineNum">     238</span>              : </span>
+<span id="L239"><span class="lineNum">     239</span>              : // ----- add -------------------------------------------------------------------</span>
+<span id="L240"><span class="lineNum">     240</span>              : </span>
+<span id="L241"><span class="lineNum">     241</span>              : /**</span>
+<span id="L242"><span class="lineNum">     242</span>              :  * @brief Register a new item and return its stable ID.</span>
+<span id="L243"><span class="lineNum">     243</span>              :  *</span>
+<span id="L244"><span class="lineNum">     244</span>              :  * After calling this, push_back (or assign at n_items-1) to EVERY data array</span>
+<span id="L245"><span class="lineNum">     245</span>              :  * in your collection.  The ID is valid immediately.</span>
+<span id="L246"><span class="lineNum">     246</span>              :  */</span>
+<span id="L247"><span class="lineNum">     247</span> <span class="tlaGNC">          51 : inline ID add(Core&amp; c)</span></span>
+<span id="L248"><span class="lineNum">     248</span>              : {</span>
+<span id="L249"><span class="lineNum">     249</span> <span class="tlaGNC">          51 :     const ID id   = detail::get_free_id(c);</span></span>
+<span id="L250"><span class="lineNum">     250</span> <span class="tlaGNC">          51 :     c.indexes[id] = static_cast&lt;ID&gt;(c.n_items);</span></span>
+<span id="L251"><span class="lineNum">     251</span> <span class="tlaGNC">          51 :     ++c.n_items;</span></span>
+<span id="L252"><span class="lineNum">     252</span> <span class="tlaGNC">          51 :     return id;</span></span>
+<span id="L253"><span class="lineNum">     253</span>              : }</span>
+<span id="L254"><span class="lineNum">     254</span>              : </span>
+<span id="L255"><span class="lineNum">     255</span>              : template&lt;size_t Capacity&gt;</span>
+<span id="L256"><span class="lineNum">     256</span> <span class="tlaGNC">           5 : inline ID add(CoreFixed&lt;Capacity&gt;&amp; c)</span></span>
+<span id="L257"><span class="lineNum">     257</span>              : {</span>
+<span id="L258"><span class="lineNum">     258</span> <span class="tlaGNC">           5 :     const ID id   = detail::get_free_id(c);</span></span>
+<span id="L259"><span class="lineNum">     259</span> <span class="tlaGNC">           5 :     c.indexes[id] = static_cast&lt;ID&gt;(c.n_items);</span></span>
+<span id="L260"><span class="lineNum">     260</span> <span class="tlaGNC">           5 :     ++c.n_items;</span></span>
+<span id="L261"><span class="lineNum">     261</span> <span class="tlaGNC">           5 :     return id;</span></span>
+<span id="L262"><span class="lineNum">     262</span>              : }</span>
+<span id="L263"><span class="lineNum">     263</span>              : </span>
+<span id="L264"><span class="lineNum">     264</span>              : // ----- erase -----------------------------------------------------------------</span>
+<span id="L265"><span class="lineNum">     265</span>              : </span>
+<span id="L266"><span class="lineNum">     266</span>              : /**</span>
+<span id="L267"><span class="lineNum">     267</span>              :  * @brief Erase the item with the given ID.</span>
+<span id="L268"><span class="lineNum">     268</span>              :  *</span>
+<span id="L269"><span class="lineNum">     269</span>              :  * @param c        The Core embedded in your collection.</span>
+<span id="L270"><span class="lineNum">     270</span>              :  * @param id       Stable ID of the item to remove.</span>
+<span id="L271"><span class="lineNum">     271</span>              :  * @param swap_fn  Callable  void(size_t a, size_t b)  that swaps the</span>
+<span id="L272"><span class="lineNum">     272</span>              :  *                 elements at indices a and b in ALL your SoA data arrays.</span>
+<span id="L273"><span class="lineNum">     273</span>              :  *</span>
+<span id="L274"><span class="lineNum">     274</span>              :  * After this call, pop_back on every data array in your collection.</span>
+<span id="L275"><span class="lineNum">     275</span>              :  *</span>
+<span id="L276"><span class="lineNum">     276</span>              :  * Example:</span>
+<span id="L277"><span class="lineNum">     277</span>              :  *   ivc::erase(bc._ivc, id, [&amp;](size_t a, size_t b) {</span>
+<span id="L278"><span class="lineNum">     278</span>              :  *       std::swap(bc.position[a],    bc.position[b]);</span>
+<span id="L279"><span class="lineNum">     279</span>              :  *       std::swap(bc.orientation[a], bc.orientation[b]);</span>
+<span id="L280"><span class="lineNum">     280</span>              :  *       std::swap(bc.mass[a],        bc.mass[b]);</span>
+<span id="L281"><span class="lineNum">     281</span>              :  *       // ... every array</span>
+<span id="L282"><span class="lineNum">     282</span>              :  *   });</span>
+<span id="L283"><span class="lineNum">     283</span>              :  *   bc.position.pop_back();</span>
+<span id="L284"><span class="lineNum">     284</span>              :  *   bc.orientation.pop_back();</span>
+<span id="L285"><span class="lineNum">     285</span>              :  *   bc.mass.pop_back();</span>
+<span id="L286"><span class="lineNum">     286</span>              :  */</span>
+<span id="L287"><span class="lineNum">     287</span>              : template&lt;typename TSwapFn&gt;</span>
+<span id="L288"><span class="lineNum">     288</span> <span class="tlaGNC">          18 : inline void erase(Core&amp; c, ID id, TSwapFn&amp;&amp; swap_fn)</span></span>
+<span id="L289"><span class="lineNum">     289</span>              : {</span>
+<span id="L290"><span class="lineNum">     290</span> <span class="tlaGNC">          18 :     detail::erase_impl(c, id, std::forward&lt;TSwapFn&gt;(swap_fn));</span></span>
+<span id="L291"><span class="lineNum">     291</span> <span class="tlaGNC">          18 : }</span></span>
+<span id="L292"><span class="lineNum">     292</span>              : </span>
+<span id="L293"><span class="lineNum">     293</span>              : template&lt;size_t Capacity, typename TSwapFn&gt;</span>
+<span id="L294"><span class="lineNum">     294</span> <span class="tlaGNC">           2 : inline void erase(CoreFixed&lt;Capacity&gt;&amp; c, ID id, TSwapFn&amp;&amp; swap_fn)</span></span>
+<span id="L295"><span class="lineNum">     295</span>              : {</span>
+<span id="L296"><span class="lineNum">     296</span> <span class="tlaGNC">           2 :     detail::erase_impl(c, id, std::forward&lt;TSwapFn&gt;(swap_fn));</span></span>
+<span id="L297"><span class="lineNum">     297</span> <span class="tlaGNC">           2 : }</span></span>
+<span id="L298"><span class="lineNum">     298</span>              : </span>
+<span id="L299"><span class="lineNum">     299</span>              : /** Convenience overload: erase via a Handle. */</span>
+<span id="L300"><span class="lineNum">     300</span>              : template&lt;typename TSwapFn&gt;</span>
+<span id="L301"><span class="lineNum">     301</span>              : inline void erase(Core&amp; c, const Handle&amp; h, TSwapFn&amp;&amp; swap_fn)</span>
+<span id="L302"><span class="lineNum">     302</span>              : {</span>
+<span id="L303"><span class="lineNum">     303</span>              :     assert(h.core == &amp;c &amp;&amp; h.isValid());</span>
+<span id="L304"><span class="lineNum">     304</span>              :     erase(c, h.id, std::forward&lt;TSwapFn&gt;(swap_fn));</span>
+<span id="L305"><span class="lineNum">     305</span>              : }</span>
+<span id="L306"><span class="lineNum">     306</span>              : </span>
+<span id="L307"><span class="lineNum">     307</span>              : // ----- index access ----------------------------------------------------------</span>
+<span id="L308"><span class="lineNum">     308</span>              : </span>
+<span id="L309"><span class="lineNum">     309</span>              : /** Returns the current data index for a live ID. */</span>
+<span id="L310"><span class="lineNum">     310</span> <span class="tlaGNC">          21 : inline size_t index(const Core&amp; c, ID id)</span></span>
+<span id="L311"><span class="lineNum">     311</span>              : {</span>
+<span id="L312"><span class="lineNum">     312</span> <span class="tlaGNC">          21 :     assert(id &lt; c.indexes.size());</span></span>
+<span id="L313"><span class="lineNum">     313</span> <span class="tlaGNC">          21 :     return static_cast&lt;size_t&gt;(c.indexes[id]);</span></span>
+<span id="L314"><span class="lineNum">     314</span>              : }</span>
+<span id="L315"><span class="lineNum">     315</span>              : </span>
+<span id="L316"><span class="lineNum">     316</span>              : template&lt;size_t Capacity&gt;</span>
+<span id="L317"><span class="lineNum">     317</span> <span class="tlaGNC">           3 : inline size_t index(const CoreFixed&lt;Capacity&gt;&amp; c, ID id)</span></span>
+<span id="L318"><span class="lineNum">     318</span>              : {</span>
+<span id="L319"><span class="lineNum">     319</span> <span class="tlaGNC">           3 :     assert(id &lt; c.n_slots);</span></span>
+<span id="L320"><span class="lineNum">     320</span> <span class="tlaGNC">           3 :     return static_cast&lt;size_t&gt;(c.indexes[id]);</span></span>
+<span id="L321"><span class="lineNum">     321</span>              : }</span>
+<span id="L322"><span class="lineNum">     322</span>              : </span>
+<span id="L323"><span class="lineNum">     323</span>              : /** Returns the current data index from a Handle (validity-checked). */</span>
+<span id="L324"><span class="lineNum">     324</span>              : inline size_t index(const Handle&amp; h)</span>
+<span id="L325"><span class="lineNum">     325</span>              : {</span>
+<span id="L326"><span class="lineNum">     326</span>              :     return h.index();</span>
+<span id="L327"><span class="lineNum">     327</span>              : }</span>
+<span id="L328"><span class="lineNum">     328</span>              : </span>
+<span id="L329"><span class="lineNum">     329</span>              : // ----- handles ---------------------------------------------------------------</span>
+<span id="L330"><span class="lineNum">     330</span>              : </span>
+<span id="L331"><span class="lineNum">     331</span>              : /** Create a Handle to an existing item. */</span>
+<span id="L332"><span class="lineNum">     332</span> <span class="tlaGNC">           7 : inline Handle make_handle(Core&amp; c, ID id)</span></span>
+<span id="L333"><span class="lineNum">     333</span>              : {</span>
+<span id="L334"><span class="lineNum">     334</span> <span class="tlaGNC">           7 :     assert(id &lt; c.indexes.size() &amp;&amp; c.indexes[id] &lt; c.n_items);</span></span>
+<span id="L335"><span class="lineNum">     335</span> <span class="tlaGNC">           7 :     return {id, c.metadata[c.indexes[id]].validity_id, &amp;c};</span></span>
+<span id="L336"><span class="lineNum">     336</span>              : }</span>
+<span id="L337"><span class="lineNum">     337</span>              : </span>
+<span id="L338"><span class="lineNum">     338</span>              : /** Check validity of an id + snapshot pair (e.g. stored externally). */</span>
+<span id="L339"><span class="lineNum">     339</span>              : inline bool is_valid(const Core&amp; c, ID id, ID validity_id)</span>
+<span id="L340"><span class="lineNum">     340</span>              : {</span>
+<span id="L341"><span class="lineNum">     341</span>              :     return id &lt; c.indexes.size()</span>
+<span id="L342"><span class="lineNum">     342</span>              :         &amp;&amp; c.metadata[c.indexes[id]].validity_id == validity_id;</span>
+<span id="L343"><span class="lineNum">     343</span>              : }</span>
+<span id="L344"><span class="lineNum">     344</span>              : </span>
+<span id="L345"><span class="lineNum">     345</span>              : template&lt;size_t Capacity&gt;</span>
+<span id="L346"><span class="lineNum">     346</span> <span class="tlaGNC">           2 : inline bool is_valid(const CoreFixed&lt;Capacity&gt;&amp; c, ID id, ID validity_id)</span></span>
+<span id="L347"><span class="lineNum">     347</span>              : {</span>
+<span id="L348"><span class="lineNum">     348</span> <span class="tlaGNC">           2 :     return id &lt; c.n_slots</span></span>
+<span id="L349"><span class="lineNum">     349</span> <span class="tlaGNC">           2 :         &amp;&amp; c.metadata[c.indexes[id]].validity_id == validity_id;</span></span>
+<span id="L350"><span class="lineNum">     350</span>              : }</span>
+<span id="L351"><span class="lineNum">     351</span>              : </span>
+<span id="L352"><span class="lineNum">     352</span>              : // ----- utilities -------------------------------------------------------------</span>
+<span id="L353"><span class="lineNum">     353</span>              : </span>
+<span id="L354"><span class="lineNum">     354</span>              : /** The ID that would be returned by the NEXT call to add(). */</span>
+<span id="L355"><span class="lineNum">     355</span>              : inline ID next_id(const Core&amp; c)</span>
+<span id="L356"><span class="lineNum">     356</span>              : {</span>
+<span id="L357"><span class="lineNum">     357</span>              :     if (c.metadata.size() &gt; c.n_items)</span>
+<span id="L358"><span class="lineNum">     358</span>              :         return c.metadata[c.n_items].rid;</span>
+<span id="L359"><span class="lineNum">     359</span>              :     return static_cast&lt;ID&gt;(c.n_items);</span>
+<span id="L360"><span class="lineNum">     360</span>              : }</span>
+<span id="L361"><span class="lineNum">     361</span>              : </span>
+<span id="L362"><span class="lineNum">     362</span>              : /**</span>
+<span id="L363"><span class="lineNum">     363</span>              :  * @brief Clear all items and invalidate all existing IDs / handles.</span>
+<span id="L364"><span class="lineNum">     364</span>              :  *</span>
+<span id="L365"><span class="lineNum">     365</span>              :  * Bumps every validity_id so outstanding Handles become stale.</span>
+<span id="L366"><span class="lineNum">     366</span>              :  * Caller must also clear() or resize(0) every SoA data array.</span>
+<span id="L367"><span class="lineNum">     367</span>              :  */</span>
+<span id="L368"><span class="lineNum">     368</span> <span class="tlaGNC">           2 : inline void clear(Core&amp; c)</span></span>
+<span id="L369"><span class="lineNum">     369</span>              : {</span>
+<span id="L370"><span class="lineNum">     370</span> <span class="tlaGNC">           2 :     c.n_items = 0;</span></span>
+<span id="L371"><span class="lineNum">     371</span> <span class="tlaGNC">           5 :     for (auto&amp; m : c.metadata)</span></span>
+<span id="L372"><span class="lineNum">     372</span> <span class="tlaGNC">           3 :         ++m.validity_id;</span></span>
+<span id="L373"><span class="lineNum">     373</span>              :     // Caller: bc.position.clear(); bc.orientation.clear(); etc.</span>
+<span id="L374"><span class="lineNum">     374</span> <span class="tlaGNC">           2 : }</span></span>
+<span id="L375"><span class="lineNum">     375</span>              : </span>
+<span id="L376"><span class="lineNum">     376</span>              : template&lt;size_t Capacity&gt;</span>
+<span id="L377"><span class="lineNum">     377</span>              : inline void clear(CoreFixed&lt;Capacity&gt;&amp; c)</span>
+<span id="L378"><span class="lineNum">     378</span>              : {</span>
+<span id="L379"><span class="lineNum">     379</span>              :     c.n_items = 0;</span>
+<span id="L380"><span class="lineNum">     380</span>              :     for (size_t i = 0; i &lt; c.n_slots; ++i)</span>
+<span id="L381"><span class="lineNum">     381</span>              :         ++c.metadata[i].validity_id;</span>
+<span id="L382"><span class="lineNum">     382</span>              : }</span>
+<span id="L383"><span class="lineNum">     383</span>              : </span>
+<span id="L384"><span class="lineNum">     384</span>              : } // namespace ivc</span>
+<span id="L385"><span class="lineNum">     385</span>              : </span>
+<span id="L386"><span class="lineNum">     386</span>              : // ─── Convenience macros ───────────────────────────────────────────────────────</span>
+<span id="L387"><span class="lineNum">     387</span>              : </span>
+<span id="L388"><span class="lineNum">     388</span>              : /**</span>
+<span id="L389"><span class="lineNum">     389</span>              :  * @brief Embed dynamic stable-ID bookkeeping into a SoA collection struct.</span>
+<span id="L390"><span class="lineNum">     390</span>              :  *</span>
+<span id="L391"><span class="lineNum">     391</span>              :  * The embedded member is named _ivc so all ivc:: free functions can be called</span>
+<span id="L392"><span class="lineNum">     392</span>              :  * as  ivc::add(myCollection._ivc).</span>
+<span id="L393"><span class="lineNum">     393</span>              :  *</span>
+<span id="L394"><span class="lineNum">     394</span>              :  * Usage:</span>
+<span id="L395"><span class="lineNum">     395</span>              :  *   struct BodyCollection {</span>
+<span id="L396"><span class="lineNum">     396</span>              :  *       IVC_CORE;</span>
+<span id="L397"><span class="lineNum">     397</span>              :  *       std::vector&lt;vec3&gt; position;</span>
+<span id="L398"><span class="lineNum">     398</span>              :  *       ...</span>
+<span id="L399"><span class="lineNum">     399</span>              :  *   };</span>
+<span id="L400"><span class="lineNum">     400</span>              :  */</span>
+<span id="L401"><span class="lineNum">     401</span>              : #define IVC_CORE  ::ivc::Core _ivc</span>
+<span id="L402"><span class="lineNum">     402</span>              : </span>
+<span id="L403"><span class="lineNum">     403</span>              : /**</span>
+<span id="L404"><span class="lineNum">     404</span>              :  * @brief Embed fixed-size stable-ID bookkeeping (no heap allocation).</span>
+<span id="L405"><span class="lineNum">     405</span>              :  *</span>
+<span id="L406"><span class="lineNum">     406</span>              :  * @param N  Maximum number of live items (compile-time constant).</span>
+<span id="L407"><span class="lineNum">     407</span>              :  *</span>
+<span id="L408"><span class="lineNum">     408</span>              :  * Usage:</span>
+<span id="L409"><span class="lineNum">     409</span>              :  *   struct BodyCollection {</span>
+<span id="L410"><span class="lineNum">     410</span>              :  *       IVC_CORE_FIXED(256);</span>
+<span id="L411"><span class="lineNum">     411</span>              :  *       vec3 position[256];</span>
+<span id="L412"><span class="lineNum">     412</span>              :  *       ...</span>
+<span id="L413"><span class="lineNum">     413</span>              :  *   };</span>
+<span id="L414"><span class="lineNum">     414</span>              :  */</span>
+<span id="L415"><span class="lineNum">     415</span>              : #define IVC_CORE_FIXED(N)  ::ivc::CoreFixed&lt;(N)&gt; _ivc</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com//linux-test-project/lcov" target="_parent">LCOV version 2.0-1</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>
