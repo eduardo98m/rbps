@@ -56,7 +56,6 @@ namespace rbc
     };
 }
 
-// // Include specialisations AFTER the primary template and dispatch() are defined
 #include "rbc/analytic/SphereSphere.hpp"
 #include "rbc/analytic/SphereBox.hpp"
 #include "rbc/analytic/BoxBox.hpp"
