@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <math3d/math3d.hpp>
+#include <ivc/ivc.hpp>
 
 using namespace m3d;
 
@@ -16,30 +17,39 @@ namespace rbps
         DYNAMIC
     };
 
+#define BODY_FIELDS(X)               \
+    X(vec3, force)                   \
+    X(vec3, torque)                  \
+    X(scalar, mass)                  \
+    X(scalar, inverse_mass)          \
+    X(BodyType, type)                \
+    X(vec3, position)                \
+    X(quat, orientation)             \
+    X(vec3, linear_velocity)         \
+    X(vec3, angular_velocity)        \
+    X(vec3, prev_position)           \
+    X(quat, prev_orientation)        \
+    X(vec3, prev_linear_velocity)    \
+    X(vec3, prev_angular_velocity)   \
+    X(smat3, inertia_tensor)         \
+    X(smat3, inverse_inertia_tensor) \
+    X(smat3, inertia_tensor_world)   \
+    X(smat3, inverse_inertia_tensor_world)
+
     /**
      * @brief Strcut to contain the information of a group (Collection) of bodies
      */
     struct BodyCollection
     {
-        size_t n_bodies = 0;
-        std::vector<vec3> force = {};
-        std::vector<vec3> torque = {};
-        std::vector<scalar> mass = {};
-        std::vector<scalar> inverse_mass = {};
-        std::vector<smat3> inertia_tensor = {};
-        std::vector<smat3> inverse_inertia_tensor = {};
-        std::vector<smat3> inertia_tensor_world = {};
-        std::vector<smat3> inverse_inertia_tensor_world = {};
-        std::vector<BodyType> type = {};
-        std::vector<vec3> position = {};
-        std::vector<quat> orientation = {};
-        std::vector<vec3> linear_velocity = {};
-        std::vector<vec3> angular_velocity = {};
-        std::vector<vec3> prev_position = {};
-        std::vector<quat> prev_orientation = {};
-        std::vector<vec3> prev_linear_velocity = {};
-        std::vector<vec3> prev_angular_velocity = {};
+        IVC_CORE;                        // embeds _ivc  (stable ID bookkeeping)
+        size_t &n_bodies = _ivc.n_items; // convenient alias, same value
+
+        // Expand X(type, name) → std::vector<type> name;
+#define DECLARE_VEC(type, name) std::vector<type> name;
+        BODY_FIELDS(DECLARE_VEC)
+#undef DECLARE_VEC
     };
+
 
     /**
      * @brief Updates the world-space inertia tensor and its inverse for a given body.

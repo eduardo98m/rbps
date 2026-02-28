@@ -95,3 +95,8 @@ add_test(NAME test_joint COMMAND test_joint)
 add_executable(test_contact tests/rbps/test_contact.cpp)
 target_link_libraries(test_contact PRIVATE rbps_lib)
 add_test(NAME test_contact COMMAND test_contact)
+
+# API
+add_executable(test_bodyAPI tests/rbps/API/test_bodyAPI.cpp)
+target_link_libraries(test_bodyAPI PRIVATE rbps_lib)
+add_test(NAME test_bodyAPI COMMAND test_bodyAPI)
