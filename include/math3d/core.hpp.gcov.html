@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-02-22 16:14:43</td>
+            <td class="headerValue">2026-02-28 05:17:42</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -74,9 +74,9 @@
 <span id="L12"><span class="lineNum">      12</span>              :     constexpr scalar ERROR_ULP = 2.107342e-08; //  unit of least precision (or Unit in the last place) for doubles</span>
 <span id="L13"><span class="lineNum">      13</span>              : </span>
 <span id="L14"><span class="lineNum">      14</span>              :     template &lt;typename T&gt;</span>
-<span id="L15"><span class="lineNum">      15</span> <span class="tlaGNC tlaBgGNC">           5 :     inline T clamp(T v, T lo, T hi)</span></span>
+<span id="L15"><span class="lineNum">      15</span> <span class="tlaGNC tlaBgGNC">          44 :     inline T clamp(T v, T lo, T hi)</span></span>
 <span id="L16"><span class="lineNum">      16</span>              :     {</span>
-<span id="L17"><span class="lineNum">      17</span> <span class="tlaGNC">           5 :         return (v &lt; lo) ? lo : ((v &gt; hi) ? hi : v);</span></span>
+<span id="L17"><span class="lineNum">      17</span> <span class="tlaGNC">          44 :         return (v &lt; lo) ? lo : ((v &gt; hi) ? hi : v);</span></span>
 <span id="L18"><span class="lineNum">      18</span>              :     }</span>
 <span id="L19"><span class="lineNum">      19</span>              : </span>
 <span id="L20"><span class="lineNum">      20</span>              :     inline scalar to_radians(scalar degrees)</span>
@@ -84,9 +84,9 @@
 <span id="L22"><span class="lineNum">      22</span>              :         return degrees * (PI / 180.0);</span>
 <span id="L23"><span class="lineNum">      23</span>              :     }</span>
 <span id="L24"><span class="lineNum">      24</span>              : </span>
-<span id="L25"><span class="lineNum">      25</span> <span class="tlaGNC">          12 :     inline scalar min(scalar x, scalar y)</span></span>
+<span id="L25"><span class="lineNum">      25</span> <span class="tlaGNC">          14 :     inline scalar min(scalar x, scalar y)</span></span>
 <span id="L26"><span class="lineNum">      26</span>              :     {</span>
-<span id="L27"><span class="lineNum">      27</span> <span class="tlaGNC">          12 :         return std::min(x, y);</span></span>
+<span id="L27"><span class="lineNum">      27</span> <span class="tlaGNC">          14 :         return std::min(x, y);</span></span>
 <span id="L28"><span class="lineNum">      28</span>              :     }</span>
 <span id="L29"><span class="lineNum">      29</span>              : </span>
 <span id="L30"><span class="lineNum">      30</span>              :     inline scalar max(scalar x, scalar y)</span>
@@ -94,14 +94,14 @@
 <span id="L32"><span class="lineNum">      32</span>              :         return std::max(x, y);</span>
 <span id="L33"><span class="lineNum">      33</span>              :     }</span>
 <span id="L34"><span class="lineNum">      34</span>              : </span>
-<span id="L35"><span class="lineNum">      35</span> <span class="tlaGNC">        1150 :     inline scalar abs(scalar x)</span></span>
+<span id="L35"><span class="lineNum">      35</span> <span class="tlaGNC">        1755 :     inline scalar abs(scalar x)</span></span>
 <span id="L36"><span class="lineNum">      36</span>              :     {</span>
-<span id="L37"><span class="lineNum">      37</span> <span class="tlaGNC">        1150 :         return std::abs(x);</span></span>
+<span id="L37"><span class="lineNum">      37</span> <span class="tlaGNC">        1755 :         return std::abs(x);</span></span>
 <span id="L38"><span class="lineNum">      38</span>              :     }</span>
 <span id="L39"><span class="lineNum">      39</span>              : </span>
-<span id="L40"><span class="lineNum">      40</span> <span class="tlaGNC">        1119 :     inline scalar sqrt(scalar x)</span></span>
+<span id="L40"><span class="lineNum">      40</span> <span class="tlaGNC">        2191 :     inline scalar sqrt(scalar x)</span></span>
 <span id="L41"><span class="lineNum">      41</span>              :     {</span>
-<span id="L42"><span class="lineNum">      42</span> <span class="tlaGNC">        1119 :         return std::sqrt(x);</span></span>
+<span id="L42"><span class="lineNum">      42</span> <span class="tlaGNC">        2191 :         return std::sqrt(x);</span></span>
 <span id="L43"><span class="lineNum">      43</span>              :     }</span>
 <span id="L44"><span class="lineNum">      44</span>              : </span>
 <span id="L45"><span class="lineNum">      45</span> <span class="tlaGNC">          62 :     inline scalar sin(scalar x)</span></span>

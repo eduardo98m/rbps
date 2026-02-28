@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-02-22 16:14:43</td>
+            <td class="headerValue">2026-02-28 05:17:42</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -61,32 +61,32 @@
 <pre class="sourceHeading">            Line data    Source code</pre>
 <pre class="source">
 <span id="L1"><span class="lineNum">       1</span>              : #pragma once</span>
-<span id="L2"><span class="lineNum">       2</span>              : #include &quot;rbc/shapes/CollisionShape.hpp&quot;</span>
+<span id="L2"><span class="lineNum">       2</span>              : #include &quot;rbc/shapes/ShapeTypes.hpp&quot;</span>
 <span id="L3"><span class="lineNum">       3</span>              : #include &lt;math3d/math3d.hpp&gt;</span>
 <span id="L4"><span class="lineNum">       4</span>              : </span>
 <span id="L5"><span class="lineNum">       5</span>              : namespace rbc</span>
 <span id="L6"><span class="lineNum">       6</span>              : {</span>
 <span id="L7"><span class="lineNum">       7</span>              :     struct MinkowskiDiff</span>
 <span id="L8"><span class="lineNum">       8</span>              :     {</span>
-<span id="L9"><span class="lineNum">       9</span>              :         const CollisionShape *shape_a;</span>
-<span id="L10"><span class="lineNum">      10</span>              :         const CollisionShape *shape_b;</span>
+<span id="L9"><span class="lineNum">       9</span>              :         const Shape *shape_a;</span>
+<span id="L10"><span class="lineNum">      10</span>              :         const Shape *shape_b;</span>
 <span id="L11"><span class="lineNum">      11</span>              :         m3d::tf tf_a;</span>
 <span id="L12"><span class="lineNum">      12</span>              :         m3d::tf tf_b;</span>
 <span id="L13"><span class="lineNum">      13</span>              : </span>
-<span id="L14"><span class="lineNum">      14</span> <span class="tlaGNC tlaBgGNC">          12 :         MinkowskiDiff(const CollisionShape *a, const CollisionShape *b,</span></span>
+<span id="L14"><span class="lineNum">      14</span> <span class="tlaGNC tlaBgGNC">          19 :         MinkowskiDiff(const Shape *a, const Shape *b,</span></span>
 <span id="L15"><span class="lineNum">      15</span>              :                       const m3d::tf &amp;ta, const m3d::tf &amp;tb)</span>
-<span id="L16"><span class="lineNum">      16</span> <span class="tlaGNC">          12 :             : shape_a(a), shape_b(b), tf_a(ta), tf_b(tb) {}</span></span>
+<span id="L16"><span class="lineNum">      16</span> <span class="tlaGNC">          19 :             : shape_a(a), shape_b(b), tf_a(ta), tf_b(tb) {}</span></span>
 <span id="L17"><span class="lineNum">      17</span>              : </span>
-<span id="L18"><span class="lineNum">      18</span>              :         // Calcula: Support(A) - Support(B) en coordenadas globales</span>
+<span id="L18"><span class="lineNum">      18</span>              :         // Calculates: Support(A) - Support(B) in global coordinates</span>
 <span id="L19"><span class="lineNum">      19</span>              :         m3d::vec3 support(const m3d::vec3 &amp;dir) const</span>
 <span id="L20"><span class="lineNum">      20</span>              :         {</span>
 <span id="L21"><span class="lineNum">      21</span>              :             // 1. Transformar dirección al espacio local de A, buscar support, devolver a global</span>
 <span id="L22"><span class="lineNum">      22</span>              :             m3d::vec3 local_dir_a = tf_a.inverse_rotate_vector(dir);</span>
-<span id="L23"><span class="lineNum">      23</span>              :             m3d::vec3 p_a = tf_a.transform_point(shape_a-&gt;support(local_dir_a));</span>
+<span id="L23"><span class="lineNum">      23</span>              :             m3d::vec3 p_a = tf_a.transform_point(shape_support(*shape_a, local_dir_a));</span>
 <span id="L24"><span class="lineNum">      24</span>              : </span>
 <span id="L25"><span class="lineNum">      25</span>              :             // 2. Transformar dirección opuesta al espacio local de B, buscar support, devolver a global</span>
 <span id="L26"><span class="lineNum">      26</span>              :             m3d::vec3 local_dir_b = tf_b.inverse_rotate_vector(-dir);</span>
-<span id="L27"><span class="lineNum">      27</span>              :             m3d::vec3 p_b = tf_b.transform_point(shape_b-&gt;support(local_dir_b));</span>
+<span id="L27"><span class="lineNum">      27</span>              :             m3d::vec3 p_b = tf_b.transform_point(shape_support(*shape_b, local_dir_b));</span>
 <span id="L28"><span class="lineNum">      28</span>              : </span>
 <span id="L29"><span class="lineNum">      29</span>              :             return p_a - p_b;</span>
 <span id="L30"><span class="lineNum">      30</span>              :         }</span>
