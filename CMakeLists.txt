@@ -33,6 +33,10 @@ target_include_directories(rbc_lib PUBLIC include)
 # Enable Testing
 enable_testing()
 
+# IVC Tests
+add_executable(test_ivc tests/ivc/test_ivc.cpp)
+add_test(NAME test_ivc COMMAND test_ivc)
+
 # Math Tests
 add_executable(test_math tests/math3d/test_math.cpp)
 add_test(NAME test_math COMMAND test_math)
