@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include "rbc/shapes/Sphere.hpp"
 #include "rbc/shapes/Box.hpp"
 
@@ -12,8 +13,8 @@ namespace rbc
     X(Sphere, sphere, ##__VA_ARGS__) \
     X(Box, box, ##__VA_ARGS__)
 
-    // Automatically generate the enum, class, union, and support switch based on the master list
-    enum class ShapeType : uint8_t
+    // Automatically generate the enum, struct, union, and support switch based on the master list
+    enum struct ShapeType : uint8_t
     {
 #define GENERATE_ENUM(Type, name) Type,
         RBC_SHAPE_LIST(GENERATE_ENUM)
