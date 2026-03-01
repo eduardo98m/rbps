@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-02-28 17:04:07</td>
+            <td class="headerValue">2026-03-01 14:47:04</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -131,23 +131,42 @@
 <span id="L69"><span class="lineNum">      69</span>              :         }</span>
 <span id="L70"><span class="lineNum">      70</span>              :     }</span>
 <span id="L71"><span class="lineNum">      71</span>              : </span>
-<span id="L72"><span class="lineNum">      72</span>              :     // Check that both lists have the same number of entries (Compile-time assertion)</span>
-<span id="L73"><span class="lineNum">      73</span>              :     namespace test_shape_list</span>
-<span id="L74"><span class="lineNum">      74</span>              :     {</span>
-<span id="L75"><span class="lineNum">      75</span>              : #define COUNT_ELEMENTS(Type, Name, ...) +1</span>
-<span id="L76"><span class="lineNum">      76</span>              : </span>
-<span id="L77"><span class="lineNum">      77</span>              :         // We calculate the length of both lists separately.</span>
-<span id="L78"><span class="lineNum">      78</span>              :         constexpr size_t TotalShapesOuter = 0 RBC_SHAPE_LIST(COUNT_ELEMENTS);</span>
-<span id="L79"><span class="lineNum">      79</span>              :         constexpr size_t TotalShapesInner = 0 RBC_SHAPE_LIST_INNER(COUNT_ELEMENTS);</span>
-<span id="L80"><span class="lineNum">      80</span>              : </span>
-<span id="L81"><span class="lineNum">      81</span>              :         static_assert(TotalShapesOuter == TotalShapesInner,</span>
-<span id="L82"><span class="lineNum">      82</span>              :                       &quot;CRITICAL DESYNC: RBC_SHAPE_LIST and RBC_SHAPE_LIST_INNER must have the same entries!&quot;);</span>
-<span id="L83"><span class="lineNum">      83</span>              : </span>
-<span id="L84"><span class="lineNum">      84</span>              :         // Also ensure the Enum matches the list (sanity check)</span>
-<span id="L85"><span class="lineNum">      85</span>              :         static_assert(TotalShapesOuter == static_cast&lt;size_t&gt;(ShapeType::Count),</span>
-<span id="L86"><span class="lineNum">      86</span>              :                       &quot;CRITICAL: ShapeType::Count does not match RBC_SHAPE_LIST length.&quot;);</span>
-<span id="L87"><span class="lineNum">      87</span>              :     } // End of shape list sanity checks</span>
-<span id="L88"><span class="lineNum">      88</span>              : } // namespace rbc</span>
+<span id="L72"><span class="lineNum">      72</span>              :     // -------------------------------------------------------------------------</span>
+<span id="L73"><span class="lineNum">      73</span>              :     //  Generic AABB dispatch — lives here because this is the first place where</span>
+<span id="L74"><span class="lineNum">      74</span>              :     //  ALL shape types and their compute_aabb() overloads are visible.</span>
+<span id="L75"><span class="lineNum">      75</span>              :     //  Sphere.hpp and Box.hpp define their own overloads; we just dispatch here.</span>
+<span id="L76"><span class="lineNum">      76</span>              :     // -------------------------------------------------------------------------</span>
+<span id="L77"><span class="lineNum">      77</span>              :     inline AABB compute_aabb(const Shape &amp;shape, const m3d::tf &amp;tf)</span>
+<span id="L78"><span class="lineNum">      78</span>              :     {</span>
+<span id="L79"><span class="lineNum">      79</span>              :         switch (shape.type)</span>
+<span id="L80"><span class="lineNum">      80</span>              :         {</span>
+<span id="L81"><span class="lineNum">      81</span>              : #define GEN_AABB_CASE(Type, name) \</span>
+<span id="L82"><span class="lineNum">      82</span>              :     case ShapeType::Type:         \</span>
+<span id="L83"><span class="lineNum">      83</span>              :         return compute_aabb(shape.name, tf);</span>
+<span id="L84"><span class="lineNum">      84</span>              :             RBC_SHAPE_LIST(GEN_AABB_CASE)</span>
+<span id="L85"><span class="lineNum">      85</span>              : #undef GEN_AABB_CASE</span>
+<span id="L86"><span class="lineNum">      86</span>              :         default:</span>
+<span id="L87"><span class="lineNum">      87</span>              :             return AABB{};</span>
+<span id="L88"><span class="lineNum">      88</span>              :         }</span>
+<span id="L89"><span class="lineNum">      89</span>              :     }</span>
+<span id="L90"><span class="lineNum">      90</span>              : </span>
+<span id="L91"><span class="lineNum">      91</span>              :     // Check that both lists have the same number of entries (Compile-time assertion)</span>
+<span id="L92"><span class="lineNum">      92</span>              :     namespace test_shape_list</span>
+<span id="L93"><span class="lineNum">      93</span>              :     {</span>
+<span id="L94"><span class="lineNum">      94</span>              : #define COUNT_ELEMENTS(Type, Name, ...) +1</span>
+<span id="L95"><span class="lineNum">      95</span>              : </span>
+<span id="L96"><span class="lineNum">      96</span>              :         // We calculate the length of both lists separately.</span>
+<span id="L97"><span class="lineNum">      97</span>              :         constexpr size_t TotalShapesOuter = 0 RBC_SHAPE_LIST(COUNT_ELEMENTS);</span>
+<span id="L98"><span class="lineNum">      98</span>              :         constexpr size_t TotalShapesInner = 0 RBC_SHAPE_LIST_INNER(COUNT_ELEMENTS);</span>
+<span id="L99"><span class="lineNum">      99</span>              : </span>
+<span id="L100"><span class="lineNum">     100</span>              :         static_assert(TotalShapesOuter == TotalShapesInner,</span>
+<span id="L101"><span class="lineNum">     101</span>              :                       &quot;CRITICAL DESYNC: RBC_SHAPE_LIST and RBC_SHAPE_LIST_INNER must have the same entries!&quot;);</span>
+<span id="L102"><span class="lineNum">     102</span>              : </span>
+<span id="L103"><span class="lineNum">     103</span>              :         // Also ensure the Enum matches the list (sanity check)</span>
+<span id="L104"><span class="lineNum">     104</span>              :         static_assert(TotalShapesOuter == static_cast&lt;size_t&gt;(ShapeType::Count),</span>
+<span id="L105"><span class="lineNum">     105</span>              :                       &quot;CRITICAL: ShapeType::Count does not match RBC_SHAPE_LIST length.&quot;);</span>
+<span id="L106"><span class="lineNum">     106</span>              :     } // End of shape list sanity checks</span>
+<span id="L107"><span class="lineNum">     107</span>              : } // namespace rbc</span>
         </pre>
               </td>
             </tr>
