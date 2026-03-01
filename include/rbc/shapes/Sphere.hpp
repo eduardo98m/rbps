@@ -1,5 +1,6 @@
 #pragma once
 #include <math3d/math3d.hpp>
+#include "rbc/AABB.hpp"
 
 namespace rbc
 {
@@ -45,4 +46,12 @@ namespace rbc
             0        // Iyz
         );
     }
+
+    // Sphere: trivially radius in all directions from center.
+    inline AABB compute_aabb(const Sphere &s, const m3d::tf &tf)
+    {
+        const m3d::vec3 r(s.radius, s.radius, s.radius);
+        return {tf.pos - r, tf.pos + r};
+    }
+
 }

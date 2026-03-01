@@ -69,6 +69,25 @@ namespace rbc
         }
     }
 
+    // -------------------------------------------------------------------------
+    //  Generic AABB dispatch — lives here because this is the first place where
+    //  ALL shape types and their compute_aabb() overloads are visible.
+    //  Sphere.hpp and Box.hpp define their own overloads; we just dispatch here.
+    // -------------------------------------------------------------------------
+    inline AABB compute_aabb(const Shape &shape, const m3d::tf &tf)
+    {
+        switch (shape.type)
+        {
+#define GEN_AABB_CASE(Type, name) \
+    case ShapeType::Type:         \
+        return compute_aabb(shape.name, tf);
+            RBC_SHAPE_LIST(GEN_AABB_CASE)
+#undef GEN_AABB_CASE
+        default:
+            return AABB{};
+        }
+    }
+
     // Check that both lists have the same number of entries (Compile-time assertion)
     namespace test_shape_list
     {

@@ -18,6 +18,7 @@ set(RBPS_SOURCES
 )
 
 set(RBC_SOURCES
+    src/rbc/BroadPhase.cpp
     src/rbc/narrow_phase.cpp
     src/rbc/gjk/GJK.cpp
     src/rbc/gjk/EPA.cpp
@@ -77,6 +78,11 @@ add_test(NAME test_sphere_box COMMAND test_sphere_box)
 add_executable(test_dispatcher tests/rbc/test_dispatcher.cpp)
 target_link_libraries(test_dispatcher PRIVATE rbc_lib)
 add_test(NAME test_dispatcher COMMAND test_dispatcher)
+
+add_executable(test_broad_phase tests/rbc/test_broad_phase.cpp)
+target_link_libraries(test_broad_phase PRIVATE rbc_lib)
+add_test(NAME test_broad_phase COMMAND test_broad_phase)
+
 
 # Physics Tests
 

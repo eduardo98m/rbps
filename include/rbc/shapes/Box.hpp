@@ -1,5 +1,6 @@
 #pragma once
 #include <math3d/math3d.hpp>
+#include "rbc/AABB.hpp"
 
 namespace rbc
 {
@@ -49,5 +50,26 @@ namespace rbc
             0,                               // Ixz
             0                                // Iyz
         );
+    }
+
+    // Project the OBB onto world axes by summing |R_ij| * half_extents_j
+    // for each world axis i. This is the standard tight AABB for a rotated box.
+    //
+    // NOTE: Assumes m3d::mat3_cast(quat) returns a column-major mat3 where
+    //       mat[col][row] gives the element, and tf.rot is an m3d::quat.
+    //       Adjust the indexing if your math3d uses a different convention.
+    inline AABB compute_aabb(const Box &b, const m3d::tf &tf)
+    {
+        const m3d::mat3 R = m3d::mat3_cast(tf.rot);
+        const m3d::vec3 &h = b.half_extents;
+
+        // World-space half-extents of the AABB that wraps the rotated box.
+        // extent_i = |R_i0|*hx + |R_i1|*hy + |R_i2|*hz  (row i of R dotted with |h|)
+        const m3d::vec3 extent(
+            m3d::abs(R[0][0]) * h.x + m3d::abs(R[1][0]) * h.y + m3d::abs(R[2][0]) * h.z,
+            m3d::abs(R[0][1]) * h.x + m3d::abs(R[1][1]) * h.y + m3d::abs(R[2][1]) * h.z,
+            m3d::abs(R[0][2]) * h.x + m3d::abs(R[1][2]) * h.y + m3d::abs(R[2][2]) * h.z);
+
+        return {tf.pos - extent, tf.pos + extent};
     }
 }
