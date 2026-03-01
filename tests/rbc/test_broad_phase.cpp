@@ -244,6 +244,109 @@ TEST(aabb_expand_increases_size)
     ASSERT_NEAR(expanded.max.y,  1.5, 1e-6);
 }
 
+// ── Velocity-expanded (swept) move ────────────────────────────────────────────
+
+// Object A is stationary. Object B starts far to the left and moves fast enough
+// to the right that its swept AABB reaches A within the same tick — even though
+// its *current* tight AABB doesn't touch A yet.
+TEST(swept_move_detects_fast_approaching_object)
+{
+    rbc::BroadPhaseState bp;
+    rbc::broad_phase_init(bp);
+
+    // A sits at x = [4, 6]  (center 5, half 1)
+    rbc::BPHandle hA = rbc::broad_phase_insert(bp, 0, make_aabb(5, 0, 0, 1.0f));
+    // B sits at x = [-2, 0] (center -1, half 1) — clearly separated from A
+    rbc::BPHandle hB = rbc::broad_phase_insert(bp, 1, make_aabb(-1, 0, 0, 1.0f));
+
+    rbc::broad_phase_update(bp);
+    ASSERT_TRUE(bp.pairs.empty()); // sanity: no overlap at rest
+
+    // B moves right at 50 m/s, dt = 0.1 s → displacement = 5 units.
+    // Swept AABB of B grows from [−2, 0] to [−2.1, 5.1] (fat_margin=0.1 on left).
+    // That reaches A's fat AABB [3.9, 6.1] → should emit a pair.
+    rbc::broad_phase_move_swept(bp, hB,
+                                make_aabb(-1, 0, 0, 1.0f),
+                                m3d::vec3(50, 0, 0),
+                                0.1);
+    rbc::broad_phase_update(bp);
+
+    ASSERT_TRUE(has_pair(bp.pairs, 0, 1));
+}
+
+// Same setup but the velocity is too small to bridge the gap — no pair expected.
+TEST(swept_move_slow_object_no_false_pair)
+{
+    rbc::BroadPhaseState bp;
+    rbc::broad_phase_init(bp);
+
+    rbc::BPHandle hA = rbc::broad_phase_insert(bp, 0, make_aabb(5, 0, 0, 1.0f));
+    rbc::BPHandle hB = rbc::broad_phase_insert(bp, 1, make_aabb(-1, 0, 0, 1.0f));
+
+    rbc::broad_phase_update(bp);
+    ASSERT_TRUE(bp.pairs.empty());
+
+    // B moves at 1 m/s, dt = 0.016 s → displacement = 0.016 units — nowhere near A.
+    rbc::broad_phase_move_swept(bp, hB,
+                                make_aabb(-1, 0, 0, 1.0f),
+                                m3d::vec3(1, 0, 0),
+                                0.016);
+    rbc::broad_phase_update(bp);
+
+    ASSERT_TRUE(bp.pairs.empty());
+}
+
+// Velocity pointing AWAY from the other object should not inflate the AABB
+// toward it, so no pair should be emitted.
+TEST(swept_move_velocity_away_no_pair)
+{
+    rbc::BroadPhaseState bp;
+    rbc::broad_phase_init(bp);
+
+    // A at x = [4, 6], B at x = [-2, 0] — separated on X.
+    rbc::BPHandle hA = rbc::broad_phase_insert(bp, 0, make_aabb( 5, 0, 0, 1.0f));
+    rbc::BPHandle hB = rbc::broad_phase_insert(bp, 1, make_aabb(-1, 0, 0, 1.0f));
+
+    rbc::broad_phase_update(bp);
+    ASSERT_TRUE(bp.pairs.empty());
+
+    // B moves LEFT (negative X) at high speed — away from A.
+    // The max side of B's AABB should NOT expand toward A.
+    rbc::broad_phase_move_swept(bp, hB,
+                                make_aabb(-1, 0, 0, 1.0f),
+                                m3d::vec3(-50, 0, 0),
+                                0.1);
+    rbc::broad_phase_update(bp);
+
+    ASSERT_TRUE(bp.pairs.empty());
+}
+
+// Zero velocity should behave identically to a plain broad_phase_move()
+// with only the uniform fat_margin applied.
+TEST(swept_move_zero_velocity_matches_standard_move)
+{
+    rbc::BroadPhaseConfig cfg;
+    cfg.fat_margin = 0.2f;
+
+    rbc::BroadPhaseState bp_swept, bp_standard;
+    rbc::broad_phase_init(bp_swept,   cfg);
+    rbc::broad_phase_init(bp_standard, cfg);
+
+    rbc::AABB tight = make_aabb(0, 0, 0, 1.0f);
+
+    rbc::BPHandle hs = rbc::broad_phase_insert(bp_swept,    0, tight);
+    rbc::BPHandle hm = rbc::broad_phase_insert(bp_standard, 0, tight);
+
+    rbc::broad_phase_move_swept  (bp_swept,    hs, tight, m3d::vec3(0, 0, 0), 0.016);
+    rbc::broad_phase_move        (bp_standard, hm, tight);
+
+    // Both should produce the same fat_aabb.
+    ASSERT_NEAR(bp_swept.objects[hs].fat_aabb.min.x,
+                bp_standard.objects[hm].fat_aabb.min.x, 1e-5);
+    ASSERT_NEAR(bp_swept.objects[hs].fat_aabb.max.x,
+                bp_standard.objects[hm].fat_aabb.max.x, 1e-5);
+}
+
 TEST_SUITE(
     RUN_TEST(empty_scene_no_pairs),
     RUN_TEST(single_object_no_pairs),
@@ -259,5 +362,9 @@ TEST_SUITE(
     RUN_TEST(large_move_outside_fat_aabb_sets_dirty),
     RUN_TEST(aabb_overlap_touching_edge),
     RUN_TEST(aabb_no_overlap_on_y_axis),
-    RUN_TEST(aabb_expand_increases_size)
+    RUN_TEST(aabb_expand_increases_size),
+    RUN_TEST(swept_move_detects_fast_approaching_object),
+    RUN_TEST(swept_move_slow_object_no_false_pair),
+    RUN_TEST(swept_move_velocity_away_no_pair),
+    RUN_TEST(swept_move_zero_velocity_matches_standard_move)
 )
