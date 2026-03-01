@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-03-01 14:57:44</td>
+            <td class="headerValue">2026-03-01 15:45:26</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -71,18 +71,18 @@
 <span id="L9"><span class="lineNum">       9</span>              :         scalar x, y, z;</span>
 <span id="L10"><span class="lineNum">      10</span>              : </span>
 <span id="L11"><span class="lineNum">      11</span>              :         // Constructors</span>
-<span id="L12"><span class="lineNum">      12</span> <span class="tlaGNC tlaBgGNC">        9523 :         vec3() : x(0), y(0), z(0) {}</span></span>
-<span id="L13"><span class="lineNum">      13</span> <span class="tlaGNC">       32752 :         vec3(scalar _x, scalar _y, scalar _z) : x(_x), y(_y), z(_z) {}</span></span>
-<span id="L14"><span class="lineNum">      14</span> <span class="tlaGNC">         208 :         vec3(scalar _d) : x(_d), y(_d), z(_d) {}</span></span>
+<span id="L12"><span class="lineNum">      12</span> <span class="tlaGNC tlaBgGNC">        9533 :         vec3() : x(0), y(0), z(0) {}</span></span>
+<span id="L13"><span class="lineNum">      13</span> <span class="tlaGNC">       33638 :         vec3(scalar _x, scalar _y, scalar _z) : x(_x), y(_y), z(_z) {}</span></span>
+<span id="L14"><span class="lineNum">      14</span> <span class="tlaGNC">         418 :         vec3(scalar _d) : x(_d), y(_d), z(_d) {}</span></span>
 <span id="L15"><span class="lineNum">      15</span>              : </span>
 <span id="L16"><span class="lineNum">      16</span>              :         // Operator Overloading for clean syntax</span>
-<span id="L17"><span class="lineNum">      17</span> <span class="tlaGNC">        5285 :         vec3 operator+(const vec3 &amp;rhs) const { return {x + rhs.x, y + rhs.y, z + rhs.z}; }</span></span>
-<span id="L18"><span class="lineNum">      18</span> <span class="tlaGNC">        5146 :         vec3 operator-(const vec3 &amp;rhs) const { return {x - rhs.x, y - rhs.y, z - rhs.z}; }</span></span>
-<span id="L19"><span class="lineNum">      19</span> <span class="tlaGNC">        5693 :         vec3 operator*(scalar s) const { return {x * s, y * s, z * s}; }</span></span>
-<span id="L20"><span class="lineNum">      20</span> <span class="tlaGNC">        1421 :         vec3 operator/(scalar s) const</span></span>
+<span id="L17"><span class="lineNum">      17</span> <span class="tlaGNC">        5552 :         vec3 operator+(const vec3 &amp;rhs) const { return {x + rhs.x, y + rhs.y, z + rhs.z}; }</span></span>
+<span id="L18"><span class="lineNum">      18</span> <span class="tlaGNC">        5236 :         vec3 operator-(const vec3 &amp;rhs) const { return {x - rhs.x, y - rhs.y, z - rhs.z}; }</span></span>
+<span id="L19"><span class="lineNum">      19</span> <span class="tlaGNC">        5826 :         vec3 operator*(scalar s) const { return {x * s, y * s, z * s}; }</span></span>
+<span id="L20"><span class="lineNum">      20</span> <span class="tlaGNC">        1426 :         vec3 operator/(scalar s) const</span></span>
 <span id="L21"><span class="lineNum">      21</span>              :         {</span>
-<span id="L22"><span class="lineNum">      22</span> <span class="tlaGNC">        1421 :             scalar inv = 1.0 / s;</span></span>
-<span id="L23"><span class="lineNum">      23</span> <span class="tlaGNC">        1421 :             return {x * inv, y * inv, z * inv};</span></span>
+<span id="L22"><span class="lineNum">      22</span> <span class="tlaGNC">        1426 :             scalar inv = 1.0 / s;</span></span>
+<span id="L23"><span class="lineNum">      23</span> <span class="tlaGNC">        1426 :             return {x * inv, y * inv, z * inv};</span></span>
 <span id="L24"><span class="lineNum">      24</span>              :         }</span>
 <span id="L25"><span class="lineNum">      25</span>              : </span>
 <span id="L26"><span class="lineNum">      26</span>              :         // Unary negation</span>
@@ -160,22 +160,22 @@
 <span id="L98"><span class="lineNum">      98</span> <span class="tlaGNC">        4252 :         return a.x * b.x + a.y * b.y + a.z * b.z;</span></span>
 <span id="L99"><span class="lineNum">      99</span>              :     }</span>
 <span id="L100"><span class="lineNum">     100</span>              : </span>
-<span id="L101"><span class="lineNum">     101</span> <span class="tlaGNC">        5961 :     inline vec3 cross(const vec3 &amp;a, const vec3 &amp;b)</span></span>
+<span id="L101"><span class="lineNum">     101</span> <span class="tlaGNC">        6079 :     inline vec3 cross(const vec3 &amp;a, const vec3 &amp;b)</span></span>
 <span id="L102"><span class="lineNum">     102</span>              :     {</span>
 <span id="L103"><span class="lineNum">     103</span>              :         return {</span>
-<span id="L104"><span class="lineNum">     104</span> <span class="tlaGNC">        5961 :             a.y * b.z - a.z * b.y,</span></span>
-<span id="L105"><span class="lineNum">     105</span> <span class="tlaGNC">        5961 :             a.z * b.x - a.x * b.z,</span></span>
-<span id="L106"><span class="lineNum">     106</span> <span class="tlaGNC">        5961 :             a.x * b.y - a.y * b.x};</span></span>
+<span id="L104"><span class="lineNum">     104</span> <span class="tlaGNC">        6079 :             a.y * b.z - a.z * b.y,</span></span>
+<span id="L105"><span class="lineNum">     105</span> <span class="tlaGNC">        6079 :             a.z * b.x - a.x * b.z,</span></span>
+<span id="L106"><span class="lineNum">     106</span> <span class="tlaGNC">        6079 :             a.x * b.y - a.y * b.x};</span></span>
 <span id="L107"><span class="lineNum">     107</span>              :     }</span>
 <span id="L108"><span class="lineNum">     108</span>              : </span>
-<span id="L109"><span class="lineNum">     109</span> <span class="tlaGNC">        2218 :     inline scalar length_sq(const vec3 &amp;v)</span></span>
+<span id="L109"><span class="lineNum">     109</span> <span class="tlaGNC">        2226 :     inline scalar length_sq(const vec3 &amp;v)</span></span>
 <span id="L110"><span class="lineNum">     110</span>              :     {</span>
-<span id="L111"><span class="lineNum">     111</span> <span class="tlaGNC">        2218 :         return v.x * v.x + v.y * v.y + v.z * v.z;</span></span>
+<span id="L111"><span class="lineNum">     111</span> <span class="tlaGNC">        2226 :         return v.x * v.x + v.y * v.y + v.z * v.z;</span></span>
 <span id="L112"><span class="lineNum">     112</span>              :     }</span>
 <span id="L113"><span class="lineNum">     113</span>              : </span>
-<span id="L114"><span class="lineNum">     114</span> <span class="tlaGNC">        1500 :     inline scalar length(const vec3 &amp;v)</span></span>
+<span id="L114"><span class="lineNum">     114</span> <span class="tlaGNC">        1508 :     inline scalar length(const vec3 &amp;v)</span></span>
 <span id="L115"><span class="lineNum">     115</span>              :     {</span>
-<span id="L116"><span class="lineNum">     116</span> <span class="tlaGNC">        1500 :         return m3d::sqrt(length_sq(v));</span></span>
+<span id="L116"><span class="lineNum">     116</span> <span class="tlaGNC">        1508 :         return m3d::sqrt(length_sq(v));</span></span>
 <span id="L117"><span class="lineNum">     117</span>              :     }</span>
 <span id="L118"><span class="lineNum">     118</span>              : </span>
 <span id="L119"><span class="lineNum">     119</span>              :     // Alias for magnitude (Its intuitive to call it like that in some contexts)</span>

@@ -32,17 +32,17 @@
             <td></td>
             <td class="headerItem">Lines:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
-            <td class="headerCovTableEntry">3</td>
-            <td class="headerCovTableEntry">3</td>
+            <td class="headerCovTableEntry">6</td>
+            <td class="headerCovTableEntry">6</td>
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-03-01 14:57:44</td>
+            <td class="headerValue">2026-03-01 15:45:26</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
-            <td class="headerCovTableEntry">2</td>
-            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">3</td>
+            <td class="headerCovTableEntry">3</td>
           </tr>
                   <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
                 </table>
@@ -71,7 +71,7 @@
 <span id="L9"><span class="lineNum">       9</span>              :         m3d::scalar radius;</span>
 <span id="L10"><span class="lineNum">      10</span>              :         // Constructors</span>
 <span id="L11"><span class="lineNum">      11</span>              :         Sphere() : radius(0.5) {}</span>
-<span id="L12"><span class="lineNum">      12</span> <span class="tlaGNC tlaBgGNC">          39 :         Sphere(const m3d::scalar &amp;radius) : radius(radius) {}</span></span>
+<span id="L12"><span class="lineNum">      12</span> <span class="tlaGNC tlaBgGNC">          66 :         Sphere(const m3d::scalar &amp;radius) : radius(radius) {}</span></span>
 <span id="L13"><span class="lineNum">      13</span>              : </span>
 <span id="L14"><span class="lineNum">      14</span>              :         inline bool operator==(const Sphere &amp;other) const</span>
 <span id="L15"><span class="lineNum">      15</span>              :         {</span>
@@ -110,10 +110,10 @@
 <span id="L48"><span class="lineNum">      48</span>              :     }</span>
 <span id="L49"><span class="lineNum">      49</span>              : </span>
 <span id="L50"><span class="lineNum">      50</span>              :     // Sphere: trivially radius in all directions from center.</span>
-<span id="L51"><span class="lineNum">      51</span>              :     inline AABB compute_aabb(const Sphere &amp;s, const m3d::tf &amp;tf)</span>
+<span id="L51"><span class="lineNum">      51</span> <span class="tlaGNC">          47 :     inline AABB compute_aabb(const Sphere &amp;s, const m3d::tf &amp;tf)</span></span>
 <span id="L52"><span class="lineNum">      52</span>              :     {</span>
-<span id="L53"><span class="lineNum">      53</span>              :         const m3d::vec3 r(s.radius, s.radius, s.radius);</span>
-<span id="L54"><span class="lineNum">      54</span>              :         return {tf.pos - r, tf.pos + r};</span>
+<span id="L53"><span class="lineNum">      53</span> <span class="tlaGNC">          47 :         const m3d::vec3 r(s.radius, s.radius, s.radius);</span></span>
+<span id="L54"><span class="lineNum">      54</span> <span class="tlaGNC">          47 :         return {tf.pos - r, tf.pos + r};</span></span>
 <span id="L55"><span class="lineNum">      55</span>              :     }</span>
 <span id="L56"><span class="lineNum">      56</span>              : </span>
 <span id="L57"><span class="lineNum">      57</span>              : }</span>
