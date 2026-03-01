@@ -12,6 +12,7 @@ include_directories(include)
 # Building the library
 set(RBPS_SOURCES
     src/rbps/Body.cpp
+    src/rbps/CollisionPipeline.cpp
     src/rbps/constraints/Constraint.cpp
     src/rbps/constraints/Joint.cpp
     src/rbps/constraints/Contact.cpp
@@ -24,12 +25,14 @@ set(RBC_SOURCES
     src/rbc/gjk/EPA.cpp
 )
 
+add_library(rbc_lib ${RBC_SOURCES}) 
+target_include_directories(rbc_lib PUBLIC include)
+
 
 add_library(rbps_lib ${RBPS_SOURCES})
 target_include_directories(rbps_lib PUBLIC include)
 
-add_library(rbc_lib ${RBC_SOURCES}) 
-target_include_directories(rbc_lib PUBLIC include)
+target_link_libraries(rbps_lib PUBLIC rbc_lib)
 
 # Enable Testing
 enable_testing()
@@ -102,6 +105,10 @@ add_executable(test_contact tests/rbps/test_contact.cpp)
 target_link_libraries(test_contact PRIVATE rbps_lib)
 add_test(NAME test_contact COMMAND test_contact)
 
+add_executable(test_collision_pipeline tests/rbps/test_collision_pipeline.cpp)
+target_link_libraries(test_collision_pipeline PRIVATE rbps_lib)
+add_test(NAME test_collision_pipeline COMMAND test_collision_pipeline)
+
 # API
 add_executable(test_bodyAPI tests/rbps/API/test_bodyAPI.cpp)
 target_link_libraries(test_bodyAPI PRIVATE rbps_lib)
@@ -114,3 +121,7 @@ add_test(NAME test_constraintAPI COMMAND test_constraintAPI)
 add_executable(test_jointAPI tests/rbps/API/test_jointAPI.cpp)
 target_link_libraries(test_jointAPI PRIVATE rbps_lib)
 add_test(NAME test_jointAPI COMMAND test_jointAPI)
+
+add_executable(test_colliderAPI tests/rbps/API/test_colliderAPI.cpp)
+target_link_libraries(test_colliderAPI PRIVATE rbps_lib)
+add_test(NAME test_colliderAPI COMMAND test_colliderAPI)
