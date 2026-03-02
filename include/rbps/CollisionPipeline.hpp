@@ -149,6 +149,7 @@ namespace rbps
     //  Call this after run_collision_pipeline().
     // -----------------------------------------------------------------------
     std::vector<std::vector<size_t>>
-    get_collision_groups(const ContactList &contacts);
+    get_collision_groups(const ContactList &contacts,
+                         const BodyCollection &bc);
 
 } // namespace rbps

@@ -109,6 +109,10 @@ add_executable(test_collision_pipeline tests/rbps/test_collision_pipeline.cpp)
 target_link_libraries(test_collision_pipeline PRIVATE rbps_lib)
 add_test(NAME test_collision_pipeline COMMAND test_collision_pipeline)
 
+add_executable(test_collision_pipeline_graph_coloring tests/rbps/test_collision_pipeline_graph_coloring.cpp)
+target_link_libraries(test_collision_pipeline_graph_coloring PRIVATE rbps_lib)
+add_test(NAME test_collision_pipeline_graph_coloring COMMAND test_collision_pipeline_graph_coloring)
+
 # API
 add_executable(test_bodyAPI tests/rbps/API/test_bodyAPI.cpp)
 target_link_libraries(test_bodyAPI PRIVATE rbps_lib)

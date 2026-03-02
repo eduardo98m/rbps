@@ -76,7 +76,6 @@ namespace rbps
         const m3d::vec3   p_on_b     = c.pos - c.normal * half_depth;
 
         // Material mixing:  average friction, minimum restitution
-        // (same convention as your old code, easy to change here)
         const m3d::scalar rest = m3d::min(cc.restitution[ca],      cc.restitution[cb]);
         const m3d::scalar sf   = (cc.static_friction[ca]  + cc.static_friction[cb])  * 0.5;
         const m3d::scalar df   = (cc.dynamic_friction[ca] + cc.dynamic_friction[cb]) * 0.5;
@@ -203,84 +202,97 @@ namespace rbps
     //  Graph coloring — independent contact groups for parallel solving
     // =========================================================================
     //  Contacts are nodes in a graph; two contacts share an edge when they
-    //  both involve the same body (solving them together would cause a race).
-    //  Greedy coloring assigns each contact a "color" = solve-wave index.
-    //  Contacts with the same color form an independent set and can be solved
-    //  in parallel.
+    //  both involve the same DYNAMIC body (solving them together would cause
+    //  a write race on that body's state).
+    //
+    //  KEY INSIGHT — static bodies do NOT create edges:
+    //    The solver never writes back to a static body (inverse_mass == 0,
+    //    no velocity update). Two contacts that share only a static body
+    //    therefore have no actual data dependency and CAN be solved in parallel.
+    //
+    //    Without this rule, a ground plane shared by N independent tower stacks
+    //    would merge all of them into a single sequential group even though no
+    //    two towers interact with each other at all.
     //
     //  Returns groups sorted by size (largest first) so the parallel scheduler
     //  can use work-stealing effectively.
     // =========================================================================
 
     std::vector<std::vector<size_t>>
-    get_collision_groups(const ContactList &contacts)
+    get_collision_groups(const ContactList   &contacts,
+                         const BodyCollection &bc)
     {
         if (contacts.n_contacts == 0)
             return {};
 
         const size_t n = contacts.n_contacts;
 
-        // Build adjacency: body_id → list of contact indices that involve it
+        // Build adjacency: dynamic body_id → list of contact indices.
+        // Static bodies are intentionally excluded: they create no edges.
         std::unordered_map<uint32_t, std::vector<size_t>> body_to_contacts;
         body_to_contacts.reserve(n * 2);
 
         for (size_t i = 0; i < n; ++i)
         {
-            body_to_contacts[contacts.body_a[i]].push_back(i);
-            body_to_contacts[contacts.body_b[i]].push_back(i);
+            if (bc.type[contacts.body_a[i]] == DYNAMIC)
+                body_to_contacts[contacts.body_a[i]].push_back(i);
+            if (bc.type[contacts.body_b[i]] == DYNAMIC)
+                body_to_contacts[contacts.body_b[i]].push_back(i);
         }
 
-        // Build contact-contact adjacency: two contacts are adjacent if they
-        // share a body.
-        // We work node-by-node (contact index) and find neighbor colors.
         std::vector<size_t> color(n, SIZE_MAX);
 
-        // Process contacts in descending order of shared-body count
-        // (heuristic: high-degree nodes first → fewer colors needed)
+        // Sort contacts: highest dynamic-body degree first (better greedy result).
+        // FIX: original code had body_b[b] twice instead of body_a[b] + body_b[b].
         std::vector<size_t> order(n);
         std::iota(order.begin(), order.end(), 0);
-        std::sort(order.begin(), order.end(), [&](size_t a, size_t b){
-            const size_t deg_a = body_to_contacts[contacts.body_a[a]].size()
-                               + body_to_contacts[contacts.body_b[a]].size();
-            const size_t deg_b = body_to_contacts[contacts.body_b[b]].size()
-                               + body_to_contacts[contacts.body_b[b]].size();
-            return deg_a > deg_b;
+        std::sort(order.begin(), order.end(), [&](size_t a, size_t b) {
+            auto deg = [&](size_t ci) {
+                size_t d = 0;
+                auto it_a = body_to_contacts.find(contacts.body_a[ci]);
+                auto it_b = body_to_contacts.find(contacts.body_b[ci]);
+                if (it_a != body_to_contacts.end()) d += it_a->second.size();
+                if (it_b != body_to_contacts.end()) d += it_b->second.size();
+                return d;
+            };
+            return deg(a) > deg(b);
         });
 
-        // Greedy coloring
+        // Greedy coloring — only propagate edges through dynamic bodies.
         for (size_t ci : order)
         {
             std::unordered_set<size_t> used_colors;
 
-            // Collect colors of all contacts that share body_a or body_b
             for (uint32_t bid : {contacts.body_a[ci], contacts.body_b[ci]})
             {
-                for (size_t neighbor : body_to_contacts[bid])
+                auto it = body_to_contacts.find(bid); // miss = static body, no edge
+                if (it == body_to_contacts.end())
+                    continue;
+
+                for (size_t neighbor : it->second)
                 {
                     if (neighbor != ci && color[neighbor] != SIZE_MAX)
                         used_colors.insert(color[neighbor]);
                 }
             }
 
-            // First available color
             size_t c = 0;
             while (used_colors.count(c)) ++c;
             color[ci] = c;
         }
 
-        // Group contact indices by color
+        // Collect groups by color, sort descending by size.
         std::unordered_map<size_t, std::vector<size_t>> color_groups;
         for (size_t i = 0; i < n; ++i)
             color_groups[color[i]].push_back(i);
 
-        // Convert to vector<vector<size_t>>, sorted by size descending
         std::vector<std::vector<size_t>> groups;
         groups.reserve(color_groups.size());
         for (auto &[_, g] : color_groups)
             groups.push_back(std::move(g));
 
         std::sort(groups.begin(), groups.end(),
-                  [](const auto &a, const auto &b){ return a.size() > b.size(); });
+                  [](const auto &a, const auto &b) { return a.size() > b.size(); });
 
         return groups;
     }
