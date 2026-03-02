@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-03-01 15:45:26</td>
+            <td class="headerValue">2026-03-02 15:33:31</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -222,9 +222,9 @@
 <span id="L160"><span class="lineNum">     160</span>              :     /** Obtain a free ID, reusing freed slots when available.</span>
 <span id="L161"><span class="lineNum">     161</span>              :      *  Grows the bookkeeping tables by one slot when needed.</span>
 <span id="L162"><span class="lineNum">     162</span>              :      *  Does NOT touch n_items. */</span>
-<span id="L163"><span class="lineNum">     163</span> <span class="tlaGNC">         312 :     inline ID get_free_id(Core&amp; c)</span></span>
+<span id="L163"><span class="lineNum">     163</span> <span class="tlaGNC">         353 :     inline ID get_free_id(Core&amp; c)</span></span>
 <span id="L164"><span class="lineNum">     164</span>              :     {</span>
-<span id="L165"><span class="lineNum">     165</span> <span class="tlaGNC">         312 :         if (c.metadata.size() &gt; c.n_items)</span></span>
+<span id="L165"><span class="lineNum">     165</span> <span class="tlaGNC">         353 :         if (c.metadata.size() &gt; c.n_items)</span></span>
 <span id="L166"><span class="lineNum">     166</span>              :         {</span>
 <span id="L167"><span class="lineNum">     167</span>              :             // A previously freed slot is available; bump its validity_id so</span>
 <span id="L168"><span class="lineNum">     168</span>              :             // any old handles to the same ID are invalidated immediately.</span>
@@ -232,10 +232,10 @@
 <span id="L170"><span class="lineNum">     170</span> <span class="tlaGNC">           8 :             return c.metadata[c.n_items].rid;</span></span>
 <span id="L171"><span class="lineNum">     171</span>              :         }</span>
 <span id="L172"><span class="lineNum">     172</span>              :         // No free slot — allocate a brand-new one.</span>
-<span id="L173"><span class="lineNum">     173</span> <span class="tlaGNC">         304 :         const ID new_id = static_cast&lt;ID&gt;(c.n_items);</span></span>
-<span id="L174"><span class="lineNum">     174</span> <span class="tlaGNC">         304 :         c.metadata.push_back({new_id, 0});</span></span>
-<span id="L175"><span class="lineNum">     175</span> <span class="tlaGNC">         304 :         c.indexes.push_back(new_id);</span></span>
-<span id="L176"><span class="lineNum">     176</span> <span class="tlaGNC">         304 :         return new_id;</span></span>
+<span id="L173"><span class="lineNum">     173</span> <span class="tlaGNC">         345 :         const ID new_id = static_cast&lt;ID&gt;(c.n_items);</span></span>
+<span id="L174"><span class="lineNum">     174</span> <span class="tlaGNC">         345 :         c.metadata.push_back({new_id, 0});</span></span>
+<span id="L175"><span class="lineNum">     175</span> <span class="tlaGNC">         345 :         c.indexes.push_back(new_id);</span></span>
+<span id="L176"><span class="lineNum">     176</span> <span class="tlaGNC">         345 :         return new_id;</span></span>
 <span id="L177"><span class="lineNum">     177</span>              :     }</span>
 <span id="L178"><span class="lineNum">     178</span>              : </span>
 <span id="L179"><span class="lineNum">     179</span>              :     template&lt;size_t Capacity&gt;</span>
@@ -306,12 +306,12 @@
 <span id="L244"><span class="lineNum">     244</span>              :  * After calling this, push_back (or assign at n_items-1) to EVERY data array</span>
 <span id="L245"><span class="lineNum">     245</span>              :  * in your collection.  The ID is valid immediately.</span>
 <span id="L246"><span class="lineNum">     246</span>              :  */</span>
-<span id="L247"><span class="lineNum">     247</span> <span class="tlaGNC">         312 : inline ID add(Core&amp; c)</span></span>
+<span id="L247"><span class="lineNum">     247</span> <span class="tlaGNC">         353 : inline ID add(Core&amp; c)</span></span>
 <span id="L248"><span class="lineNum">     248</span>              : {</span>
-<span id="L249"><span class="lineNum">     249</span> <span class="tlaGNC">         312 :     const ID id   = detail::get_free_id(c);</span></span>
-<span id="L250"><span class="lineNum">     250</span> <span class="tlaGNC">         312 :     c.indexes[id] = static_cast&lt;ID&gt;(c.n_items);</span></span>
-<span id="L251"><span class="lineNum">     251</span> <span class="tlaGNC">         312 :     ++c.n_items;</span></span>
-<span id="L252"><span class="lineNum">     252</span> <span class="tlaGNC">         312 :     return id;</span></span>
+<span id="L249"><span class="lineNum">     249</span> <span class="tlaGNC">         353 :     const ID id   = detail::get_free_id(c);</span></span>
+<span id="L250"><span class="lineNum">     250</span> <span class="tlaGNC">         353 :     c.indexes[id] = static_cast&lt;ID&gt;(c.n_items);</span></span>
+<span id="L251"><span class="lineNum">     251</span> <span class="tlaGNC">         353 :     ++c.n_items;</span></span>
+<span id="L252"><span class="lineNum">     252</span> <span class="tlaGNC">         353 :     return id;</span></span>
 <span id="L253"><span class="lineNum">     253</span>              : }</span>
 <span id="L254"><span class="lineNum">     254</span>              : </span>
 <span id="L255"><span class="lineNum">     255</span>              : template&lt;size_t Capacity&gt;</span>
@@ -369,10 +369,10 @@
 <span id="L307"><span class="lineNum">     307</span>              : // ----- index access ----------------------------------------------------------</span>
 <span id="L308"><span class="lineNum">     308</span>              : </span>
 <span id="L309"><span class="lineNum">     309</span>              : /** Returns the current data index for a live ID. */</span>
-<span id="L310"><span class="lineNum">     310</span> <span class="tlaGNC">          75 : inline size_t index(const Core&amp; c, ID id)</span></span>
+<span id="L310"><span class="lineNum">     310</span> <span class="tlaGNC">         116 : inline size_t index(const Core&amp; c, ID id)</span></span>
 <span id="L311"><span class="lineNum">     311</span>              : {</span>
-<span id="L312"><span class="lineNum">     312</span> <span class="tlaGNC">          75 :     assert(id &lt; c.indexes.size());</span></span>
-<span id="L313"><span class="lineNum">     313</span> <span class="tlaGNC">          75 :     return static_cast&lt;size_t&gt;(c.indexes[id]);</span></span>
+<span id="L312"><span class="lineNum">     312</span> <span class="tlaGNC">         116 :     assert(id &lt; c.indexes.size());</span></span>
+<span id="L313"><span class="lineNum">     313</span> <span class="tlaGNC">         116 :     return static_cast&lt;size_t&gt;(c.indexes[id]);</span></span>
 <span id="L314"><span class="lineNum">     314</span>              : }</span>
 <span id="L315"><span class="lineNum">     315</span>              : </span>
 <span id="L316"><span class="lineNum">     316</span>              : template&lt;size_t Capacity&gt;</span>

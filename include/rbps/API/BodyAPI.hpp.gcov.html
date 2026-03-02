@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-03-01 15:45:26</td>
+            <td class="headerValue">2026-03-02 15:33:31</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -94,36 +94,36 @@
 <span id="L32"><span class="lineNum">      32</span>              :      *   ivc::ID ball = create_body(bc, { .mass = 2.0, .position = {0,5,0} });</span>
 <span id="L33"><span class="lineNum">      33</span>              :      *   ivc::Handle h = ivc::make_handle(bc._ivc, ball); // optional safe ref</span>
 <span id="L34"><span class="lineNum">      34</span>              :      */</span>
-<span id="L35"><span class="lineNum">      35</span> <span class="tlaGNC tlaBgGNC">          42 :     inline ivc::ID create_body(BodyCollection &amp;bc, const BodyParams &amp;params = {})</span></span>
+<span id="L35"><span class="lineNum">      35</span> <span class="tlaGNC tlaBgGNC">          83 :     inline ivc::ID create_body(BodyCollection &amp;bc, const BodyParams &amp;params = {})</span></span>
 <span id="L36"><span class="lineNum">      36</span>              :     {</span>
 <span id="L37"><span class="lineNum">      37</span>              :         // 1. Reserve a stable ID.  n_bodies (_ivc.n_items) is incremented here.</span>
-<span id="L38"><span class="lineNum">      38</span> <span class="tlaGNC">          42 :         ivc::ID id = ivc::add(bc._ivc);</span></span>
+<span id="L38"><span class="lineNum">      38</span> <span class="tlaGNC">          83 :         ivc::ID id = ivc::add(bc._ivc);</span></span>
 <span id="L39"><span class="lineNum">      39</span>              : </span>
 <span id="L40"><span class="lineNum">      40</span>              :         // 2. Push initial values to every data array.</span>
 <span id="L41"><span class="lineNum">      41</span>              :         //    Order must match BODY_FIELDS — the compiler will catch size mismatches</span>
 <span id="L42"><span class="lineNum">      42</span>              :         //    at runtime via assert inside ivc if arrays get out of sync.</span>
-<span id="L43"><span class="lineNum">      43</span> <span class="tlaGNC">          42 :         const scalar inv_mass = (params.type == STATIC) ? scalar(0) : scalar(1) / params.mass;</span></span>
-<span id="L44"><span class="lineNum">      44</span> <span class="tlaGNC">          42 :         const smat3 I_inv = (params.type == STATIC) ? smat3{} : params.inertia_tensor.inverse();</span></span>
+<span id="L43"><span class="lineNum">      43</span> <span class="tlaGNC">          83 :         const scalar inv_mass = (params.type == STATIC) ? scalar(0) : scalar(1) / params.mass;</span></span>
+<span id="L44"><span class="lineNum">      44</span> <span class="tlaGNC">          83 :         const smat3 I_inv = (params.type == STATIC) ? smat3{} : params.inertia_tensor.inverse();</span></span>
 <span id="L45"><span class="lineNum">      45</span>              : </span>
-<span id="L46"><span class="lineNum">      46</span> <span class="tlaGNC">          42 :         bc.force.push_back(vec3{0, -9.8f * params.mass, 0});</span></span>
-<span id="L47"><span class="lineNum">      47</span> <span class="tlaGNC">          42 :         bc.torque.push_back(vec3(0));</span></span>
-<span id="L48"><span class="lineNum">      48</span> <span class="tlaGNC">          42 :         bc.mass.push_back(params.mass);</span></span>
-<span id="L49"><span class="lineNum">      49</span> <span class="tlaGNC">          42 :         bc.inverse_mass.push_back(inv_mass);</span></span>
-<span id="L50"><span class="lineNum">      50</span> <span class="tlaGNC">          42 :         bc.type.push_back(params.type);</span></span>
-<span id="L51"><span class="lineNum">      51</span> <span class="tlaGNC">          42 :         bc.position.push_back(params.position);</span></span>
-<span id="L52"><span class="lineNum">      52</span> <span class="tlaGNC">          42 :         bc.orientation.push_back(params.orientation);</span></span>
-<span id="L53"><span class="lineNum">      53</span> <span class="tlaGNC">          42 :         bc.linear_velocity.push_back(params.linear_velocity);</span></span>
-<span id="L54"><span class="lineNum">      54</span> <span class="tlaGNC">          42 :         bc.angular_velocity.push_back(params.angular_velocity);</span></span>
-<span id="L55"><span class="lineNum">      55</span> <span class="tlaGNC">          42 :         bc.prev_position.push_back(params.position);</span></span>
-<span id="L56"><span class="lineNum">      56</span> <span class="tlaGNC">          42 :         bc.prev_orientation.push_back(params.orientation);</span></span>
-<span id="L57"><span class="lineNum">      57</span> <span class="tlaGNC">          42 :         bc.prev_linear_velocity.push_back(params.linear_velocity);</span></span>
-<span id="L58"><span class="lineNum">      58</span> <span class="tlaGNC">          42 :         bc.prev_angular_velocity.push_back(params.angular_velocity);</span></span>
-<span id="L59"><span class="lineNum">      59</span> <span class="tlaGNC">          42 :         bc.inertia_tensor.push_back(params.inertia_tensor);</span></span>
-<span id="L60"><span class="lineNum">      60</span> <span class="tlaGNC">          42 :         bc.inverse_inertia_tensor.push_back(I_inv);</span></span>
-<span id="L61"><span class="lineNum">      61</span> <span class="tlaGNC">          42 :         bc.inertia_tensor_world.push_back(params.inertia_tensor);</span></span>
-<span id="L62"><span class="lineNum">      62</span> <span class="tlaGNC">          42 :         bc.inverse_inertia_tensor_world.push_back(I_inv);</span></span>
+<span id="L46"><span class="lineNum">      46</span> <span class="tlaGNC">          83 :         bc.force.push_back(vec3{0, -9.8f * params.mass, 0});</span></span>
+<span id="L47"><span class="lineNum">      47</span> <span class="tlaGNC">          83 :         bc.torque.push_back(vec3(0));</span></span>
+<span id="L48"><span class="lineNum">      48</span> <span class="tlaGNC">          83 :         bc.mass.push_back(params.mass);</span></span>
+<span id="L49"><span class="lineNum">      49</span> <span class="tlaGNC">          83 :         bc.inverse_mass.push_back(inv_mass);</span></span>
+<span id="L50"><span class="lineNum">      50</span> <span class="tlaGNC">          83 :         bc.type.push_back(params.type);</span></span>
+<span id="L51"><span class="lineNum">      51</span> <span class="tlaGNC">          83 :         bc.position.push_back(params.position);</span></span>
+<span id="L52"><span class="lineNum">      52</span> <span class="tlaGNC">          83 :         bc.orientation.push_back(params.orientation);</span></span>
+<span id="L53"><span class="lineNum">      53</span> <span class="tlaGNC">          83 :         bc.linear_velocity.push_back(params.linear_velocity);</span></span>
+<span id="L54"><span class="lineNum">      54</span> <span class="tlaGNC">          83 :         bc.angular_velocity.push_back(params.angular_velocity);</span></span>
+<span id="L55"><span class="lineNum">      55</span> <span class="tlaGNC">          83 :         bc.prev_position.push_back(params.position);</span></span>
+<span id="L56"><span class="lineNum">      56</span> <span class="tlaGNC">          83 :         bc.prev_orientation.push_back(params.orientation);</span></span>
+<span id="L57"><span class="lineNum">      57</span> <span class="tlaGNC">          83 :         bc.prev_linear_velocity.push_back(params.linear_velocity);</span></span>
+<span id="L58"><span class="lineNum">      58</span> <span class="tlaGNC">          83 :         bc.prev_angular_velocity.push_back(params.angular_velocity);</span></span>
+<span id="L59"><span class="lineNum">      59</span> <span class="tlaGNC">          83 :         bc.inertia_tensor.push_back(params.inertia_tensor);</span></span>
+<span id="L60"><span class="lineNum">      60</span> <span class="tlaGNC">          83 :         bc.inverse_inertia_tensor.push_back(I_inv);</span></span>
+<span id="L61"><span class="lineNum">      61</span> <span class="tlaGNC">          83 :         bc.inertia_tensor_world.push_back(params.inertia_tensor);</span></span>
+<span id="L62"><span class="lineNum">      62</span> <span class="tlaGNC">          83 :         bc.inverse_inertia_tensor_world.push_back(I_inv);</span></span>
 <span id="L63"><span class="lineNum">      63</span>              : </span>
-<span id="L64"><span class="lineNum">      64</span> <span class="tlaGNC">          42 :         return id;</span></span>
+<span id="L64"><span class="lineNum">      64</span> <span class="tlaGNC">          83 :         return id;</span></span>
 <span id="L65"><span class="lineNum">      65</span>              :     }</span>
 <span id="L66"><span class="lineNum">      66</span>              : </span>
 <span id="L67"><span class="lineNum">      67</span> <span class="tlaGNC">           6 :     inline void swap_body_arrays(BodyCollection &amp;bc, size_t a, size_t b)</span></span>
