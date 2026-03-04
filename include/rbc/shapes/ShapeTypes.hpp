@@ -2,16 +2,34 @@
 #include <cstdint>
 #include "rbc/shapes/Sphere.hpp"
 #include "rbc/shapes/Box.hpp"
+#include "rbc/shapes/Ellipsoid.hpp"
+#include "rbc/shapes/Capsule.hpp"
+#include "rbc/shapes/Cone.hpp"
+#include "rbc/shapes/Plane.hpp"
+#include "rbc/shapes/Heightmap.hpp"
+#include "rbc/shapes/Mesh.hpp"
 
 namespace rbc
 {
-#define RBC_SHAPE_LIST(X, ...)       \
-    X(Sphere, sphere, ##__VA_ARGS__) \
-    X(Box, box, ##__VA_ARGS__)
+#define RBC_SHAPE_LIST(X, ...)         \
+    X(Sphere,    sphere,    ##__VA_ARGS__) \
+    X(Box,       box,       ##__VA_ARGS__) \
+    X(Ellipsoid, ellipsoid, ##__VA_ARGS__) \
+    X(Capsule,   capsule,   ##__VA_ARGS__) \
+    X(Cone,      cone,      ##__VA_ARGS__) \
+    X(Plane,     plane,     ##__VA_ARGS__) \
+    X(Heightmap, heightmap, ##__VA_ARGS__) \
+    X(Mesh,      mesh,      ##__VA_ARGS__)
 
-#define RBC_SHAPE_LIST_INNER(X, ...) \
-    X(Sphere, sphere, ##__VA_ARGS__) \
-    X(Box, box, ##__VA_ARGS__)
+#define RBC_SHAPE_LIST_INNER(X, ...)   \
+    X(Sphere,    sphere,    ##__VA_ARGS__) \
+    X(Box,       box,       ##__VA_ARGS__) \
+    X(Ellipsoid, ellipsoid, ##__VA_ARGS__) \
+    X(Capsule,   capsule,   ##__VA_ARGS__) \
+    X(Cone,      cone,      ##__VA_ARGS__) \
+    X(Plane,     plane,     ##__VA_ARGS__) \
+    X(Heightmap, heightmap, ##__VA_ARGS__) \
+    X(Mesh,      mesh,      ##__VA_ARGS__)
 
     // Automatically generate the enum, struct, union, and support switch based on the master list
     enum struct ShapeType : uint8_t

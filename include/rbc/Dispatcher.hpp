@@ -59,6 +59,12 @@ namespace rbc
 #include "rbc/analytic/SphereSphere.hpp"
 #include "rbc/analytic/SphereBox.hpp"
 #include "rbc/analytic/BoxBox.hpp"
+#include "rbc/analytic/SphereCapsule.hpp"
+#include "rbc/analytic/CapsuleCapsule.hpp"
+#include "rbc/analytic/PlaneCollision.hpp"   // generic partial spec for all convex vs Plane
+//#include "rbc/analytic/MeshCollision.hpp"    // Sphere/Capsule/Box vs Mesh
+#include "rbc/analytic/HeightmapCollision.hpp" // Sphere/Capsule/Box vs Heightmap
+
 
 namespace rbc
 {
