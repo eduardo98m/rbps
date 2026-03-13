@@ -1,14 +1,22 @@
 #pragma once
-// BodyAPI.hpp
+// rbps/API/BodyAPI.hpp
 //
 // Public API for adding and removing bodies from a BodyCollection.
-// The caller works only with stable ivc::ID values — these never change
-// even when other bodies are added or removed.
+// Callers work with stable uint32_t IDs — these never change even when
+// other bodies are added or removed.
+//
+// Replaces the old IVC-based BodyAPI.  The bookkeeping that was previously
+// split across ivc::add / ivc::erase / push_back / pop_back is now handled
+// entirely inside BodyCollection (via DynSoABase).
 
 #include "rbps/Body.hpp"
 
 namespace rbps
 {
+
+    /**
+     * @brief Initial properties for a new body.  All fields have sensible defaults.
+     */
     struct BodyParams
     {
         BodyType type = DYNAMIC;
@@ -21,81 +29,67 @@ namespace rbps
     };
 
     /**
-     * @brief Add a new body to the collection.
+     * @brief Add a new body to the collection and return its stable ID.
      *
-     * @param bc     The BodyCollection.
-     * @param params Initial body properties (all have defaults).
-     * @return       Stable ID — safe to store long-term.
-     *               Use  ivc::index(bc._ivc, id)  to get the current array index.
+     * The SoA allocates the slot and zero-initialises all fields first.
+     * This function then writes the caller-supplied parameter values.
+     * Gravity is baked into the initial force vector.
      *
-     * Example:
-     *   ivc::ID ball = create_body(bc, { .mass = 2.0, .position = {0,5,0} });
-     *   ivc::Handle h = ivc::make_handle(bc._ivc, ball); // optional safe ref
+     * @param bc      The BodyCollection.
+     * @param params  Initial body properties (all have defaults).
+     * @return        Stable ID — safe to store long-term.
+     *                Use bc.index_of(id) to get the current packed array index.
+     *
+     * @par Example
+     * @code
+     *   uint32_t ball = create_body(bc, { .mass=2.0, .position={0,5,0} });
+     *   uint32_t i    = bc.index_of(ball);    // packed index for direct array access
+     * @endcode
      */
-    inline ivc::ID create_body(BodyCollection &bc, const BodyParams &params = {})
+    inline uint32_t create_body(BodyCollection &bc, const BodyParams &params = {})
     {
-        // 1. Reserve a stable ID.  n_bodies (_ivc.n_items) is incremented here.
-        ivc::ID id = ivc::add(bc._ivc);
+        uint32_t id = bc.add();       // allocates slot, zero-inits all field vectors
+        uint32_t i = bc.index_of(id); // packed data index of the new item
 
-        // 2. Push initial values to every data array.
-        //    Order must match BODY_FIELDS — the compiler will catch size mismatches
-        //    at runtime via assert inside ivc if arrays get out of sync.
         const scalar inv_mass = (params.type == STATIC) ? scalar(0) : scalar(1) / params.mass;
         const smat3 I_inv = (params.type == STATIC) ? smat3{} : params.inertia_tensor.inverse();
 
-        bc.force.push_back(vec3{0, -9.8f * params.mass, 0});
-        bc.torque.push_back(vec3(0));
-        bc.mass.push_back(params.mass);
-        bc.inverse_mass.push_back(inv_mass);
-        bc.type.push_back(params.type);
-        bc.position.push_back(params.position);
-        bc.orientation.push_back(params.orientation);
-        bc.linear_velocity.push_back(params.linear_velocity);
-        bc.angular_velocity.push_back(params.angular_velocity);
-        bc.prev_position.push_back(params.position);
-        bc.prev_orientation.push_back(params.orientation);
-        bc.prev_linear_velocity.push_back(params.linear_velocity);
-        bc.prev_angular_velocity.push_back(params.angular_velocity);
-        bc.inertia_tensor.push_back(params.inertia_tensor);
-        bc.inverse_inertia_tensor.push_back(I_inv);
-        bc.inertia_tensor_world.push_back(params.inertia_tensor);
-        bc.inverse_inertia_tensor_world.push_back(I_inv);
+        bc.force[i] = vec3{0, -9.8f * params.mass, 0};
+        bc.torque[i] = vec3(0);
+        bc.mass[i] = params.mass;
+        bc.inverse_mass[i] = inv_mass;
+        bc.type[i] = params.type;
+        bc.position[i] = params.position;
+        bc.orientation[i] = params.orientation;
+        bc.linear_velocity[i] = params.linear_velocity;
+        bc.angular_velocity[i] = params.angular_velocity;
+        bc.prev_position[i] = params.position;
+        bc.prev_orientation[i] = params.orientation;
+        bc.prev_linear_velocity[i] = params.linear_velocity;
+        bc.prev_angular_velocity[i] = params.angular_velocity;
+        bc.inertia_tensor[i] = params.inertia_tensor;
+        bc.inverse_inertia_tensor[i] = I_inv;
+        bc.inertia_tensor_world[i] = params.inertia_tensor;
+        bc.inverse_inertia_tensor_world[i] = I_inv;
 
         return id;
     }
 
-    inline void swap_body_arrays(BodyCollection &bc, size_t a, size_t b)
-    {
-        using std::swap;
-#define SWAP_FIELD(type, name) swap(bc.name[a], bc.name[b]);
-        BODY_FIELDS(SWAP_FIELD)
-#undef SWAP_FIELD
-    }
-
-    /// Pop the last element from every data array (called once after ivc::erase).
-    inline void pop_back_body(BodyCollection &bc)
-    {
-#define POP_FIELD(type, name) bc.name.pop_back();
-        BODY_FIELDS(POP_FIELD)
-#undef POP_FIELD
-    }
-
     /**
-     * @brief Remove a body from the collection.
+     * @brief Remove a body from the collection by stable ID.
      *
-     * Uses swap-and-pop: the last body slides into the freed slot so all other
-     * IDs remain valid.  Any Handle to this ID becomes false after this call.
+     * Uses swap-and-pop internally: the last live body slides into the freed
+     * slot so all other IDs and packed indices are unaffected except for the
+     * item that was last (its packed index changes).
+     *
+     * Passing a stale or never-issued ID is safe — it is silently ignored.
      *
      * @param bc  The BodyCollection.
      * @param id  Stable ID returned by create_body().
      */
-    inline void remove_body(BodyCollection &bc, ivc::ID id)
+    inline void remove_body(BodyCollection &bc, uint32_t id)
     {
-        // swap_body_arrays and pop_back_body are auto-generated from BODY_FIELDS,
-        // so adding a new field to the collection automatically updates them.
-        ivc::erase(bc._ivc, id, [&](size_t a, size_t b)
-                   { swap_body_arrays(bc, a, b); });
-        pop_back_body(bc);
+        bc.remove(id);
     }
 
 } // namespace rbps

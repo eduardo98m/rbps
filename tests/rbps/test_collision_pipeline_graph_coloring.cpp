@@ -24,8 +24,8 @@ static uint32_t add_dynamic(rbps::BodyCollection &bc, m3d::vec3 pos = m3d::vec3(
     p.type     = rbps::DYNAMIC;
     p.mass     = 1.0;
     p.position = pos;
-    ivc::ID id = rbps::create_body(bc, p);
-    return static_cast<uint32_t>(ivc::index(bc._ivc, id));
+    uint32_t id = rbps::create_body(bc, p);
+    return bc.index_of(id);
 }
 
 static uint32_t add_static(rbps::BodyCollection &bc, m3d::vec3 pos = m3d::vec3(0))
@@ -34,8 +34,8 @@ static uint32_t add_static(rbps::BodyCollection &bc, m3d::vec3 pos = m3d::vec3(0
     p.type     = rbps::STATIC;
     p.mass     = 1.0;
     p.position = pos;
-    ivc::ID id = rbps::create_body(bc, p);
-    return static_cast<uint32_t>(ivc::index(bc._ivc, id));
+    uint32_t id = rbps::create_body(bc, p);
+    return bc.index_of(id);
 }
 
 // Verify the core correctness invariant: no two contacts in the same group

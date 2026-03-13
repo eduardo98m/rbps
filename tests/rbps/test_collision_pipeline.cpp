@@ -6,25 +6,18 @@
 
 // =============================================================================
 // COLLISION PIPELINE TESTS
-//
-// These tests verify the full pipeline: broad phase → narrow phase → ContactList
-// and the graph coloring step for parallel solving.
-//
-// Each test constructs a minimal BodyCollection + ColliderCollection, runs
-// the pipeline, and checks the ContactList output.
 // =============================================================================
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-// Creates a body at `pos` and returns its array index (== ivc slot for fresh bc)
 static uint32_t add_dynamic_body(rbps::BodyCollection &bc, m3d::vec3 pos)
 {
     rbps::BodyParams p;
     p.type     = rbps::DYNAMIC;
     p.mass     = 1.0;
     p.position = pos;
-    ivc::ID id = rbps::create_body(bc, p);
-    return static_cast<uint32_t>(ivc::index(bc._ivc, id));
+    uint32_t id = rbps::create_body(bc, p);
+    return bc.index_of(id);
 }
 
 static uint32_t add_static_body(rbps::BodyCollection &bc, m3d::vec3 pos)
@@ -33,8 +26,8 @@ static uint32_t add_static_body(rbps::BodyCollection &bc, m3d::vec3 pos)
     p.type     = rbps::STATIC;
     p.mass     = 1.0;
     p.position = pos;
-    ivc::ID id = rbps::create_body(bc, p);
-    return static_cast<uint32_t>(ivc::index(bc._ivc, id));
+    uint32_t id = rbps::create_body(bc, p);
+    return bc.index_of(id);
 }
 
 static m3d::tf tf_at(float x, float y, float z)
@@ -57,14 +50,13 @@ static void add_sphere_collider(rbps::ColliderCollection &cc,
     p.shape     = rbc::Sphere(radius);
     p.body_id   = body_idx;
     p.is_static = is_static;
-
     m3d::tf init_tf = tf_at(bc.position[body_idx].x,
                              bc.position[body_idx].y,
                              bc.position[body_idx].z);
     rbps::collider_add(cc, bp, p, init_tf);
 }
 
-// ── Empty scene ───────────────────────────────────────────────────────────────
+// ── Tests ─────────────────────────────────────────────────────────────────────
 
 TEST(pipeline_empty_scene_no_contacts)
 {
@@ -72,17 +64,12 @@ TEST(pipeline_empty_scene_no_contacts)
     rbps::ColliderCollection cc;
     rbc::BroadPhaseState     bp;
     rbc::broad_phase_init(bp);
-
     rbps::ContactList contacts;
     rbps::CollisionPipelineConfig cfg;
     cfg.use_velocity_expansion = false;
-
     rbps::run_collision_pipeline(cc, bp, bc, 0.016, contacts, cfg);
-
     ASSERT_EQ(contacts.n_contacts, 0u);
 }
-
-// ── Two overlapping dynamic spheres ───────────────────────────────────────────
 
 TEST(pipeline_two_overlapping_spheres_one_contact)
 {
@@ -90,20 +77,14 @@ TEST(pipeline_two_overlapping_spheres_one_contact)
     rbps::ColliderCollection cc;
     rbc::BroadPhaseState     bp;
     rbc::broad_phase_init(bp);
-
-    // Bodies centers 1.5 apart, radii 1.0 each → 0.5 penetration
     uint32_t b0 = add_dynamic_body(bc, m3d::vec3(0,   0, 0));
     uint32_t b1 = add_dynamic_body(bc, m3d::vec3(1.5, 0, 0));
-
     add_sphere_collider(cc, bp, bc, b0, 1.0f);
     add_sphere_collider(cc, bp, bc, b1, 1.0f);
-
     rbps::ContactList contacts;
     rbps::CollisionPipelineConfig cfg;
     cfg.use_velocity_expansion = false;
-
     rbps::run_collision_pipeline(cc, bp, bc, 0.016, contacts, cfg);
-
     ASSERT_EQ(contacts.n_contacts, 1u);
     ASSERT_EQ(contacts.body_a[0], b0);
     ASSERT_EQ(contacts.body_b[0], b1);
@@ -117,23 +98,16 @@ TEST(pipeline_two_separated_spheres_no_contact)
     rbps::ColliderCollection cc;
     rbc::BroadPhaseState     bp;
     rbc::broad_phase_init(bp);
-
     uint32_t b0 = add_dynamic_body(bc, m3d::vec3(-5, 0, 0));
     uint32_t b1 = add_dynamic_body(bc, m3d::vec3( 5, 0, 0));
-
     add_sphere_collider(cc, bp, bc, b0, 1.0f);
     add_sphere_collider(cc, bp, bc, b1, 1.0f);
-
     rbps::ContactList contacts;
     rbps::CollisionPipelineConfig cfg;
     cfg.use_velocity_expansion = false;
-
     rbps::run_collision_pipeline(cc, bp, bc, 0.016, contacts, cfg);
-
     ASSERT_EQ(contacts.n_contacts, 0u);
 }
-
-// ── Static-static filter ──────────────────────────────────────────────────────
 
 TEST(pipeline_static_static_overlap_no_contact)
 {
@@ -143,23 +117,16 @@ TEST(pipeline_static_static_overlap_no_contact)
     rbps::ColliderCollection cc;
     rbc::BroadPhaseState     bp;
     rbc::broad_phase_init(bp);
-
     uint32_t b0 = add_static_body(bc, m3d::vec3(0,   0, 0));
     uint32_t b1 = add_static_body(bc, m3d::vec3(1.0, 0, 0));
-
     add_sphere_collider(cc, bp, bc, b0, 1.0f, /*is_static=*/true);
     add_sphere_collider(cc, bp, bc, b1, 1.0f, /*is_static=*/true);
-
     rbps::ContactList contacts;
     rbps::CollisionPipelineConfig cfg;
     cfg.use_velocity_expansion = false;
-
     rbps::run_collision_pipeline(cc, bp, bc, 0.016, contacts, cfg);
-
     ASSERT_EQ(contacts.n_contacts, 0u);
 }
-
-// ── Same-body filter ──────────────────────────────────────────────────────────
 
 TEST(pipeline_same_body_two_colliders_no_self_contact)
 {
@@ -170,29 +137,20 @@ TEST(pipeline_same_body_two_colliders_no_self_contact)
     rbps::ColliderCollection cc;
     rbc::BroadPhaseState     bp;
     rbc::broad_phase_init(bp);
-
     uint32_t b0 = add_dynamic_body(bc, m3d::vec3(0, 0, 0));
-
-    // Both colliders belong to b0 but are offset slightly
     rbps::ColliderParams p;
     p.shape     = rbc::Sphere(1.0);
     p.body_id   = b0;
     p.local_pos = m3d::vec3(-0.3f, 0, 0);
     rbps::collider_add(cc, bp, p, tf_at(0, 0, 0));
-
     p.local_pos = m3d::vec3( 0.3f, 0, 0);
     rbps::collider_add(cc, bp, p, tf_at(0, 0, 0));
-
     rbps::ContactList contacts;
     rbps::CollisionPipelineConfig cfg;
     cfg.use_velocity_expansion = false;
-
     rbps::run_collision_pipeline(cc, bp, bc, 0.016, contacts, cfg);
-
     ASSERT_EQ(contacts.n_contacts, 0u);
 }
-
-// ── Material mixing ───────────────────────────────────────────────────────────
 
 TEST(pipeline_contact_material_mixing)
 {
@@ -201,10 +159,8 @@ TEST(pipeline_contact_material_mixing)
     rbps::ColliderCollection cc;
     rbc::BroadPhaseState     bp;
     rbc::broad_phase_init(bp);
-
     uint32_t b0 = add_dynamic_body(bc, m3d::vec3(0,   0, 0));
     uint32_t b1 = add_dynamic_body(bc, m3d::vec3(1.5, 0, 0));
-
     rbps::ColliderParams p0;
     p0.shape            = rbc::Sphere(1.0);
     p0.body_id          = b0;
@@ -212,7 +168,6 @@ TEST(pipeline_contact_material_mixing)
     p0.static_friction  = 0.6;
     p0.dynamic_friction = 0.4;
     rbps::collider_add(cc, bp, p0, tf_at(0, 0, 0));
-
     rbps::ColliderParams p1;
     p1.shape            = rbc::Sphere(1.0);
     p1.body_id          = b1;
@@ -220,20 +175,15 @@ TEST(pipeline_contact_material_mixing)
     p1.static_friction  = 0.2;
     p1.dynamic_friction = 0.2;
     rbps::collider_add(cc, bp, p1, tf_at(1.5f, 0, 0));
-
     rbps::ContactList contacts;
     rbps::CollisionPipelineConfig cfg;
     cfg.use_velocity_expansion = false;
-
     rbps::run_collision_pipeline(cc, bp, bc, 0.016, contacts, cfg);
-
     ASSERT_EQ(contacts.n_contacts, 1u);
-    ASSERT_NEAR(contacts.restitution[0],      0.4, 1e-5); // min(0.8, 0.4)
-    ASSERT_NEAR(contacts.static_friction[0],  0.4, 1e-5); // avg(0.6, 0.2)
-    ASSERT_NEAR(contacts.dynamic_friction[0], 0.3, 1e-5); // avg(0.4, 0.2)
+    ASSERT_NEAR(contacts.restitution[0],      0.4, 1e-5);
+    ASSERT_NEAR(contacts.static_friction[0],  0.4, 1e-5);
+    ASSERT_NEAR(contacts.dynamic_friction[0], 0.3, 1e-5);
 }
-
-// ── ContactList solver state initialisation ───────────────────────────────────
 
 TEST(pipeline_solver_fields_initialised_to_zero)
 {
@@ -241,27 +191,20 @@ TEST(pipeline_solver_fields_initialised_to_zero)
     rbps::ColliderCollection cc;
     rbc::BroadPhaseState     bp;
     rbc::broad_phase_init(bp);
-
     uint32_t b0 = add_dynamic_body(bc, m3d::vec3(0,   0, 0));
     uint32_t b1 = add_dynamic_body(bc, m3d::vec3(1.5, 0, 0));
-
     add_sphere_collider(cc, bp, bc, b0, 1.0f);
     add_sphere_collider(cc, bp, bc, b1, 1.0f);
-
     rbps::ContactList contacts;
     rbps::CollisionPipelineConfig cfg;
     cfg.use_velocity_expansion = false;
-
     rbps::run_collision_pipeline(cc, bp, bc, 0.016, contacts, cfg);
-
     ASSERT_EQ(contacts.n_contacts, 1u);
     ASSERT_NEAR(contacts.normal_lambda[0],  0.0, 1e-10);
     ASSERT_NEAR(contacts.tangent_lambda[0], 0.0, 1e-10);
     ASSERT_NEAR(m3d::length(contacts.normal_force[0]),  0.0, 1e-10);
     ASSERT_NEAR(m3d::length(contacts.tangent_force[0]), 0.0, 1e-10);
 }
-
-// ── Repeated pipeline calls ───────────────────────────────────────────────────
 
 TEST(pipeline_clear_between_calls)
 {
@@ -270,21 +213,15 @@ TEST(pipeline_clear_between_calls)
     rbps::ColliderCollection cc;
     rbc::BroadPhaseState     bp;
     rbc::broad_phase_init(bp);
-
     uint32_t b0 = add_dynamic_body(bc, m3d::vec3(0,   0, 0));
     uint32_t b1 = add_dynamic_body(bc, m3d::vec3(1.5, 0, 0));
-
     add_sphere_collider(cc, bp, bc, b0, 1.0f);
     add_sphere_collider(cc, bp, bc, b1, 1.0f);
-
     rbps::ContactList contacts;
     rbps::CollisionPipelineConfig cfg;
     cfg.use_velocity_expansion = false;
-
     rbps::run_collision_pipeline(cc, bp, bc, 0.016, contacts, cfg);
     ASSERT_EQ(contacts.n_contacts, 1u);
-
-    // Second call — must still be exactly 1, not 2
     rbps::run_collision_pipeline(cc, bp, bc, 0.016, contacts, cfg);
     ASSERT_EQ(contacts.n_contacts, 1u);
 }

@@ -5,29 +5,28 @@ using namespace rbps;
 using namespace m3d;
 
 // Helper function to create test bodies
-BodyCollection create_test_bodies(size_t n)
+static BodyCollection create_test_bodies(uint32_t n)
 {
     BodyCollection bc;
-    bc.n_bodies = n;
-    bc.force.resize(n, vec3{0, 0, 0});
-    bc.torque.resize(n, vec3{0, 0, 0});
-    bc.mass.resize(n, 1.0);
-    bc.inverse_mass.resize(n, 1.0);
-    bc.inertia_tensor.resize(n, smat3(1, 1, 1, 0, 0, 0));
-    bc.inverse_inertia_tensor.resize(n, smat3(1, 1, 1, 0, 0, 0));
-    bc.inertia_tensor_world.resize(n, smat3(1, 1, 1, 0, 0, 0));
-    bc.inverse_inertia_tensor_world.resize(n, smat3(1, 1, 1, 0, 0, 0));
-    bc.type.resize(n, BodyType::DYNAMIC);
-    bc.position.resize(n, vec3{0, 0, 0});
-    bc.orientation.resize(n, quat(1, 0, 0, 0));
-    bc.linear_velocity.resize(n, vec3{0, 0, 0});
-    bc.angular_velocity.resize(n, vec3{0, 0, 0});
-    bc.prev_position.resize(n, vec3{0, 0, 0});
-    bc.prev_orientation.resize(n, quat(1, 0, 0, 0));
-    bc.prev_linear_velocity.resize(n, vec3{0, 0, 0});
-    bc.prev_angular_velocity.resize(n, vec3{0, 0, 0});
+    for (uint32_t k = 0; k < n; ++k)
+    {
+        int32_t i = bc.index_of(bc.add());
+        bc.mass[i] = 1.0;
+        bc.inverse_mass[i] = 1.0;
+        bc.type[i] = BodyType::DYNAMIC;
+        bc.position[i] = vec3{0, 0, 0};
+        bc.linear_velocity[i] = vec3{0, 0, 0};
+        bc.orientation[i] = quat(1, 0, 0, 0);
+        bc.angular_velocity[i] = vec3{0, 0, 0};
+        bc.prev_orientation[i] = quat(1, 0, 0, 0);
+        bc.inertia_tensor[i] = smat3(1, 1, 1, 0, 0, 0);
+        bc.inverse_inertia_tensor[i] = smat3(1, 1, 1, 0, 0, 0);
+        bc.inertia_tensor_world[i] = smat3(1, 1, 1, 0, 0, 0);
+        bc.inverse_inertia_tensor_world[i] = smat3(1, 1, 1, 0, 0, 0);
+    }
     return bc;
 }
+
 
 // Helper to create a contact collection
 ContactCollection create_contact_collection(size_t n)

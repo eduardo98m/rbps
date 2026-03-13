@@ -1,7 +1,8 @@
 #pragma once
-#include <vector>
+// rbps/Body.hpp
+
+#include <storage/Soa.hpp>
 #include <math3d/math3d.hpp>
-#include <ivc/ivc.hpp>
 
 using namespace m3d;
 
@@ -9,7 +10,9 @@ namespace rbps
 {
 
     /**
-     * @brief Enum for the types of bodies that can be
+     * @brief Enum for the motion type of a body.
+     * STATIC  — infinite mass, never moved by the solver.
+     * DYNAMIC — integrated each frame.
      */
     enum BodyType
     {
@@ -17,6 +20,11 @@ namespace rbps
         DYNAMIC
     };
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  BODY_FIELDS — the ONLY place body fields are declared.
+//  BodyCollection, its vectors, swap, pop, and reserve are all derived
+//  automatically from this macro.  To add a field: one line here.
+// ─────────────────────────────────────────────────────────────────────────────
 #define BODY_FIELDS(X)               \
     X(vec3, force)                   \
     X(vec3, torque)                  \
@@ -36,128 +44,127 @@ namespace rbps
     X(smat3, inertia_tensor_world)   \
     X(smat3, inverse_inertia_tensor_world)
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    //  BodyCollection
+    //
+    //  Dynamic SoA: grows at runtime, no compile-time capacity needed.
+    //  ID type:       uint32_t
+    //  GenerationBits: 8  →  24-bit slot index (≤16 M bodies),
+    //                         256 reuse cycles before generation wraps.
+    //
+    //  Access pattern:
+    //    uint32_t id = create_body(bc, params);   // stable ID
+    //    uint32_t i  = bc.index_of(id);           // current packed index
+    //    bc.position[i] = {0, 5, 0};             // direct field write
+    //
+    //    for (uint32_t i = 0; i < bc.count(); ++i)   // solver loop
+    //        bc.position[i] += bc.linear_velocity[i] * dt;
+    // ─────────────────────────────────────────────────────────────────────────────
+    DEFINE_DYN_SOA(BodyCollection, uint32_t, /*GenerationBits=*/8, BODY_FIELDS)
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    //  Free functions — implementations in Body.cpp
+    //  All take a packed data index i, NOT a stable ID.
+    // ─────────────────────────────────────────────────────────────────────────────
+
     /**
-     * @brief Strcut to contain the information of a group (Collection) of bodies
-     */
-    struct BodyCollection
-    {
-        IVC_CORE;                        // embeds _ivc  (stable ID bookkeeping)
-        size_t &n_bodies = _ivc.n_items; // convenient alias, same value
-
-        // Expand X(type, name) → std::vector<type> name;
-#define DECLARE_VEC(type, name) std::vector<type> name;
-        BODY_FIELDS(DECLARE_VEC)
-#undef DECLARE_VEC
-    };
-
-
-    /**
-     * @brief Updates the world-space inertia tensor and its inverse for a given body.
+     * @brief Recompute the world-space inertia tensor and its inverse for body i.
      *
-     * Converts the body’s local inertia tensor to world coordinates using its
-     * current orientation and updates both the inertia tensor and its inverse.
+     * Must be called whenever orientation[i] changes before any function that
+     * reads inertia_tensor_world or inverse_inertia_tensor_world.
      *
-     * @param bc Reference to the BodyCollection containing all bodies.
-     * @param i  Index of the body to update.
+     * @param bc  The BodyCollection.
+     * @param i   Packed data index of the body to update.
      */
-    void update_inertia_tensor_world(BodyCollection &bc, size_t i);
+    void update_inertia_tensor_world(BodyCollection &bc, uint32_t i);
 
     /**
-     * @brief Advances positions and orientations of all non-static bodies over time.
+     * @brief Integrate positions and orientations for all dynamic bodies.
      *
      * For each dynamic body:
-     * 1. Store previous pose.
-     * 2. Recompute world inertia tensor.
-     * 3. Integrate linear velocity from applied forces.
-     * 4. Integrate position.
-     * 5. Integrate angular velocity from applied torques (with gyroscopic term).
-     * 6. Update orientation quaternion via small-angle approximation.
+     *   1. Store previous pose.
+     *   2. Recompute world inertia tensor.
+     *   3. Integrate linear velocity from applied forces.
+     *   4. Integrate position.
+     *   5. Integrate angular velocity from applied torques (gyroscopic correction).
+     *   6. Update orientation via small-angle quaternion approximation.
      *
-     * @param bc Reference to the BodyCollection containing all bodies.
-     * @param dt Time step (Δt) for integration.
+     * @param bc  The BodyCollection.
+     * @param dt  Time step (Δt).
      */
     void update_position_and_orientation(BodyCollection &bc, scalar dt);
 
     /**
-     * @brief Recalculates linear and angular velocities based on pose changes.
+     * @brief Recompute linear and angular velocities from pose deltas.
      *
-     * For each dynamic body:
-     * 1. Store previous velocities.
-     * 2. Compute new linear velocity from position delta.
-     * 3. Compute new angular velocity from quaternion delta.
+     * Called after constraint solving to derive post-solve velocities.
      *
-     * @param bc    Reference to the BodyCollection containing all bodies.
-     * @param inv_dt Inverse of the time step (1/Δt).
+     * @param bc      The BodyCollection.
+     * @param inv_dt  Inverse time step (1/Δt).
      */
     void update_velocities(BodyCollection &bc, scalar inv_dt);
 
     /**
-     * @brief Applies an instantaneous positional impulse to resolve constraints.
+     * @brief Apply a positional impulse at offset r to body i.
      *
-     * Moves the body’s center of mass by the impulse scaled by inverse mass,
-     * and applies the corresponding small rotation from the impulse about point r.
+     * Adjusts position and orientation. Used during position-level constraint
+     * solving (XPBD).
      *
-     * @param bc      Reference to the BodyCollection.
-     * @param i       Index of the body to which the impulse is applied.
-     * @param impulse Impulse vector in world coordinates.
-     * @param r       Lever arm (vector) from the center of mass to the application point.
+     * @param bc      The BodyCollection.
+     * @param i       Packed data index.
+     * @param impulse Impulse vector in world space.
+     * @param r       Lever arm from centre of mass to application point (world space).
      */
-    void apply_positional_constraint_impulse(BodyCollection &bc, size_t i, vec3 impulse, vec3 r);
+    void apply_positional_constraint_impulse(BodyCollection &bc, uint32_t i, vec3 impulse, vec3 r);
 
     /**
-     * @brief Applies an instantaneous rotational impulse to resolve constraints.
+     * @brief Apply a pure rotational impulse to body i.
      *
-     * Rotates the body by the small-angle approximation corresponding to
-     * the given impulse in world coordinates.
-     *
-     * @param bc      Reference to the BodyCollection.
-     * @param i       Index of the body to which the impulse is applied.
-     * @param impulse Rotational impulse vector (torque impulse) in world coordinates.
+     * @param bc      The BodyCollection.
+     * @param i       Packed data index.
+     * @param impulse Rotational impulse (torque impulse) in world space.
      */
-    void apply_rotational_constraint_impulse(BodyCollection &bc, size_t i, vec3 impulse);
+    void apply_rotational_constraint_impulse(BodyCollection &bc, uint32_t i, vec3 impulse);
 
     /**
-     * @brief Applies an impulse directly to a body's velocity.
+     * @brief Apply a velocity-level impulse at offset r to body i.
      *
-     * This function enforces a velocity‐level positional constraint by adjusting
-     * both linear and angular velocities based on a specified impulse applied
-     * at an offset from the center of mass.
+     * Adjusts linear_velocity and angular_velocity. Used during velocity-level
+     * constraint solving (restitution, friction).
+     * No-op if the body is STATIC.
      *
-     * @param bc      The BodyCollection containing body states.
-     * @param i       Index of the body to which the impulse is applied.
-     * @param impulse Impulse vector in world coordinates.
-     * @param r       Lever arm from the body's center of mass to the application point, in world coordinates.
-     *
-     * If the body is static (type == BodyType::STATIC), no changes are made.
-     * Otherwise:
-     * - The body's linear velocity is incremented by impulse * inverse_mass.
-     * - The body's angular velocity is incremented by inverse_inertia_tensor_world × (r × impulse).
+     * @param bc      The BodyCollection.
+     * @param i       Packed data index.
+     * @param impulse Impulse vector in world space.
+     * @param r       Lever arm from centre of mass to application point (world space).
      */
-    void apply_positional_velocity_constraint_impulse(BodyCollection &bc, size_t i, vec3 impulse, vec3 r);
-    /**
-     * @brief Computes the generalized inverse mass for positional constraint resolution.
-     *
-     * This scalar combines the body’s inverse mass and inverse inertia
-     * to measure how responsive it is to an impulse at point r in direction n.
-     *
-     * @param bc Reference to the BodyCollection.
-     * @param i  Index of the body.
-     * @param r  Vector from center of mass to contact point.
-     * @param n  Constraint direction (unit normal).
-     * @return   Generalized inverse mass (zero if the body is static).
-     */
-    scalar get_positional_generalized_inverse_mass(BodyCollection &bc, size_t i, vec3 r, vec3 n);
+    void apply_positional_velocity_constraint_impulse(BodyCollection &bc, uint32_t i, vec3 impulse, vec3 r);
 
     /**
-     * @brief Computes the generalized inverse mass for rotational constraint resolution.
+     * @brief Compute the generalised inverse mass for a positional constraint.
      *
-     * Measures how responsive the body is to a pure rotational impulse about axis n.
+     * Returns  w = 1/m + (r×n)ᵀ I⁻¹ (r×n).
+     * Returns 0 for STATIC bodies.
      *
-     * @param bc Reference to the BodyCollection.
-     * @param i  Index of the body.
-     * @param n  Rotation axis (unit direction).
-     * @return   Generalized inverse mass (zero if the body is static).
+     * @param bc  The BodyCollection.
+     * @param i   Packed data index.
+     * @param r   Vector from centre of mass to contact point.
+     * @param n   Constraint direction (unit normal).
+     * @return    Generalised inverse mass scalar.
      */
-    scalar get_rotational_generalized_inverse_mass(BodyCollection &bc, size_t i, vec3 n);
+    scalar get_positional_generalized_inverse_mass(BodyCollection &bc, uint32_t i, vec3 r, vec3 n);
+
+    /**
+     * @brief Compute the generalised inverse mass for a rotational constraint.
+     *
+     * Returns  w = nᵀ I⁻¹ n.
+     * Returns 0 for STATIC bodies.
+     *
+     * @param bc  The BodyCollection.
+     * @param i   Packed data index.
+     * @param n   Rotation axis (unit direction).
+     * @return    Generalised inverse mass scalar.
+     */
+    scalar get_rotational_generalized_inverse_mass(BodyCollection &bc, uint32_t i, vec3 n);
 
 } // namespace rbps
