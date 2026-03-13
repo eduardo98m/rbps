@@ -1,9 +1,6 @@
 #pragma once
 
-#include <vector>
-#include <tuple>
-
-#include <ivc/ivc.hpp>
+#include <storage/Soa.hpp>
 #include <math3d/math3d.hpp>
 #include <rbps/Body.hpp>
 
@@ -38,15 +35,7 @@ namespace rbps
      * Holds all data arrays needed to evaluate and apply constraint impulses
      * between pairs of bodies.
      */
-    struct ConstraintCollection
-    {
-        IVC_CORE;                             // embeds _ivc  (stable ID bookkeeping)
-        size_t &n_constraints = _ivc.n_items; // Number of constraints in the collection (Alias for convenience)
-
-#define DECLARE_VEC(type, name) std::vector<type> name;
-        CONSTRAINT_FIELDS(DECLARE_VEC)
-#undef DECLARE_VEC
-    };
+    DEFINE_DYN_SOA(ConstraintCollection, uint32_t, /*GenerationBits=*/8, CONSTRAINT_FIELDS)
 
     /**
      * @brief Computes and stores magnitude and direction for a raw constraint vector.
@@ -55,7 +44,7 @@ namespace rbps
      * @param i     Index of the constraint.
      * @param value Raw 3D vector whose magnitude/direction to extract.
      */
-    void set_value(ConstraintCollection &cc, size_t i, vec3 value);
+    void set_value(ConstraintCollection &cc, uint32_t i, vec3 value);
 
     /**
      * @brief Computes the change in the Lagrange multiplier for one constraint.
@@ -69,7 +58,7 @@ namespace rbps
      * @param inverse_time_step Inverse of the time step (1/Δt).
      * @return                  Change in Lagrange multiplier Δλ.
      */
-    scalar compute_delta_lambda(const ConstraintCollection &cc, size_t i, scalar w_1, scalar w_2, scalar inverse_time_step);
+    scalar compute_delta_lambda(const ConstraintCollection &cc, uint32_t i, scalar w_1, scalar w_2, scalar inverse_time_step);
 
     /**
      * @brief Solves and applies a rotational constraint impulse between two bodies.
@@ -84,7 +73,7 @@ namespace rbps
      * @param i                 Index of the constraint.
      * @param inverse_time_step Inverse of the time step (1/Δt).
      */
-    void compute_rotational_constraint_impulse(BodyCollection &bc, ConstraintCollection &cc, size_t i, scalar inverse_time_step);
+    void compute_rotational_constraint_impulse(BodyCollection &bc, ConstraintCollection &cc, uint32_t i, scalar inverse_time_step);
 
     /**
      * @brief Solves and applies a rotational constraint impulse between two bodies.
@@ -99,7 +88,7 @@ namespace rbps
      * @param i                 Index of the constraint.
      * @param inverse_time_step Inverse of the time step (1/Δt).
      */
-    void compute_positional_constraint_impulse(BodyCollection &bc, ConstraintCollection &cc, size_t i, scalar inverse_time_step);
+    void compute_positional_constraint_impulse(BodyCollection &bc, ConstraintCollection &cc, uint32_t i, scalar inverse_time_step);
 
     /**
      * @brief Resets the Lagrange multiplier for a given constraint to zero.
@@ -107,7 +96,7 @@ namespace rbps
      * @param cc The ConstraintCollection.
      * @param i  Index of the constraint to reset.
      */
-    void reset_lagrange_multiplier(ConstraintCollection &cc, size_t i);
+    void reset_lagrange_multiplier(ConstraintCollection &cc, uint32_t i);
 
     /**
      * @brief Sets the local contact points for a constraint.
@@ -117,7 +106,7 @@ namespace rbps
      * @param r_1 Local contact point on body 1.
      * @param r_2 Local contact point on body 2.
      */
-    void set_constraint_positions(ConstraintCollection &cc, size_t i, const vec3 &r_1, const vec3 &r_2);
+    void set_constraint_positions(ConstraintCollection &cc, uint32_t i, const vec3 &r_1, const vec3 &r_2);
     /**
      * @brief Returns the current Lagrange multiplier λ for a constraint.
      *
@@ -125,7 +114,7 @@ namespace rbps
      * @param i  Index of the constraint.
      * @return   Current λ value.
      */
-    scalar get_lagrange_multiplier(const ConstraintCollection &cc, size_t i);
+    scalar get_lagrange_multiplier(const ConstraintCollection &cc, uint32_t i);
 
     /**
      * @brief Computes the updated Lagrange multiplier for a single constraint.
@@ -138,7 +127,7 @@ namespace rbps
      * @param inverse_time_step Inverse of the time step (1/Δt).
      * @return                  Updated Lagrange multiplier.
      */
-    scalar compute_lagrange_multiplier(BodyCollection &bc, ConstraintCollection &cc, size_t i, scalar inverse_time_step);
+    scalar compute_lagrange_multiplier(BodyCollection &bc, ConstraintCollection &cc, uint32_t i, scalar inverse_time_step);
 
     /**
      * @brief Solves the constraints by computing impulses of the bodies.

@@ -2,20 +2,34 @@
 #include "rbps/constraints/Joint.hpp"
 namespace rbps
 {
+
+    // ─── Helper: resolve child constraint k of joint i to a packed data index ────
+    //
+    // jc.constraints[i].ids[k] is a stable SoA ID.
+    // cc.index_of() translates it to the current packed index in cc's arrays.
+    // This is safe even after other constraints have been swap-and-popped out.
+    //
+    static inline uint32_t cid(const JointCollection &jc, const ConstraintCollection &cc,
+                               uint32_t i, uint32_t k)
+    {
+        return cc.index_of(jc.constraints[i].ids[k]);
+    }
+
     void compute_prismatic_joint_errors(JointCollection &jc,
-                                        size_t i,
+                                        uint32_t i,
                                         BodyCollection &bc,
                                         ConstraintCollection &cc,
                                         scalar time_step)
     {
 
-        const size_t start = jc.constraint_start[i];
-        const size_t b1 = jc.body_1[i];
-        const size_t b2 = jc.body_2[i];
+        // const uint32_t start = jc.constraint_start[i];
+        const uint32_t b1 = jc.body_1[i];
+        const uint32_t b2 = jc.body_2[i];
         // 1) Alignment error (rotational constraint)
         quat dq = bc.orientation[b1] * m3d::conjugate(bc.orientation[b2]);
         vec3 err_align = vec3{dq.x, dq.y, dq.z} * scalar(2.0);
-        set_value(cc, start + 0, err_align);
+        set_value(cc, cid(jc, cc, i, 0), err_align);
+        
         // 2) Attachment‐point error (positional constraint)
         vec3 r1_wc = m3d::rotate(bc.orientation[b1], jc.r_1[i]);
         vec3 r2_wc = m3d::rotate(bc.orientation[b2], jc.r_2[i]);
@@ -33,7 +47,7 @@ namespace rbps
             overshoot = pos - clamped;
         }
         vec3 correction = delta_p - axis * pos + axis * overshoot;
-        set_value(cc, start + 1, correction);
+        set_value(cc, cid(jc, cc, i, 1), correction);
         // 3) Drive error (positional constraint)
         vec3 err_drive = vec3{0.0, 0.0, 0.0};
 
@@ -52,7 +66,7 @@ namespace rbps
         }
         }
 
-        set_value(cc, start + 2, err_drive);
+        set_value(cc, cid(jc, cc, i, 2), err_drive);
         jc.current_position[i] = pos;
     }
 
@@ -76,26 +90,25 @@ namespace rbps
     }
 
     void compute_revolute_joint_errors(JointCollection &jc,
-                                       size_t i,
+                                       uint32_t i,
                                        BodyCollection &bc,
                                        ConstraintCollection &cc,
                                        scalar time_step)
     {
-        const size_t start = jc.constraint_start[i];
-        const size_t b1 = jc.body_1[i];
-        const size_t b2 = jc.body_2[i];
+        const uint32_t b1 = jc.body_1[i];
+        const uint32_t b2 = jc.body_2[i];
         // 1) alignment (rotational)
         // main_axis in world on each body
         vec3 a1 = m3d::rotate(bc.orientation[b1], jc.main_axis[i]);
         vec3 a2 = m3d::rotate(bc.orientation[b2], jc.main_axis[i]);
         vec3 err_align = m3d::cross(a1, a2); // According to the original paper err = a_1 x a_2
-        set_value(cc, start + 0, err_align);
+        set_value(cc, cid(jc, cc, i, 0), err_align);
         // 2) attachment (positional)
         vec3 r1_wc = m3d::rotate(bc.orientation[b1], jc.r_1[i]);
         vec3 r2_wc = m3d::rotate(bc.orientation[b2], jc.r_2[i]);
         vec3 p1 = bc.position[b1] + r1_wc;
         vec3 p2 = bc.position[b2] + r2_wc;
-        set_value(cc, start + 1, p1 - p2);
+        set_value(cc, cid(jc, cc, i, 1), p1 - p2);
 
         // This peice of code was just to test the distance constraint
         // scalar current_distance = m3d::magnitude(p1 - p2);
@@ -122,7 +135,7 @@ namespace rbps
                 jc.lower_limit[i],
                 jc.upper_limit[i]);
         }
-        set_value(cc, start + 2, -err_limit);
+        set_value(cc, cid(jc, cc, i, 2), -err_limit);
         // 4) drive (rotational)
         vec3 err_drive{0.0, 0.0, 0.0};
         switch (jc.actuation_type[i])
@@ -141,41 +154,40 @@ namespace rbps
             break;
         }
         }
-        set_value(cc, start + 3, err_drive);
+        set_value(cc, cid(jc, cc, i, 3), err_drive);
         jc.current_position[i] = phi;
     }
 
     void compute_fixed_joint_errors(
         JointCollection &jc,
-        size_t i,
+        uint32_t i,
         BodyCollection &bc,
         ConstraintCollection &cc,
         scalar /*time_step—unused*/
     )
     {
-        const size_t start = jc.constraint_start[i];
-        const size_t b1 = jc.body_1[i];
-        const size_t b2 = jc.body_2[i];
+        const uint32_t b1 = jc.body_1[i];
+        const uint32_t b2 = jc.body_2[i];
         // 1) Alignment error (rotational constraint)
         quat dq = bc.orientation[b1] * m3d::conjugate(bc.orientation[b2]);
         vec3 err_align = vec3{dq.x, dq.y, dq.z} * scalar(2.0);
-        set_value(cc, start + 0, err_align);
+        set_value(cc, cid(jc, cc, i, 0), err_align);
         // 2) Attachment-point error (positional constraint)
         vec3 r1w = m3d::rotate(bc.orientation[b1], jc.r_1[i]);
         vec3 r2w = m3d::rotate(bc.orientation[b2], jc.r_2[i]);
         vec3 p1 = bc.position[b1] + r1w;
         vec3 p2 = bc.position[b2] + r2w;
         vec3 err_pos = p1 - p2;
-        set_value(cc, start + 1, err_pos);
+        set_value(cc, cid(jc, cc, i, 1), err_pos);
     }
 
     void apply_prismatic_joint_damping(JointCollection &jc,
-                                       size_t i,
+                                       uint32_t i,
                                        BodyCollection &bc,
                                        scalar time_step)
     {
-        const size_t b1 = jc.body_1[i];
-        const size_t b2 = jc.body_2[i];
+        const uint32_t b1 = jc.body_1[i];
+        const uint32_t b2 = jc.body_2[i];
         vec3 delta_v = (bc.linear_velocity[b2] - bc.linear_velocity[b1]) * std::min(jc.damping[i] * time_step, 1.0);
         if (m3d::magnitude(delta_v) < EPSILON)
             return;
@@ -190,12 +202,12 @@ namespace rbps
     }
 
     void apply_revolute_joint_damping(JointCollection &jc,
-                                      size_t i,
+                                      uint32_t i,
                                       BodyCollection &bc,
                                       scalar time_step)
     {
-        const size_t b1 = jc.body_1[i];
-        const size_t b2 = jc.body_2[i];
+        const uint32_t b1 = jc.body_1[i];
+        const uint32_t b2 = jc.body_2[i];
         vec3 delta_omega = (bc.angular_velocity[b2] - bc.angular_velocity[b1]) * std::min(jc.damping[i] * time_step, 1.0);
         bc.angular_velocity[b1] += delta_omega;
         bc.angular_velocity[b2] -= delta_omega;
@@ -206,7 +218,7 @@ namespace rbps
                               ConstraintCollection &cc,
                               scalar time_step)
     {
-        for (size_t i = 0; i < jc.n_joints; ++i)
+        for (uint32_t i = 0; i < jc.count(); ++i)
         {
             switch (jc.type[i])
             {
@@ -232,7 +244,7 @@ namespace rbps
                              BodyCollection &bc,
                              scalar time_step)
     {
-        for (size_t i = 0; i < jc.n_joints; ++i)
+        for (uint32_t i = 0; i < jc.count(); ++i)
         {
             switch (jc.type[i])
             {

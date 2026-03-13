@@ -60,6 +60,10 @@ namespace rbps
     //    for (uint32_t i = 0; i < bc.count(); ++i)   // solver loop
     //        bc.position[i] += bc.linear_velocity[i] * dt;
     // ─────────────────────────────────────────────────────────────────────────────
+    /**
+     * @brief SoA collection for rigid bodies.  All body data is stored in
+     * separate vectors, indexed by a packed data index.
+     */
     DEFINE_DYN_SOA(BodyCollection, uint32_t, /*GenerationBits=*/8, BODY_FIELDS)
 
     // ─────────────────────────────────────────────────────────────────────────────

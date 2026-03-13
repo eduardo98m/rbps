@@ -24,42 +24,36 @@ namespace rbps
      *
      * @param cc     The ConstraintCollection.
      * @param params Constraint properties.
-     * @return       Index (ivc::ID / uint64_t) of the newly created constraint.
+     * @return       Stable uint32_t ID of the new constraint, which can be used to reference it later.
      */
-    inline ivc::ID create_constraint(ConstraintCollection &cc, const ConstraintParams &params = {})
-    {
-        ivc::ID id = ivc::add(cc._ivc);
+    inline uint32_t create_constraint(ConstraintCollection &cc,
+                                  const ConstraintParams &params = {})
+{
+    uint32_t id = cc.add();          // allocate element
+    uint32_t i  = cc.index_of(id);   // packed index
 
-        cc.body_1.push_back(params.body_1);
-        cc.body_2.push_back(params.body_2);
-        cc.r_1.push_back(params.r_1);
-        cc.r_2.push_back(params.r_2);
-        cc.direction.push_back({1.0, 0.0, 0.0}); // placeholder, set by solver
-        cc.magnitude.push_back(0.0);
-        cc.lambda.push_back(0.0);
-        cc.force.push_back({0.0, 0.0, 0.0});
-        cc.torque.push_back({0.0, 0.0, 0.0});
-        cc.compliance.push_back(params.compliance);
-        cc.type.push_back(params.type);
-        cc.impulse.push_back({0.0, 0.0, 0.0});
+    // Fill the allocated slot instead of push_back
+    cc.body_1[i] = params.body_1;
+    cc.body_2[i] = params.body_2;
 
-        return id;
-    }
+    cc.r_1[i] = params.r_1;
+    cc.r_2[i] = params.r_2;
 
-    inline void swap_constraint_arrays(ConstraintCollection &cc, size_t a, size_t b)
-    {
-        using std::swap;
-#define SWAP_FIELD(type, name) swap(cc.name[a], cc.name[b]);
-        CONSTRAINT_FIELDS(SWAP_FIELD)
-#undef SWAP_FIELD
-    }
+    cc.direction[i] = {1.0, 0.0, 0.0}; // placeholder axis
 
-    inline void pop_back_constraint(ConstraintCollection &cc)
-    {
-#define POP_FIELD(type, name) cc.name.pop_back();
-        CONSTRAINT_FIELDS(POP_FIELD)
-#undef POP_FIELD
-    }
+    cc.magnitude[i] = 0.0;
+    cc.lambda[i]    = 0.0;
+
+    cc.force[i]  = {0.0, 0.0, 0.0};
+    cc.torque[i] = {0.0, 0.0, 0.0};
+
+    cc.compliance[i] = params.compliance;
+    cc.type[i]       = params.type;
+
+    cc.impulse[i] = {0.0, 0.0, 0.0};
+
+    return id;
+}
 
     /**
      * @brief Remove a constraint from the collection.
@@ -70,13 +64,9 @@ namespace rbps
      * @param cc  The ConstraintCollection.
      * @param id  Stable ID returned by create_constraint().
      */
-    inline void remove_constraint(ConstraintCollection &cc, ivc::ID id)
+    inline void remove_constraint(ConstraintCollection &cc, uint32_t id)
     {
-        // swap_constraint_arrays and pop_back_constraint are auto-generated from CONSTRAINT_FIELDS,
-        // so adding a new field to the constraint collection automatically updates them.
-        ivc::erase(cc._ivc, id, [&](size_t a, size_t b)
-                   { swap_constraint_arrays(cc, a, b); });
-        pop_back_constraint(cc);
+        cc.remove(id);
     }
 
 } // namespace rbps

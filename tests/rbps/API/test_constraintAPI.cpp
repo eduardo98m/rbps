@@ -8,16 +8,16 @@ using namespace rbps;
 TEST(constraint_count_starts_at_zero)
 {
     ConstraintCollection cc;
-    ASSERT_EQ(cc.n_constraints, 0u);
+    ASSERT_EQ(cc.count(), 0u);
 }
 
 TEST(constraint_count_increments)
 {
     ConstraintCollection cc;
     create_constraint(cc, {.body_1 = 0, .body_2 = 1, .type = ConstraintType::POSITIONAL});
-    ASSERT_EQ(cc.n_constraints, 1u);
+    ASSERT_EQ(cc.count(), 1u);
     create_constraint(cc, {.body_1 = 1, .body_2 = 2, .type = ConstraintType::ROTATIONAL});
-    ASSERT_EQ(cc.n_constraints, 2u);
+    ASSERT_EQ(cc.count(), 2u);
 }
 
 TEST(all_arrays_same_size_after_creates)
@@ -124,16 +124,16 @@ TEST(zero_compliance_by_default)
 TEST(remove_decrements_count)
 {
     ConstraintCollection cc;
-    ivc::ID id = create_constraint(cc);
+    u_int32_t id = create_constraint(cc);
     create_constraint(cc);
     remove_constraint(cc, id);
-    ASSERT_EQ(cc.n_constraints, 1u);
+    ASSERT_EQ(cc.count(), 1u);
 }
 
 TEST(remove_shrinks_all_arrays)
 {
     ConstraintCollection cc;
-    ivc::ID id = create_constraint(cc);
+    u_int32_t id = create_constraint(cc);
     create_constraint(cc);
     remove_constraint(cc, id);
     ASSERT_EQ(cc.body_1.size(),        1u);
@@ -153,11 +153,11 @@ TEST(remove_first_constraint_data_intact)
     // After removing the first constraint the second must slide to index 0
     // and still have its original values.
     ConstraintCollection cc;
-    ivc::ID id_a = create_constraint(cc, {.body_1=1, .body_2=2});
-    ivc::ID id_b = create_constraint(cc, {.body_1=3, .body_2=4});
+    u_int32_t id_a = create_constraint(cc, {.body_1=1, .body_2=2});
+    u_int32_t id_b = create_constraint(cc, {.body_1=3, .body_2=4});
     remove_constraint(cc, id_a);
 
-    size_t i = ivc::index(cc._ivc, id_b);
+    size_t i = cc.index_of(id_b); //ivc::index(cc._ivc, id_b);
     ASSERT_EQ(cc.body_1[i], 3u);
     ASSERT_EQ(cc.body_2[i], 4u);
 }
@@ -165,13 +165,13 @@ TEST(remove_first_constraint_data_intact)
 TEST(remove_all_constraints)
 {
     ConstraintCollection cc;
-    ivc::ID a = create_constraint(cc);
-    ivc::ID b = create_constraint(cc);
-    ivc::ID c = create_constraint(cc);
+    u_int32_t a = create_constraint(cc);
+    u_int32_t b = create_constraint(cc);
+    u_int32_t c = create_constraint(cc);
     remove_constraint(cc, b);
     remove_constraint(cc, a);
     remove_constraint(cc, c);
-    ASSERT_EQ(cc.n_constraints, 0u);
+    ASSERT_EQ(cc.count(), 0u);
     ASSERT_EQ(cc.body_1.size(), 0u);
 }
 

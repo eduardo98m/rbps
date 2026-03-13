@@ -1,6 +1,5 @@
 #pragma once
-#include <vector>
-
+#include <storage/Soa.hpp>
 #include <math3d/math3d.hpp>
 #include <rbps/Body.hpp>
 #include <rbps/constraints/Constraint.hpp>
@@ -23,6 +22,14 @@ namespace rbps
         SPEED,
     };
 
+    // This can change later till 5 or 6, but for now we know that no joint will have more than 4 constraints (e.g. revolute has 4, prismatic has 3).
+    static constexpr uint32_t MAX_CONSTRAINTS_PER_JOINT = 4;
+
+    struct ConstraintBlock
+    {
+        uint32_t ids[MAX_CONSTRAINTS_PER_JOINT] = {};
+    };
+
 // ─── Field list — ONE place to add / remove joint properties ─────────────────
 //
 // X(ValueType, field_name)
@@ -30,8 +37,8 @@ namespace rbps
 #define JOINT_FIELDS(X)                   \
     X(JointType, type)                    \
     X(JointActuationType, actuation_type) \
-    X(size_t, body_1)                     \
-    X(size_t, body_2)                     \
+    X(u_int32_t, body_1)                     \
+    X(u_int32_t, body_2)                     \
     X(vec3, r_1)                          \
     X(vec3, r_2)                          \
     X(vec3, main_axis)                    \
@@ -43,18 +50,10 @@ namespace rbps
     X(scalar, current_position)           \
     X(scalar, damping)                    \
     X(vec3, limit_axis)                   \
-    X(size_t, constraint_start)           \
-    X(u_short, constraint_count)
+    X(u_short, constraint_count)          \
+    X(ConstraintBlock, constraints)
 
-    struct JointCollection
-    {
-        IVC_CORE;                        // embeds _ivc (stable ID bookkeeping)
-        size_t &n_joints = _ivc.n_items; // convenient alias
-
-#define DECLARE_VEC(type, name) std::vector<type> name;
-        JOINT_FIELDS(DECLARE_VEC)
-#undef DECLARE_VEC
-    };
+    DEFINE_DYN_SOA(JointCollection, uint32_t, /*GenerationBits=*/8, JOINT_FIELDS)
 
     /**
      * @brief Compute the three low-level XPBD constraint errors for a prismatic joint.
@@ -79,7 +78,7 @@ namespace rbps
      * @param time_step  The simulation time step Δt.
      */
     void compute_prismatic_joint_errors(JointCollection &jc,
-                                        size_t i,
+                                        u_int32_t i,
                                         BodyCollection &bc,
                                         ConstraintCollection &cc,
                                         scalar time_step);
@@ -130,7 +129,7 @@ namespace rbps
      * @param time_step  The simulation time step Δt.
      */
     void compute_revolute_joint_errors(JointCollection &jc,
-                                       size_t i,
+                                       u_int32_t i,
                                        BodyCollection &bc,
                                        ConstraintCollection &cc,
                                        scalar time_step);
@@ -153,7 +152,7 @@ namespace rbps
      */
     void compute_fixed_joint_errors(
         JointCollection &jc,
-        size_t i,
+        u_int32_t i,
         BodyCollection &bc,
         ConstraintCollection &cc,
         scalar /*time_step—unused*/
@@ -182,7 +181,7 @@ namespace rbps
      * @param time_step  Simulation time step Δt.
      */
     void apply_prismatic_joint_damping(JointCollection &jc,
-                                       size_t i,
+                                       u_int32_t i,
                                        BodyCollection &bc,
                                        scalar time_step);
 
@@ -203,7 +202,7 @@ namespace rbps
      * @param time_step  Simulation timestep Δt.
      */
     void apply_revolute_joint_damping(JointCollection &jc,
-                                      size_t i,
+                                      u_int32_t i,
                                       BodyCollection &bc,
                                       scalar time_step);
 

@@ -28,22 +28,25 @@ static BodyCollection create_bodies(uint32_t n)
 }
 
 
-ConstraintCollection create_constraints(size_t n)
+static ConstraintCollection create_constraints(uint32_t n)
 {
     ConstraintCollection cc;
-    cc.n_constraints = n;
-    cc.body_1.resize(n, 0);
-    cc.body_2.resize(n, 0);
-    cc.r_1.resize(n, vec3{0, 0, 0});
-    cc.r_2.resize(n, vec3{0, 0, 0});
-    cc.direction.resize(n, vec3{1, 0, 0});
-    cc.magnitude.resize(n, 0.0);
-    cc.lambda.resize(n, 0.0);
-    cc.force.resize(n, vec3{0, 0, 0});
-    cc.torque.resize(n, vec3{0, 0, 0});
-    cc.compliance.resize(n, 0.0); // Rigid by default
-    cc.type.resize(n, ConstraintType::POSITIONAL);
-    cc.impulse.resize(n, vec3{0, 0, 0});
+    for (uint32_t k = 0; k < n; ++k)
+    {
+        int32_t i = cc.index_of(cc.add());
+        cc.body_1[i] = 0;
+        cc.body_2[i] = 0;
+        cc.r_1[i] = vec3{0, 0, 0};
+        cc.r_2[i] = vec3{0, 0, 0};
+        cc.direction[i] = vec3{1, 0, 0};
+        cc.magnitude[i] = 0.0;
+        cc.lambda[i] = 0.0;
+        cc.force[i] = vec3{0, 0, 0};
+        cc.torque[i] = vec3{0, 0, 0};
+        cc.compliance[i] = 0.0;
+        cc.type[i] = ConstraintType::POSITIONAL;
+        cc.impulse[i] = vec3{0, 0, 0};        
+    }
     return cc;
 }
 
