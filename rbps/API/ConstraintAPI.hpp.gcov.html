@@ -32,17 +32,17 @@
             <td></td>
             <td class="headerItem">Lines:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
-            <td class="headerCovTableEntry">26</td>
-            <td class="headerCovTableEntry">26</td>
+            <td class="headerCovTableEntry">19</td>
+            <td class="headerCovTableEntry">19</td>
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-03-13 13:36:27</td>
+            <td class="headerValue">2026-03-13 15:54:07</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
-            <td class="headerCovTableEntry">5</td>
-            <td class="headerCovTableEntry">5</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">2</td>
           </tr>
                   <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
                 </table>
@@ -86,62 +86,52 @@
 <span id="L24"><span class="lineNum">      24</span>              :      *</span>
 <span id="L25"><span class="lineNum">      25</span>              :      * @param cc     The ConstraintCollection.</span>
 <span id="L26"><span class="lineNum">      26</span>              :      * @param params Constraint properties.</span>
-<span id="L27"><span class="lineNum">      27</span>              :      * @return       Index (ivc::ID / uint64_t) of the newly created constraint.</span>
+<span id="L27"><span class="lineNum">      27</span>              :      * @return       Stable uint32_t ID of the new constraint, which can be used to reference it later.</span>
 <span id="L28"><span class="lineNum">      28</span>              :      */</span>
-<span id="L29"><span class="lineNum">      29</span> <span class="tlaGNC tlaBgGNC">         146 :     inline ivc::ID create_constraint(ConstraintCollection &amp;cc, const ConstraintParams &amp;params = {})</span></span>
-<span id="L30"><span class="lineNum">      30</span>              :     {</span>
-<span id="L31"><span class="lineNum">      31</span> <span class="tlaGNC">         146 :         ivc::ID id = ivc::add(cc._ivc);</span></span>
-<span id="L32"><span class="lineNum">      32</span>              : </span>
-<span id="L33"><span class="lineNum">      33</span> <span class="tlaGNC">         146 :         cc.body_1.push_back(params.body_1);</span></span>
-<span id="L34"><span class="lineNum">      34</span> <span class="tlaGNC">         146 :         cc.body_2.push_back(params.body_2);</span></span>
-<span id="L35"><span class="lineNum">      35</span> <span class="tlaGNC">         146 :         cc.r_1.push_back(params.r_1);</span></span>
-<span id="L36"><span class="lineNum">      36</span> <span class="tlaGNC">         146 :         cc.r_2.push_back(params.r_2);</span></span>
-<span id="L37"><span class="lineNum">      37</span> <span class="tlaGNC">         146 :         cc.direction.push_back({1.0, 0.0, 0.0}); // placeholder, set by solver</span></span>
-<span id="L38"><span class="lineNum">      38</span> <span class="tlaGNC">         146 :         cc.magnitude.push_back(0.0);</span></span>
-<span id="L39"><span class="lineNum">      39</span> <span class="tlaGNC">         146 :         cc.lambda.push_back(0.0);</span></span>
-<span id="L40"><span class="lineNum">      40</span> <span class="tlaGNC">         146 :         cc.force.push_back({0.0, 0.0, 0.0});</span></span>
-<span id="L41"><span class="lineNum">      41</span> <span class="tlaGNC">         146 :         cc.torque.push_back({0.0, 0.0, 0.0});</span></span>
-<span id="L42"><span class="lineNum">      42</span> <span class="tlaGNC">         146 :         cc.compliance.push_back(params.compliance);</span></span>
-<span id="L43"><span class="lineNum">      43</span> <span class="tlaGNC">         146 :         cc.type.push_back(params.type);</span></span>
-<span id="L44"><span class="lineNum">      44</span> <span class="tlaGNC">         146 :         cc.impulse.push_back({0.0, 0.0, 0.0});</span></span>
-<span id="L45"><span class="lineNum">      45</span>              : </span>
-<span id="L46"><span class="lineNum">      46</span> <span class="tlaGNC">         146 :         return id;</span></span>
-<span id="L47"><span class="lineNum">      47</span>              :     }</span>
-<span id="L48"><span class="lineNum">      48</span>              : </span>
-<span id="L49"><span class="lineNum">      49</span> <span class="tlaGNC">          27 :     inline void swap_constraint_arrays(ConstraintCollection &amp;cc, size_t a, size_t b)</span></span>
-<span id="L50"><span class="lineNum">      50</span>              :     {</span>
-<span id="L51"><span class="lineNum">      51</span>              :         using std::swap;</span>
-<span id="L52"><span class="lineNum">      52</span>              : #define SWAP_FIELD(type, name) swap(cc.name[a], cc.name[b]);</span>
-<span id="L53"><span class="lineNum">      53</span> <span class="tlaGNC">          27 :         CONSTRAINT_FIELDS(SWAP_FIELD)</span></span>
-<span id="L54"><span class="lineNum">      54</span>              : #undef SWAP_FIELD</span>
-<span id="L55"><span class="lineNum">      55</span> <span class="tlaGNC">          27 :     }</span></span>
-<span id="L56"><span class="lineNum">      56</span>              : </span>
-<span id="L57"><span class="lineNum">      57</span> <span class="tlaGNC">          31 :     inline void pop_back_constraint(ConstraintCollection &amp;cc)</span></span>
-<span id="L58"><span class="lineNum">      58</span>              :     {</span>
-<span id="L59"><span class="lineNum">      59</span>              : #define POP_FIELD(type, name) cc.name.pop_back();</span>
-<span id="L60"><span class="lineNum">      60</span> <span class="tlaGNC">          31 :         CONSTRAINT_FIELDS(POP_FIELD)</span></span>
-<span id="L61"><span class="lineNum">      61</span>              : #undef POP_FIELD</span>
-<span id="L62"><span class="lineNum">      62</span> <span class="tlaGNC">          31 :     }</span></span>
-<span id="L63"><span class="lineNum">      63</span>              : </span>
-<span id="L64"><span class="lineNum">      64</span>              :     /**</span>
-<span id="L65"><span class="lineNum">      65</span>              :      * @brief Remove a constraint from the collection.</span>
-<span id="L66"><span class="lineNum">      66</span>              :      *</span>
-<span id="L67"><span class="lineNum">      67</span>              :      * Uses swap-and-pop: the last constraint slides into the freed slot so all other</span>
-<span id="L68"><span class="lineNum">      68</span>              :      * IDs remain valid.  Any Handle to this ID becomes false after this call.</span>
-<span id="L69"><span class="lineNum">      69</span>              :      *</span>
-<span id="L70"><span class="lineNum">      70</span>              :      * @param cc  The ConstraintCollection.</span>
-<span id="L71"><span class="lineNum">      71</span>              :      * @param id  Stable ID returned by create_constraint().</span>
-<span id="L72"><span class="lineNum">      72</span>              :      */</span>
-<span id="L73"><span class="lineNum">      73</span> <span class="tlaGNC">          31 :     inline void remove_constraint(ConstraintCollection &amp;cc, ivc::ID id)</span></span>
-<span id="L74"><span class="lineNum">      74</span>              :     {</span>
-<span id="L75"><span class="lineNum">      75</span>              :         // swap_constraint_arrays and pop_back_constraint are auto-generated from CONSTRAINT_FIELDS,</span>
-<span id="L76"><span class="lineNum">      76</span>              :         // so adding a new field to the constraint collection automatically updates them.</span>
-<span id="L77"><span class="lineNum">      77</span> <span class="tlaGNC">          31 :         ivc::erase(cc._ivc, id, [&amp;](size_t a, size_t b)</span></span>
-<span id="L78"><span class="lineNum">      78</span> <span class="tlaGNC">          27 :                    { swap_constraint_arrays(cc, a, b); });</span></span>
-<span id="L79"><span class="lineNum">      79</span> <span class="tlaGNC">          31 :         pop_back_constraint(cc);</span></span>
-<span id="L80"><span class="lineNum">      80</span> <span class="tlaGNC">          31 :     }</span></span>
-<span id="L81"><span class="lineNum">      81</span>              : </span>
-<span id="L82"><span class="lineNum">      82</span>              : } // namespace rbps</span>
+<span id="L29"><span class="lineNum">      29</span> <span class="tlaGNC tlaBgGNC">         146 :     inline uint32_t create_constraint(ConstraintCollection &amp;cc,</span></span>
+<span id="L30"><span class="lineNum">      30</span>              :                                   const ConstraintParams &amp;params = {})</span>
+<span id="L31"><span class="lineNum">      31</span>              : {</span>
+<span id="L32"><span class="lineNum">      32</span> <span class="tlaGNC">         146 :     uint32_t id = cc.add();          // allocate element</span></span>
+<span id="L33"><span class="lineNum">      33</span> <span class="tlaGNC">         146 :     uint32_t i  = cc.index_of(id);   // packed index</span></span>
+<span id="L34"><span class="lineNum">      34</span>              : </span>
+<span id="L35"><span class="lineNum">      35</span>              :     // Fill the allocated slot instead of push_back</span>
+<span id="L36"><span class="lineNum">      36</span> <span class="tlaGNC">         146 :     cc.body_1[i] = params.body_1;</span></span>
+<span id="L37"><span class="lineNum">      37</span> <span class="tlaGNC">         146 :     cc.body_2[i] = params.body_2;</span></span>
+<span id="L38"><span class="lineNum">      38</span>              : </span>
+<span id="L39"><span class="lineNum">      39</span> <span class="tlaGNC">         146 :     cc.r_1[i] = params.r_1;</span></span>
+<span id="L40"><span class="lineNum">      40</span> <span class="tlaGNC">         146 :     cc.r_2[i] = params.r_2;</span></span>
+<span id="L41"><span class="lineNum">      41</span>              : </span>
+<span id="L42"><span class="lineNum">      42</span> <span class="tlaGNC">         146 :     cc.direction[i] = {1.0, 0.0, 0.0}; // placeholder axis</span></span>
+<span id="L43"><span class="lineNum">      43</span>              : </span>
+<span id="L44"><span class="lineNum">      44</span> <span class="tlaGNC">         146 :     cc.magnitude[i] = 0.0;</span></span>
+<span id="L45"><span class="lineNum">      45</span> <span class="tlaGNC">         146 :     cc.lambda[i]    = 0.0;</span></span>
+<span id="L46"><span class="lineNum">      46</span>              : </span>
+<span id="L47"><span class="lineNum">      47</span> <span class="tlaGNC">         146 :     cc.force[i]  = {0.0, 0.0, 0.0};</span></span>
+<span id="L48"><span class="lineNum">      48</span> <span class="tlaGNC">         146 :     cc.torque[i] = {0.0, 0.0, 0.0};</span></span>
+<span id="L49"><span class="lineNum">      49</span>              : </span>
+<span id="L50"><span class="lineNum">      50</span> <span class="tlaGNC">         146 :     cc.compliance[i] = params.compliance;</span></span>
+<span id="L51"><span class="lineNum">      51</span> <span class="tlaGNC">         146 :     cc.type[i]       = params.type;</span></span>
+<span id="L52"><span class="lineNum">      52</span>              : </span>
+<span id="L53"><span class="lineNum">      53</span> <span class="tlaGNC">         146 :     cc.impulse[i] = {0.0, 0.0, 0.0};</span></span>
+<span id="L54"><span class="lineNum">      54</span>              : </span>
+<span id="L55"><span class="lineNum">      55</span> <span class="tlaGNC">         146 :     return id;</span></span>
+<span id="L56"><span class="lineNum">      56</span>              : }</span>
+<span id="L57"><span class="lineNum">      57</span>              : </span>
+<span id="L58"><span class="lineNum">      58</span>              :     /**</span>
+<span id="L59"><span class="lineNum">      59</span>              :      * @brief Remove a constraint from the collection.</span>
+<span id="L60"><span class="lineNum">      60</span>              :      *</span>
+<span id="L61"><span class="lineNum">      61</span>              :      * Uses swap-and-pop: the last constraint slides into the freed slot so all other</span>
+<span id="L62"><span class="lineNum">      62</span>              :      * IDs remain valid.  Any Handle to this ID becomes false after this call.</span>
+<span id="L63"><span class="lineNum">      63</span>              :      *</span>
+<span id="L64"><span class="lineNum">      64</span>              :      * @param cc  The ConstraintCollection.</span>
+<span id="L65"><span class="lineNum">      65</span>              :      * @param id  Stable ID returned by create_constraint().</span>
+<span id="L66"><span class="lineNum">      66</span>              :      */</span>
+<span id="L67"><span class="lineNum">      67</span> <span class="tlaGNC">           6 :     inline void remove_constraint(ConstraintCollection &amp;cc, uint32_t id)</span></span>
+<span id="L68"><span class="lineNum">      68</span>              :     {</span>
+<span id="L69"><span class="lineNum">      69</span> <span class="tlaGNC">           6 :         cc.remove(id);</span></span>
+<span id="L70"><span class="lineNum">      70</span> <span class="tlaGNC">           6 :     }</span></span>
+<span id="L71"><span class="lineNum">      71</span>              : </span>
+<span id="L72"><span class="lineNum">      72</span>              : } // namespace rbps</span>
         </pre>
               </td>
             </tr>

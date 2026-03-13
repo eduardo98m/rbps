@@ -37,12 +37,12 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-03-13 13:36:27</td>
+            <td class="headerValue">2026-03-13 15:54:07</td>
             <td></td>
             <td class="headerItem">Functions:</td>
-            <td class="headerCovTableEntryHi">97.8&nbsp;%</td>
-            <td class="headerCovTableEntry">45</td>
-            <td class="headerCovTableEntry">44</td>
+            <td class="headerCovTableEntryHi">95.5&nbsp;%</td>
+            <td class="headerCovTableEntry">66</td>
+            <td class="headerCovTableEntry">63</td>
           </tr>
                   <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
                 </table>
@@ -432,12 +432,12 @@
 <span id="L370"><span class="lineNum">     370</span>              :   std::vector&lt;IdType&gt; _free_slots;</span>
 <span id="L371"><span class="lineNum">     371</span>              :   std::vector&lt;IdType&gt; _generation;</span>
 <span id="L372"><span class="lineNum">     372</span>              : </span>
-<span id="L373"><span class="lineNum">     373</span> <span class="tlaGNC">         115 :   explicit DynSoABase(IdType initial_capacity = 0) {</span></span>
-<span id="L374"><span class="lineNum">     374</span> <span class="tlaGNC">         115 :     if (initial_capacity &gt; 0)</span></span>
+<span id="L373"><span class="lineNum">     373</span> <span class="tlaGNC">         245 :   explicit DynSoABase(IdType initial_capacity = 0) {</span></span>
+<span id="L374"><span class="lineNum">     374</span> <span class="tlaGNC">         245 :     if (initial_capacity &gt; 0)</span></span>
 <span id="L375"><span class="lineNum">     375</span> <span class="tlaUNC tlaBgUNC">           0 :       _reserve_bookkeeping(initial_capacity);</span></span>
-<span id="L376"><span class="lineNum">     376</span> <span class="tlaGNC tlaBgGNC">         115 :   }</span></span>
+<span id="L376"><span class="lineNum">     376</span> <span class="tlaGNC tlaBgGNC">         245 :   }</span></span>
 <span id="L377"><span class="lineNum">     377</span>              : </span>
-<span id="L378"><span class="lineNum">     378</span> <span class="tlaGNC">         254 :   Derived &amp;self() { return *static_cast&lt;Derived *&gt;(this); }</span></span>
+<span id="L378"><span class="lineNum">     378</span> <span class="tlaGNC">         637 :   Derived &amp;self() { return *static_cast&lt;Derived *&gt;(this); }</span></span>
 <span id="L379"><span class="lineNum">     379</span>              :   const Derived &amp;self() const { return *static_cast&lt;const Derived *&gt;(this); }</span>
 <span id="L380"><span class="lineNum">     380</span>              : </span>
 <span id="L381"><span class="lineNum">     381</span>              :   /**</span>
@@ -455,28 +455,28 @@
 <span id="L393"><span class="lineNum">     393</span>              :   /**</span>
 <span id="L394"><span class="lineNum">     394</span>              :    * @brief Allocate a new item and return its stable ID.</span>
 <span id="L395"><span class="lineNum">     395</span>              :    */</span>
-<span id="L396"><span class="lineNum">     396</span> <span class="tlaGNC">         237 :   IdType add() {</span></span>
+<span id="L396"><span class="lineNum">     396</span> <span class="tlaGNC">         542 :   IdType add() {</span></span>
 <span id="L397"><span class="lineNum">     397</span>              :     IdType slot;</span>
-<span id="L398"><span class="lineNum">     398</span> <span class="tlaGNC">         237 :     if (_n_free &gt; 0) {</span></span>
+<span id="L398"><span class="lineNum">     398</span> <span class="tlaGNC">         542 :     if (_n_free &gt; 0) {</span></span>
 <span id="L399"><span class="lineNum">     399</span> <span class="tlaUNC tlaBgUNC">           0 :       slot = _free_slots[--_n_free];</span></span>
 <span id="L400"><span class="lineNum">     400</span> <span class="tlaUNC">           0 :       _free_slots.pop_back();</span></span>
 <span id="L401"><span class="lineNum">     401</span>              :     } else {</span>
-<span id="L402"><span class="lineNum">     402</span> <span class="tlaGNC tlaBgGNC">         237 :       slot = _next_slot++;</span></span>
-<span id="L403"><span class="lineNum">     403</span> <span class="tlaGNC">         237 :       _data_index.push_back(INVALID);</span></span>
-<span id="L404"><span class="lineNum">     404</span> <span class="tlaGNC">         237 :       _generation.push_back(0);</span></span>
+<span id="L402"><span class="lineNum">     402</span> <span class="tlaGNC tlaBgGNC">         542 :       slot = _next_slot++;</span></span>
+<span id="L403"><span class="lineNum">     403</span> <span class="tlaGNC">         542 :       _data_index.push_back(INVALID);</span></span>
+<span id="L404"><span class="lineNum">     404</span> <span class="tlaGNC">         542 :       _generation.push_back(0);</span></span>
 <span id="L405"><span class="lineNum">     405</span>              :     }</span>
 <span id="L406"><span class="lineNum">     406</span>              : </span>
-<span id="L407"><span class="lineNum">     407</span> <span class="tlaGNC">         237 :     IdType data_idx = _size;</span></span>
-<span id="L408"><span class="lineNum">     408</span> <span class="tlaGNC">         237 :     IdType gen = _generation[slot];</span></span>
-<span id="L409"><span class="lineNum">     409</span> <span class="tlaGNC">         237 :     IdType id = make_id(slot, gen);</span></span>
+<span id="L407"><span class="lineNum">     407</span> <span class="tlaGNC">         542 :     IdType data_idx = _size;</span></span>
+<span id="L408"><span class="lineNum">     408</span> <span class="tlaGNC">         542 :     IdType gen = _generation[slot];</span></span>
+<span id="L409"><span class="lineNum">     409</span> <span class="tlaGNC">         542 :     IdType id = make_id(slot, gen);</span></span>
 <span id="L410"><span class="lineNum">     410</span>              : </span>
-<span id="L411"><span class="lineNum">     411</span> <span class="tlaGNC">         237 :     _data_index[slot] = data_idx;</span></span>
-<span id="L412"><span class="lineNum">     412</span> <span class="tlaGNC">         237 :     _ids.push_back(id);</span></span>
+<span id="L411"><span class="lineNum">     411</span> <span class="tlaGNC">         542 :     _data_index[slot] = data_idx;</span></span>
+<span id="L412"><span class="lineNum">     412</span> <span class="tlaGNC">         542 :     _ids.push_back(id);</span></span>
 <span id="L413"><span class="lineNum">     413</span>              : </span>
-<span id="L414"><span class="lineNum">     414</span> <span class="tlaGNC">         237 :     self()</span></span>
-<span id="L415"><span class="lineNum">     415</span> <span class="tlaGNC">         237 :         .push_back_data(); // CRTP: push one zero-init element per field vector</span></span>
-<span id="L416"><span class="lineNum">     416</span> <span class="tlaGNC">         237 :     ++_size;</span></span>
-<span id="L417"><span class="lineNum">     417</span> <span class="tlaGNC">         237 :     return id;</span></span>
+<span id="L414"><span class="lineNum">     414</span> <span class="tlaGNC">         542 :     self()</span></span>
+<span id="L415"><span class="lineNum">     415</span> <span class="tlaGNC">         542 :         .push_back_data(); // CRTP: push one zero-init element per field vector</span></span>
+<span id="L416"><span class="lineNum">     416</span> <span class="tlaGNC">         542 :     ++_size;</span></span>
+<span id="L417"><span class="lineNum">     417</span> <span class="tlaGNC">         542 :     return id;</span></span>
 <span id="L418"><span class="lineNum">     418</span>              :   }</span>
 <span id="L419"><span class="lineNum">     419</span>              : </span>
 <span id="L420"><span class="lineNum">     420</span>              :   template &lt;typename Fn&gt; IdType emplace(Fn &amp;&amp;fn) {</span>
@@ -491,48 +491,48 @@
 <span id="L429"><span class="lineNum">     429</span>              :       on_added(add());</span>
 <span id="L430"><span class="lineNum">     430</span>              :   }</span>
 <span id="L431"><span class="lineNum">     431</span>              : </span>
-<span id="L432"><span class="lineNum">     432</span> <span class="tlaGNC">           8 :   void remove(IdType id) {</span></span>
-<span id="L433"><span class="lineNum">     433</span> <span class="tlaGNC">           8 :     if (!_size)</span></span>
+<span id="L432"><span class="lineNum">     432</span> <span class="tlaGNC">          47 :   void remove(IdType id) {</span></span>
+<span id="L433"><span class="lineNum">     433</span> <span class="tlaGNC">          47 :     if (!_size)</span></span>
 <span id="L434"><span class="lineNum">     434</span> <span class="tlaUNC tlaBgUNC">           0 :       return;</span></span>
-<span id="L435"><span class="lineNum">     435</span> <span class="tlaGNC tlaBgGNC">           8 :     const IdType slot = slot_of(id);</span></span>
-<span id="L436"><span class="lineNum">     436</span> <span class="tlaGNC">           8 :     if (slot &gt;= _next_slot)</span></span>
+<span id="L435"><span class="lineNum">     435</span> <span class="tlaGNC tlaBgGNC">          47 :     const IdType slot = slot_of(id);</span></span>
+<span id="L436"><span class="lineNum">     436</span> <span class="tlaGNC">          47 :     if (slot &gt;= _next_slot)</span></span>
 <span id="L437"><span class="lineNum">     437</span> <span class="tlaUNC tlaBgUNC">           0 :       return;</span></span>
-<span id="L438"><span class="lineNum">     438</span> <span class="tlaGNC tlaBgGNC">           8 :     const IdType idx = _data_index[slot];</span></span>
-<span id="L439"><span class="lineNum">     439</span> <span class="tlaGNC">           8 :     if (idx &gt;= _size)</span></span>
+<span id="L438"><span class="lineNum">     438</span> <span class="tlaGNC tlaBgGNC">          47 :     const IdType idx = _data_index[slot];</span></span>
+<span id="L439"><span class="lineNum">     439</span> <span class="tlaGNC">          47 :     if (idx &gt;= _size)</span></span>
 <span id="L440"><span class="lineNum">     440</span> <span class="tlaUNC tlaBgUNC">           0 :       return;</span></span>
 <span id="L441"><span class="lineNum">     441</span>              :     if constexpr (GenerationBits &gt; 0)</span>
-<span id="L442"><span class="lineNum">     442</span> <span class="tlaGNC tlaBgGNC">           8 :       if (gen_of(_ids[idx]) != gen_of(id))</span></span>
+<span id="L442"><span class="lineNum">     442</span> <span class="tlaGNC tlaBgGNC">          47 :       if (gen_of(_ids[idx]) != gen_of(id))</span></span>
 <span id="L443"><span class="lineNum">     443</span> <span class="tlaUNC tlaBgUNC">           0 :         return;</span></span>
 <span id="L444"><span class="lineNum">     444</span>              : </span>
-<span id="L445"><span class="lineNum">     445</span> <span class="tlaGNC tlaBgGNC">           8 :     const IdType last_idx = _size - 1;</span></span>
-<span id="L446"><span class="lineNum">     446</span> <span class="tlaGNC">           8 :     const IdType last_slot = slot_of(_ids[last_idx]);</span></span>
+<span id="L445"><span class="lineNum">     445</span> <span class="tlaGNC tlaBgGNC">          47 :     const IdType last_idx = _size - 1;</span></span>
+<span id="L446"><span class="lineNum">     446</span> <span class="tlaGNC">          47 :     const IdType last_slot = slot_of(_ids[last_idx]);</span></span>
 <span id="L447"><span class="lineNum">     447</span>              : </span>
-<span id="L448"><span class="lineNum">     448</span> <span class="tlaGNC">           8 :     self().swap_elements(idx, last_idx);</span></span>
-<span id="L449"><span class="lineNum">     449</span> <span class="tlaGNC">           8 :     _ids[idx] = _ids[last_idx];</span></span>
+<span id="L448"><span class="lineNum">     448</span> <span class="tlaGNC">          47 :     self().swap_elements(idx, last_idx);</span></span>
+<span id="L449"><span class="lineNum">     449</span> <span class="tlaGNC">          47 :     _ids[idx] = _ids[last_idx];</span></span>
 <span id="L450"><span class="lineNum">     450</span>              : </span>
-<span id="L451"><span class="lineNum">     451</span> <span class="tlaGNC">           8 :     _data_index[last_slot] = idx;</span></span>
-<span id="L452"><span class="lineNum">     452</span> <span class="tlaGNC">           8 :     _data_index[slot] = INVALID;</span></span>
+<span id="L451"><span class="lineNum">     451</span> <span class="tlaGNC">          47 :     _data_index[last_slot] = idx;</span></span>
+<span id="L452"><span class="lineNum">     452</span> <span class="tlaGNC">          47 :     _data_index[slot] = INVALID;</span></span>
 <span id="L453"><span class="lineNum">     453</span>              :     if constexpr (GenerationBits &gt; 0)</span>
-<span id="L454"><span class="lineNum">     454</span> <span class="tlaGNC">           8 :       ++_generation[slot];</span></span>
+<span id="L454"><span class="lineNum">     454</span> <span class="tlaGNC">          47 :       ++_generation[slot];</span></span>
 <span id="L455"><span class="lineNum">     455</span>              : </span>
-<span id="L456"><span class="lineNum">     456</span> <span class="tlaGNC">           8 :     self().pop_back_data(); // CRTP: pop_back every field vector</span></span>
-<span id="L457"><span class="lineNum">     457</span> <span class="tlaGNC">           8 :     _ids.pop_back();</span></span>
-<span id="L458"><span class="lineNum">     458</span> <span class="tlaGNC">           8 :     _free_slots.push_back(slot);</span></span>
-<span id="L459"><span class="lineNum">     459</span> <span class="tlaGNC">           8 :     ++_n_free;</span></span>
-<span id="L460"><span class="lineNum">     460</span> <span class="tlaGNC">           8 :     --_size;</span></span>
+<span id="L456"><span class="lineNum">     456</span> <span class="tlaGNC">          47 :     self().pop_back_data(); // CRTP: pop_back every field vector</span></span>
+<span id="L457"><span class="lineNum">     457</span> <span class="tlaGNC">          47 :     _ids.pop_back();</span></span>
+<span id="L458"><span class="lineNum">     458</span> <span class="tlaGNC">          47 :     _free_slots.push_back(slot);</span></span>
+<span id="L459"><span class="lineNum">     459</span> <span class="tlaGNC">          47 :     ++_n_free;</span></span>
+<span id="L460"><span class="lineNum">     460</span> <span class="tlaGNC">          47 :     --_size;</span></span>
 <span id="L461"><span class="lineNum">     461</span>              :   }</span>
 <span id="L462"><span class="lineNum">     462</span>              : </span>
-<span id="L463"><span class="lineNum">     463</span> <span class="tlaGNC">         293 :   IdType index_of(IdType id) const { return _data_index[slot_of(id)]; }</span></span>
+<span id="L463"><span class="lineNum">     463</span> <span class="tlaGNC">         737 :   IdType index_of(IdType id) const { return _data_index[slot_of(id)]; }</span></span>
 <span id="L464"><span class="lineNum">     464</span>              : </span>
-<span id="L465"><span class="lineNum">     465</span> <span class="tlaGNC">          12 :   bool contains(IdType id) const {</span></span>
-<span id="L466"><span class="lineNum">     466</span> <span class="tlaGNC">          12 :     const IdType slot = slot_of(id);</span></span>
-<span id="L467"><span class="lineNum">     467</span> <span class="tlaGNC">          12 :     if (slot &gt;= _next_slot)</span></span>
+<span id="L465"><span class="lineNum">     465</span> <span class="tlaGNC">          14 :   bool contains(IdType id) const {</span></span>
+<span id="L466"><span class="lineNum">     466</span> <span class="tlaGNC">          14 :     const IdType slot = slot_of(id);</span></span>
+<span id="L467"><span class="lineNum">     467</span> <span class="tlaGNC">          14 :     if (slot &gt;= _next_slot)</span></span>
 <span id="L468"><span class="lineNum">     468</span> <span class="tlaUNC tlaBgUNC">           0 :       return false;</span></span>
-<span id="L469"><span class="lineNum">     469</span> <span class="tlaGNC tlaBgGNC">          12 :     const IdType idx = _data_index[slot];</span></span>
-<span id="L470"><span class="lineNum">     470</span> <span class="tlaGNC">          12 :     if (idx &gt;= _size)</span></span>
-<span id="L471"><span class="lineNum">     471</span> <span class="tlaGNC">           1 :       return false;</span></span>
+<span id="L469"><span class="lineNum">     469</span> <span class="tlaGNC tlaBgGNC">          14 :     const IdType idx = _data_index[slot];</span></span>
+<span id="L470"><span class="lineNum">     470</span> <span class="tlaGNC">          14 :     if (idx &gt;= _size)</span></span>
+<span id="L471"><span class="lineNum">     471</span> <span class="tlaGNC">           2 :       return false;</span></span>
 <span id="L472"><span class="lineNum">     472</span>              :     if constexpr (GenerationBits &gt; 0)</span>
-<span id="L473"><span class="lineNum">     473</span> <span class="tlaGNC">          11 :       return gen_of(_ids[idx]) == gen_of(id);</span></span>
+<span id="L473"><span class="lineNum">     473</span> <span class="tlaGNC">          12 :       return gen_of(_ids[idx]) == gen_of(id);</span></span>
 <span id="L474"><span class="lineNum">     474</span>              :     return true;</span>
 <span id="L475"><span class="lineNum">     475</span>              :   }</span>
 <span id="L476"><span class="lineNum">     476</span>              : </span>
@@ -553,7 +553,7 @@
 <span id="L491"><span class="lineNum">     491</span>              :       fn(_ids[i]);</span>
 <span id="L492"><span class="lineNum">     492</span>              :   }</span>
 <span id="L493"><span class="lineNum">     493</span>              : </span>
-<span id="L494"><span class="lineNum">     494</span> <span class="tlaGNC">          26 :   IdType count() const { return _size; }</span></span>
+<span id="L494"><span class="lineNum">     494</span> <span class="tlaGNC">          62 :   IdType count() const { return _size; }</span></span>
 <span id="L495"><span class="lineNum">     495</span>              : </span>
 <span id="L496"><span class="lineNum">     496</span>              :   void clear() {</span>
 <span id="L497"><span class="lineNum">     497</span>              :     self().clear_data();</span>
@@ -563,10 +563,10 @@
 <span id="L501"><span class="lineNum">     501</span>              :     _next_slot = 0;</span>
 <span id="L502"><span class="lineNum">     502</span>              :   }</span>
 <span id="L503"><span class="lineNum">     503</span>              : </span>
-<span id="L504"><span class="lineNum">     504</span> <span class="tlaGNC">         321 :   static constexpr IdType slot_of(IdType id) { return id &amp; SLOT_MASK; }</span></span>
-<span id="L505"><span class="lineNum">     505</span> <span class="tlaGNC">          38 :   static constexpr IdType gen_of(IdType id) { return id &gt;&gt; SLOT_BITS; }</span></span>
-<span id="L506"><span class="lineNum">     506</span> <span class="tlaGNC">         237 :   static constexpr IdType make_id(IdType s, IdType g) {</span></span>
-<span id="L507"><span class="lineNum">     507</span> <span class="tlaGNC">         237 :     return s | (g &lt;&lt; SLOT_BITS);</span></span>
+<span id="L504"><span class="lineNum">     504</span> <span class="tlaGNC">         845 :   static constexpr IdType slot_of(IdType id) { return id &amp; SLOT_MASK; }</span></span>
+<span id="L505"><span class="lineNum">     505</span> <span class="tlaGNC">         118 :   static constexpr IdType gen_of(IdType id) { return id &gt;&gt; SLOT_BITS; }</span></span>
+<span id="L506"><span class="lineNum">     506</span> <span class="tlaGNC">         542 :   static constexpr IdType make_id(IdType s, IdType g) {</span></span>
+<span id="L507"><span class="lineNum">     507</span> <span class="tlaGNC">         542 :     return s | (g &lt;&lt; SLOT_BITS);</span></span>
 <span id="L508"><span class="lineNum">     508</span>              :   }</span>
 <span id="L509"><span class="lineNum">     509</span>              : </span>
 <span id="L510"><span class="lineNum">     510</span>              : private:</span>

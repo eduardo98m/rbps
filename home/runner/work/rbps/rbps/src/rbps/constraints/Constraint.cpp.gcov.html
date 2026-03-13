@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-03-13 13:36:27</td>
+            <td class="headerValue">2026-03-13 15:54:07</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryLo">66.7&nbsp;%</td>
@@ -64,7 +64,7 @@
 <span id="L2"><span class="lineNum">       2</span>              : </span>
 <span id="L3"><span class="lineNum">       3</span>              : namespace rbps</span>
 <span id="L4"><span class="lineNum">       4</span>              : {</span>
-<span id="L5"><span class="lineNum">       5</span> <span class="tlaGNC tlaBgGNC">          81 :     void set_value(ConstraintCollection &amp;cc, size_t i, vec3 value)</span></span>
+<span id="L5"><span class="lineNum">       5</span> <span class="tlaGNC tlaBgGNC">          81 :     void set_value(ConstraintCollection &amp;cc, uint32_t i, vec3 value)</span></span>
 <span id="L6"><span class="lineNum">       6</span>              :     {</span>
 <span id="L7"><span class="lineNum">       7</span> <span class="tlaGNC">          81 :         cc.magnitude[i] = m3d::magnitude(value);</span></span>
 <span id="L8"><span class="lineNum">       8</span>              : </span>
@@ -73,13 +73,13 @@
 <span id="L11"><span class="lineNum">      11</span>              :                               : vec3{1.0, 0.0, 0.0}; // Needs to be a unit vector</span>
 <span id="L12"><span class="lineNum">      12</span> <span class="tlaGNC">          81 :     };</span></span>
 <span id="L13"><span class="lineNum">      13</span>              : </span>
-<span id="L14"><span class="lineNum">      14</span> <span class="tlaGNC">           6 :     scalar compute_delta_lambda(const ConstraintCollection &amp;cc, size_t i, scalar w_1, scalar w_2, scalar inverse_time_step)</span></span>
+<span id="L14"><span class="lineNum">      14</span> <span class="tlaGNC">           6 :     scalar compute_delta_lambda(const ConstraintCollection &amp;cc, uint32_t i, scalar w_1, scalar w_2, scalar inverse_time_step)</span></span>
 <span id="L15"><span class="lineNum">      15</span>              :     {</span>
 <span id="L16"><span class="lineNum">      16</span> <span class="tlaGNC">           6 :         scalar alpha_p = cc.compliance[i] * inverse_time_step * inverse_time_step;</span></span>
 <span id="L17"><span class="lineNum">      17</span> <span class="tlaGNC">           6 :         return (-cc.magnitude[i] - alpha_p * cc.lambda[i]) / (w_1 + w_2 + alpha_p);</span></span>
 <span id="L18"><span class="lineNum">      18</span>              :     };</span>
 <span id="L19"><span class="lineNum">      19</span>              : </span>
-<span id="L20"><span class="lineNum">      20</span> <span class="tlaGNC">           2 :     void compute_rotational_constraint_impulse(BodyCollection &amp;bc, ConstraintCollection &amp;cc, size_t i, scalar inverse_time_step)</span></span>
+<span id="L20"><span class="lineNum">      20</span> <span class="tlaGNC">           2 :     void compute_rotational_constraint_impulse(BodyCollection &amp;bc, ConstraintCollection &amp;cc, uint32_t i, scalar inverse_time_step)</span></span>
 <span id="L21"><span class="lineNum">      21</span>              :     {</span>
 <span id="L22"><span class="lineNum">      22</span>              :         scalar w_1, w_2;</span>
 <span id="L23"><span class="lineNum">      23</span> <span class="tlaGNC">           2 :         w_1 = get_rotational_generalized_inverse_mass(bc, cc.body_1[i], cc.direction[i]);</span></span>
@@ -92,7 +92,7 @@
 <span id="L30"><span class="lineNum">      30</span> <span class="tlaGNC">           2 :         apply_rotational_constraint_impulse(bc, cc.body_2[i], -cc.impulse[i]);</span></span>
 <span id="L31"><span class="lineNum">      31</span> <span class="tlaGNC">           2 :     };</span></span>
 <span id="L32"><span class="lineNum">      32</span>              : </span>
-<span id="L33"><span class="lineNum">      33</span> <span class="tlaGNC">           2 :     void compute_positional_constraint_impulse(BodyCollection &amp;bc, ConstraintCollection &amp;cc, size_t i, scalar inverse_time_step)</span></span>
+<span id="L33"><span class="lineNum">      33</span> <span class="tlaGNC">           2 :     void compute_positional_constraint_impulse(BodyCollection &amp;bc, ConstraintCollection &amp;cc, uint32_t i, scalar inverse_time_step)</span></span>
 <span id="L34"><span class="lineNum">      34</span>              :     {</span>
 <span id="L35"><span class="lineNum">      35</span> <span class="tlaGNC">           2 :         vec3 r_1_wc = m3d::rotate(bc.orientation[cc.body_1[i]], cc.r_1[i]);</span></span>
 <span id="L36"><span class="lineNum">      36</span> <span class="tlaGNC">           2 :         vec3 r_2_wc = m3d::rotate(bc.orientation[cc.body_2[i]], cc.r_2[i]);</span></span>
@@ -107,13 +107,13 @@
 <span id="L45"><span class="lineNum">      45</span> <span class="tlaGNC">           2 :         apply_positional_constraint_impulse(bc, cc.body_2[i], -cc.impulse[i], r_2_wc);</span></span>
 <span id="L46"><span class="lineNum">      46</span> <span class="tlaGNC">           2 :     };</span></span>
 <span id="L47"><span class="lineNum">      47</span>              : </span>
-<span id="L48"><span class="lineNum">      48</span> <span class="tlaGNC">           1 :     void reset_lagrange_multiplier(ConstraintCollection &amp;cc, size_t i)</span></span>
+<span id="L48"><span class="lineNum">      48</span> <span class="tlaGNC">           1 :     void reset_lagrange_multiplier(ConstraintCollection &amp;cc, uint32_t i)</span></span>
 <span id="L49"><span class="lineNum">      49</span>              :     {</span>
 <span id="L50"><span class="lineNum">      50</span> <span class="tlaGNC">           1 :         cc.lambda[i] = 0.0;</span></span>
 <span id="L51"><span class="lineNum">      51</span> <span class="tlaGNC">           1 :     };</span></span>
 <span id="L52"><span class="lineNum">      52</span>              : </span>
 <span id="L53"><span class="lineNum">      53</span> <span class="tlaUNC tlaBgUNC">           0 :     void set_constraint_positions(ConstraintCollection &amp;cc,</span></span>
-<span id="L54"><span class="lineNum">      54</span>              :                                   size_t i,</span>
+<span id="L54"><span class="lineNum">      54</span>              :                                   uint32_t i,</span>
 <span id="L55"><span class="lineNum">      55</span>              :                                   const vec3 &amp;r_1,</span>
 <span id="L56"><span class="lineNum">      56</span>              :                                   const vec3 &amp;r_2)</span>
 <span id="L57"><span class="lineNum">      57</span>              :     {</span>
@@ -121,12 +121,12 @@
 <span id="L59"><span class="lineNum">      59</span> <span class="tlaUNC">           0 :         cc.r_2[i] = r_2;</span></span>
 <span id="L60"><span class="lineNum">      60</span> <span class="tlaUNC">           0 :     }</span></span>
 <span id="L61"><span class="lineNum">      61</span>              : </span>
-<span id="L62"><span class="lineNum">      62</span> <span class="tlaUNC">           0 :     scalar get_lagrange_multiplier(const ConstraintCollection &amp;cc, size_t i)</span></span>
+<span id="L62"><span class="lineNum">      62</span> <span class="tlaUNC">           0 :     scalar get_lagrange_multiplier(const ConstraintCollection &amp;cc, uint32_t i)</span></span>
 <span id="L63"><span class="lineNum">      63</span>              :     {</span>
 <span id="L64"><span class="lineNum">      64</span> <span class="tlaUNC">           0 :         return cc.lambda[i];</span></span>
 <span id="L65"><span class="lineNum">      65</span>              :     };</span>
 <span id="L66"><span class="lineNum">      66</span>              : </span>
-<span id="L67"><span class="lineNum">      67</span> <span class="tlaUNC">           0 :     scalar compute_lagrange_multiplier(BodyCollection &amp;bc, ConstraintCollection &amp;cc, size_t i, scalar inverse_time_step)</span></span>
+<span id="L67"><span class="lineNum">      67</span> <span class="tlaUNC">           0 :     scalar compute_lagrange_multiplier(BodyCollection &amp;bc, ConstraintCollection &amp;cc, uint32_t i, scalar inverse_time_step)</span></span>
 <span id="L68"><span class="lineNum">      68</span>              :     {</span>
 <span id="L69"><span class="lineNum">      69</span> <span class="tlaUNC">           0 :         vec3 r_1_wc = m3d::rotate(bc.orientation[cc.body_1[i]], cc.r_1[i]);</span></span>
 <span id="L70"><span class="lineNum">      70</span> <span class="tlaUNC">           0 :         vec3 r_2_wc = m3d::rotate(bc.orientation[cc.body_2[i]], cc.r_2[i]);</span></span>
@@ -151,7 +151,7 @@
 <span id="L89"><span class="lineNum">      89</span> <span class="tlaGNC tlaBgGNC">           1 :     void solve_constraints(BodyCollection &amp;bc, ConstraintCollection &amp;cc, scalar inverse_time_step)</span></span>
 <span id="L90"><span class="lineNum">      90</span>              :     {</span>
 <span id="L91"><span class="lineNum">      91</span>              : </span>
-<span id="L92"><span class="lineNum">      92</span> <span class="tlaGNC">           3 :         for (size_t i = 0; i &lt; cc.n_constraints; ++i)</span></span>
+<span id="L92"><span class="lineNum">      92</span> <span class="tlaGNC">           3 :         for (uint32_t i = 0; i &lt; cc.count(); ++i)</span></span>
 <span id="L93"><span class="lineNum">      93</span>              :         {</span>
 <span id="L94"><span class="lineNum">      94</span> <span class="tlaGNC">           2 :             switch (cc.type[i])</span></span>
 <span id="L95"><span class="lineNum">      95</span>              :             {</span>
