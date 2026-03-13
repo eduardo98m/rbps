@@ -25,7 +25,7 @@ set(RBC_SOURCES
     src/rbc/gjk/EPA.cpp
 )
 
-add_library(rbc_lib ${RBC_SOURCES}) 
+add_library(rbc_lib ${RBC_SOURCES})
 target_include_directories(rbc_lib PUBLIC include)
 
 
@@ -40,6 +40,10 @@ enable_testing()
 # IVC Tests
 add_executable(test_ivc tests/ivc/test_ivc.cpp)
 add_test(NAME test_ivc COMMAND test_ivc)
+
+# Storage Tests
+add_executable(test_soa tests/storage/test_soa.cpp)
+add_test(NAME test_soa COMMAND test_soa)
 
 # Math Tests
 add_executable(test_math tests/math3d/test_math.cpp)
