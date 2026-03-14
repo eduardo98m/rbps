@@ -116,7 +116,7 @@ namespace rbps
     //  Step 3 — Narrow phase filter + dispatch
     // =========================================================================
 
-    static void run_narrow_phase(const rbc::BroadPhaseState    &bp,
+    void run_narrow_phase(const rbc::BroadPhaseState    &bp,
                                  const rbps::ColliderCollection  &cc,
                                  const BodyCollection           &bc,
                                  ContactList                    &out)

@@ -162,3 +162,7 @@ add_test(NAME test_jointAPI COMMAND test_jointAPI)
 add_executable(test_colliderAPI tests/rbps/API/test_colliderAPI.cpp)
 target_link_libraries(test_colliderAPI PRIVATE rbps_lib)
 add_test(NAME test_colliderAPI COMMAND test_colliderAPI)
+
+add_executable(test_world tests/rbps/API/test_world.cpp)
+target_link_libraries(test_world PRIVATE rbps_lib)
+add_test(NAME test_world COMMAND test_world)

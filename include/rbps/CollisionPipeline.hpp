@@ -172,7 +172,7 @@ namespace rbps
     //  local-space lever arms and zero lambdas.  Does NOT fill world-space
     //  substep data (that is done by refresh_contacts each substep).
     // -------------------------------------------------------------------------
-    static void run_narrow_phase(const rbc::BroadPhaseState    &bp,
+    void run_narrow_phase(const rbc::BroadPhaseState    &bp,
                                  const rbps::ColliderCollection  &cc,
                                  const BodyCollection           &bc,
                                  ContactList                    &out);

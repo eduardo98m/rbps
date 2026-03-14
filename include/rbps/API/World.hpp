@@ -4,7 +4,7 @@
 #include "rbps/API/JointAPI.hpp"
 #include "rbps/API/ConstraintAPI.hpp"
 #include "rbps/CollisionPipeline.hpp"   // ContactList, run_narrow_phase, etc.
-#include "rbps/constraints/Contact.hpp"             // solve_contacts_*
+#include "rbps/constraints/Contact.hpp" // solve_contacts_*
 #include "rbc/BroadPhase.hpp"
 
 // ============================================================================
@@ -12,22 +12,22 @@
 //
 //  Step loop structure (per frame):
 //
-//    ┌─ frame ──────────────────────────────────────────────────────────────┐
+//    ┌─ frame ─────────────────────────────────────────────────────────────┐
 //    │  1. update_broad_phase_aabbs()   — push swept AABBs into SAP        │
 //    │  2. broad_phase_update()         — SAP sort+sweep → bp.pairs        │
-//    │  3. contacts.clear()             — drop last frame's contacts        │
+//    │  3. contacts.clear()             — drop last frame's contacts       │
 //    │  4. run_narrow_phase()           — GJK/EPA dispatch → ContactList   │
-//    │                                                                      │
+//    │                                                                     │
 //    │  ┌─ substep × N ──────────────────────────────────────────────────┐ │
 //    │  │  5.  update_position_and_orientation()                         │ │
 //    │  │  6a. solve_contacts_position_level()   ─┐                      │ │
 //    │  │  6b. compute_joint_errors()             ├─ solve_positions()   │ │
 //    │  │  6c. solve_constraints()               ─┘                      │ │
-//    │  │  7.  update_velocities()                                        │ │
+//    │  │  7.  update_velocities()                                       │ │
 //    │  │  8a. solve_contacts_velocity_level()  ─┐                       │ │
 //    │  │  8b. apply_joint_damping()             ├─ solve_velocities()   │ │
 //    │  └────────────────────────────────────────┘                       │ │
-//    └──────────────────────────────────────────────────────────────────────┘
+//    └─────────────────────────────────────────────────────────────────────┘
 //
 //  WHY broad+narrow outside the substep loop?
 //    Running narrow phase once per frame and reusing the same contact set
@@ -44,14 +44,14 @@ namespace rbps
 {
     struct World
     {
-        scalar   timestep = 1.0 / 60.0;
-        int      substeps = 20;
+        scalar timestep = 1.0 / 60.0;
+        int substeps = 20;
 
-        BodyCollection       bodies;
+        BodyCollection bodies;
         ConstraintCollection constraints;
-        JointCollection      joints;
-        ContactList          contacts;       // unified pipeline output + solver state
-        ColliderCollection   colliders;
+        JointCollection joints;
+        ContactList contacts; // unified pipeline output + solver state
+        ColliderCollection colliders;
         rbc::BroadPhaseState broad_phase_state;
 
         // -----------------------------------------------------------------
@@ -59,7 +59,8 @@ namespace rbps
 
         World(scalar timestep_, int substeps_)
             : timestep(timestep_), substeps(substeps_)
-        {}
+        {
+        }
 
         // -----------------------------------------------------------------
         //  Creation helpers
@@ -74,10 +75,10 @@ namespace rbps
         {
             // Build the initial world transform from the owning body so the
             // broad phase AABB is correct from the first frame.
-            const uint32_t    body_slot = bodies.index_of(params.body_id);
-            const m3d::vec3   body_pos  = bodies.position   [body_slot];
-            const m3d::quat   body_rot  = bodies.orientation [body_slot];
-            const m3d::tf     body_tf   {body_pos, body_rot};
+            const uint32_t body_slot = bodies.index_of(params.body_id);
+            const m3d::vec3 body_pos = bodies.position[body_slot];
+            const m3d::quat body_rot = bodies.orientation[body_slot];
+            const m3d::tf body_tf{body_pos, body_rot};
 
             return rbps::create_collider(colliders, broad_phase_state, params, body_tf);
         }
@@ -126,7 +127,7 @@ namespace rbps
         // -----------------------------------------------------------------
         void step()
         {
-            const scalar h     = timestep / substeps;
+            const scalar h = timestep / substeps;
             const scalar inv_h = 1.0 / h;
 
             // ── FRAME-LEVEL: broad phase + narrow phase (once per frame) ──
@@ -141,13 +142,12 @@ namespace rbps
             // 3. Discard last frame's contacts (resets lambdas too).
             contacts.clear();
             contacts.reserve(broad_phase_state.pairs.size() * 2); // rough pre-alloc
-
-            // 4. Narrow phase: filter pairs, run GJK/EPA, emit ContactList.
-            run_narrow_phase(broad_phase_state, colliders, bodies, contacts);
+            // 4. Narrow phase dispatch → contacts
+            rbps::run_narrow_phase(broad_phase_state, colliders, bodies, contacts);
 
             // ── SUBSTEP LOOP ──────────────────────────────────────────────
             for (int i = 0; i < substeps; ++i)
-            {
+            {   
                 update_position_and_orientation(bodies, h);
                 solve_positions(inv_h, h);
                 update_velocities(bodies, inv_h);
