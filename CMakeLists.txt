@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.14)
 project(rbps)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -33,6 +33,109 @@ add_library(rbps_lib ${RBPS_SOURCES})
 target_include_directories(rbps_lib PUBLIC include)
 
 target_link_libraries(rbps_lib PUBLIC rbc_lib)
+
+#----------------------------------------------------------
+
+# ============================================================================
+#  Visualizer optional block — append to your existing CMakeLists.txt
+#
+#  Usage:
+#    cmake -DRBPS_BUILD_VISR=ON ..   → builds the visr target + demo app
+#    cmake ..                         → visr not built, zero overhead
+#
+#  Dependencies (managed here, isolated from your test build):
+#    raylib   5.0        — prefer system install, FetchContent fallback
+#    imgui    v1.91.8    — always FetchContent (no system package standard)
+#    rlImGui  pinned SHA — FetchContent (small bridging lib)
+#
+#  Why FetchContent over submodules?
+#    • Pinned to an exact git tag or commit SHA — fully reproducible.
+#    • No .gitmodules to maintain; devs don't need 'git submodule update'.
+#    • CMake handles the dependency graph; targets are available immediately.
+#    • To update a dep: change the GIT_TAG line and re-run cmake.
+# ============================================================================
+
+
+cmake_minimum_required(VERSION 3.14)
+ 
+option(RBPS_BUILD_VISR "Build the rbps visualizer (requires Raylib + ImGui)" OFF)
+ 
+if(NOT RBPS_BUILD_VISR)
+    return()
+endif()
+ 
+include(FetchContent)
+ 
+# ── 1. Raylib ─────────────────────────────────────────────────────────────────
+find_package(raylib 5.0 QUIET)
+ 
+if(NOT raylib_FOUND)
+    message(STATUS "[visr] raylib not found, fetching 5.5...")
+    fetchcontent_declare(raylib
+        GIT_REPOSITORY https://github.com/raysan5/raylib.git
+        GIT_TAG        5.5
+        GIT_SHALLOW    TRUE
+    )
+    set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(BUILD_GAMES    OFF CACHE BOOL "" FORCE)
+    fetchcontent_makeavailable(raylib)
+else()
+    message(STATUS "[visr] using system raylib ${raylib_VERSION}")
+endif()
+ 
+# ── 2. Dear ImGui ─────────────────────────────────────────────────────────────
+#  Must be >= 1.92.1 — rlImGui uses the new Font API introduced there.
+#  Pin to v1.92.6 (latest as of 2025-03).
+fetchcontent_declare(imgui
+    GIT_REPOSITORY https://github.com/ocornut/imgui.git
+    GIT_TAG        v1.92.6
+    GIT_SHALLOW    TRUE
+)
+fetchcontent_makeavailable(imgui)
+ 
+add_library(imgui_rbps STATIC
+    ${imgui_SOURCE_DIR}/imgui.cpp
+    ${imgui_SOURCE_DIR}/imgui_draw.cpp
+    ${imgui_SOURCE_DIR}/imgui_tables.cpp
+    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+)
+target_include_directories(imgui_rbps PUBLIC ${imgui_SOURCE_DIR})
+ 
+# ── 3. rlImGui ────────────────────────────────────────────────────────────────
+#  rlImGui has NO release tags — we pin to a commit SHA.
+#  4d8a618 = latest main as of 2025-03, compatible with ImGui >= 1.92.1.
+#  To update: grab a new SHA from https://github.com/raylib-extras/rlImGui/commits/main
+fetchcontent_declare(rlimgui
+    GIT_REPOSITORY https://github.com/raylib-extras/rlImGui.git
+    GIT_TAG        4d8a618
+    GIT_SHALLOW    FALSE   # shallow clone cannot be used with a commit SHA
+)
+fetchcontent_makeavailable(rlimgui)
+ 
+add_library(rlimgui_rbps STATIC
+    ${rlimgui_SOURCE_DIR}/rlImGui.cpp
+)
+target_include_directories(rlimgui_rbps PUBLIC ${rlimgui_SOURCE_DIR})
+target_link_libraries(rlimgui_rbps PUBLIC raylib imgui_rbps)
+ 
+# ── 4. visr (header-only interface target) ────────────────────────────────────
+add_library(visr_lib INTERFACE)
+target_include_directories(visr_lib INTERFACE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(visr_lib INTERFACE
+    rbps_lib
+    raylib
+    imgui_rbps
+    rlimgui_rbps
+)
+
+# ── 5. Demo application ───────────────────────────────────────────────────────
+#Replace src/visr_demo/main.cpp with your own scene setup.
+add_executable(visr_demo src/visr_demo/main.cpp)
+target_link_libraries(visr_demo PRIVATE visr_lib)
+
+message(STATUS "[visr] visualizer targets built: visr_lib, visr_demo")
+
+#----------------------------------------------------------
 
 # Enable Testing
 enable_testing()
