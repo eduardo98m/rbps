@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-03-14 03:47:01</td>
+            <td class="headerValue">2026-03-14 04:59:24</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -79,7 +79,7 @@
 <span id="L17"><span class="lineNum">      17</span>              :                                   m3d::scalar               dt,</span>
 <span id="L18"><span class="lineNum">      18</span>              :                                   bool                      use_velocity_expansion)</span>
 <span id="L19"><span class="lineNum">      19</span>              :     {</span>
-<span id="L20"><span class="lineNum">      20</span> <span class="tlaGNC">          25 :         for (size_t i = 0; i &lt; cc.n_colliders; ++i)</span></span>
+<span id="L20"><span class="lineNum">      20</span> <span class="tlaGNC">          25 :         for (size_t i = 0; i &lt; cc.count(); ++i)</span></span>
 <span id="L21"><span class="lineNum">      21</span>              :         {</span>
 <span id="L22"><span class="lineNum">      22</span>              :             // ── STATIC BODY OPTIMISATION ──────────────────────────────────────</span>
 <span id="L23"><span class="lineNum">      23</span>              :             // Static bodies never move. Their AABB was inserted at creation time</span>
@@ -113,7 +113,7 @@
 <span id="L51"><span class="lineNum">      51</span>              :         // The pattern is:</span>
 <span id="L52"><span class="lineNum">      52</span>              :         //</span>
 <span id="L53"><span class="lineNum">      53</span>              :         //   for (auto &amp;plane : cc.static_planes)</span>
-<span id="L54"><span class="lineNum">      54</span>              :         //       for (size_t i = 0; i &lt; cc.n_colliders; ++i)</span>
+<span id="L54"><span class="lineNum">      54</span>              :         //       for (size_t i = 0; i &lt; cc.count(); ++i)</span>
 <span id="L55"><span class="lineNum">      55</span>              :         //           if (!cc.is_static[i] &amp;&amp; aabb_vs_plane(cc tight_aabb[i], plane))</span>
 <span id="L56"><span class="lineNum">      56</span>              :         //               emit_pair_for_narrow_phase(i, plane);</span>
 <span id="L57"><span class="lineNum">      57</span>              :         //</span>
@@ -176,8 +176,8 @@
 <span id="L114"><span class="lineNum">     114</span>              :         //</span>
 <span id="L115"><span class="lineNum">     115</span>              :         // OPTIMISATION NOTE: in a large scene you can cache this map and update</span>
 <span id="L116"><span class="lineNum">     116</span>              :         // it only when colliders are added or removed.</span>
-<span id="L117"><span class="lineNum">     117</span> <span class="tlaGNC">           9 :         std::vector&lt;size_t&gt; uid_to_slot(cc.n_colliders);</span></span>
-<span id="L118"><span class="lineNum">     118</span> <span class="tlaGNC">          25 :         for (size_t i = 0; i &lt; cc.n_colliders; ++i)</span></span>
+<span id="L117"><span class="lineNum">     117</span> <span class="tlaGNC">           9 :         std::vector&lt;size_t&gt; uid_to_slot(cc.count());</span></span>
+<span id="L118"><span class="lineNum">     118</span> <span class="tlaGNC">          25 :         for (size_t i = 0; i &lt; cc.count(); ++i)</span></span>
 <span id="L119"><span class="lineNum">     119</span> <span class="tlaGNC">          16 :             uid_to_slot[i] = i; // user_id == slot for now (see collider_add)</span></span>
 <span id="L120"><span class="lineNum">     120</span>              : </span>
 <span id="L121"><span class="lineNum">     121</span> <span class="tlaGNC">          16 :         for (const rbc::BroadPhasePair &amp;pair : bp.pairs)</span></span>
@@ -188,7 +188,7 @@
 <span id="L126"><span class="lineNum">     126</span> <span class="tlaGNC">           7 :             const size_t ca = pair.id_a;</span></span>
 <span id="L127"><span class="lineNum">     127</span> <span class="tlaGNC">           7 :             const size_t cb = pair.id_b;</span></span>
 <span id="L128"><span class="lineNum">     128</span>              : </span>
-<span id="L129"><span class="lineNum">     129</span> <span class="tlaGNC">           7 :             if (ca &gt;= cc.n_colliders || cb &gt;= cc.n_colliders)</span></span>
+<span id="L129"><span class="lineNum">     129</span> <span class="tlaGNC">           7 :             if (ca &gt;= cc.count() || cb &gt;= cc.count())</span></span>
 <span id="L130"><span class="lineNum">     130</span> <span class="tlaGNC">           2 :                 continue;</span></span>
 <span id="L131"><span class="lineNum">     131</span>              : </span>
 <span id="L132"><span class="lineNum">     132</span> <span class="tlaGNC">           7 :             const uint32_t ba = cc.body_id[ca];</span></span>
