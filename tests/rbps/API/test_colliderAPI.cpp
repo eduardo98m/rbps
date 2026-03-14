@@ -10,7 +10,7 @@
 // These tests verify the ColliderAPI: add, remove, handle lifecycle,
 // world transform computation, and broad phase synchronisation.
 //
-// NOTE: collider_add() currently has an identical ternary for is_static —
+// NOTE: create_collider() currently has an identical ternary for is_static —
 //       both branches call broad_phase_insert with the same arguments.
 //       A TODO comment marks the spot; test_static_flag_stored verifies
 //       the field is at least stored correctly in the meantime.
@@ -46,7 +46,7 @@ static m3d::tf tf_at(float x, float y, float z)
     return tf;
 }
 
-// ── collider_add ──────────────────────────────────────────────────────────────
+// ── create_collider ──────────────────────────────────────────────────────────────
 
 TEST(add_increases_collider_count)
 {
@@ -60,10 +60,10 @@ TEST(add_increases_collider_count)
     p.shape   = rbc::Sphere(1.0);
     p.body_id = 0;
 
-    rbps::collider_add(cc, bp, p, identity_tf());
+    rbps::create_collider(cc, bp, p, identity_tf());
     ASSERT_EQ(cc.count(), 1u);
 
-    rbps::collider_add(cc, bp, p, identity_tf());
+    rbps::create_collider(cc, bp, p, identity_tf());
     ASSERT_EQ(cc.count(), 2u);
 }
 
@@ -76,7 +76,7 @@ TEST(add_stores_shape_correctly)
     rbps::ColliderParams p;
     p.shape = rbc::Sphere(2.5);
 
-    u_int32_t id = rbps::collider_add(cc, bp, p, identity_tf());
+    u_int32_t id = rbps::create_collider(cc, bp, p, identity_tf());
     size_t  idx = cc.index_of(id);
 
     ASSERT_EQ(cc.shape[idx].type, rbc::ShapeType::Sphere);
@@ -95,7 +95,7 @@ TEST(add_stores_material_properties)
     p.static_friction  = 0.4;
     p.dynamic_friction = 0.3;
 
-    u_int32_t id  = rbps::collider_add(cc, bp, p, identity_tf());
+    u_int32_t id  = rbps::create_collider(cc, bp, p, identity_tf());
     size_t  idx = cc.index_of(id);
 
     ASSERT_NEAR(cc.restitution[idx],      0.8, 1e-6);
@@ -113,7 +113,7 @@ TEST(add_stores_body_id)
     p.shape   = rbc::Sphere(1.0);
     p.body_id = 42u;
 
-    u_int32_t id  = rbps::collider_add(cc, bp, p, identity_tf());
+    u_int32_t id  = rbps::create_collider(cc, bp, p, identity_tf());
     size_t  idx = cc.index_of(id);
 
     ASSERT_EQ(cc.body_id[idx], 42u);
@@ -129,7 +129,7 @@ TEST(add_stores_local_offset)
     p.shape     = rbc::Sphere(1.0);
     p.local_pos = m3d::vec3(1, 2, 3);
 
-    u_int32_t id  = rbps::collider_add(cc, bp, p, identity_tf());
+    u_int32_t id  = rbps::create_collider(cc, bp, p, identity_tf());
     size_t  idx = cc.index_of(id);
 
     ASSERT_NEAR(cc.local_pos[idx].x, 1.0, 1e-6);
@@ -151,8 +151,8 @@ TEST(add_static_flag_stored)
     p_sta.shape     = rbc::Sphere(1.0);
     p_sta.is_static = true;
 
-    u_int32_t dyn_id = rbps::collider_add(cc, bp, p_dyn, identity_tf());
-    u_int32_t sta_id = rbps::collider_add(cc, bp, p_sta, identity_tf());
+    u_int32_t dyn_id = rbps::create_collider(cc, bp, p_dyn, identity_tf());
+    u_int32_t sta_id = rbps::create_collider(cc, bp, p_sta, identity_tf());
 
     ASSERT_FALSE(cc.is_static[cc.index_of(dyn_id)]);
     ASSERT_TRUE (cc.is_static[cc.index_of(sta_id)]);
@@ -170,9 +170,9 @@ TEST(add_registers_aabb_in_broad_phase)
     p.shape = rbc::Sphere(1.0);
 
     ASSERT_EQ(bp.endpoints.size(), 0u);
-    rbps::collider_add(cc, bp, p, identity_tf());
+    rbps::create_collider(cc, bp, p, identity_tf());
     ASSERT_EQ(bp.endpoints.size(), 2u); // min + max
-    rbps::collider_add(cc, bp, p, identity_tf());
+    rbps::create_collider(cc, bp, p, identity_tf());
     ASSERT_EQ(bp.endpoints.size(), 4u);
 }
 
@@ -187,7 +187,7 @@ TEST(remove_decreases_collider_count)
     rbps::ColliderParams p;
     p.shape = rbc::Sphere(1.0);
 
-    u_int32_t id = rbps::collider_add(cc, bp, p, identity_tf());
+    u_int32_t id = rbps::create_collider(cc, bp, p, identity_tf());
     ASSERT_EQ(cc.count(), 1u);
 
     rbps::collider_remove(cc, bp, id);
@@ -203,7 +203,7 @@ TEST(remove_unregisters_from_broad_phase)
     rbps::ColliderParams p;
     p.shape = rbc::Sphere(1.0);
 
-    u_int32_t id = rbps::collider_add(cc, bp, p, identity_tf());
+    u_int32_t id = rbps::create_collider(cc, bp, p, identity_tf());
     ASSERT_EQ(bp.endpoints.size(), 2u);
 
     rbps::collider_remove(cc, bp, id);
@@ -220,9 +220,9 @@ TEST(remove_middle_leaves_others_intact)
     rbps::ColliderParams p;
     p.shape = rbc::Sphere(1.0);
 
-    u_int32_t id_a = rbps::collider_add(cc, bp, p, tf_at(-5, 0, 0));
-    u_int32_t id_b = rbps::collider_add(cc, bp, p, tf_at( 0, 0, 0));
-    u_int32_t id_c = rbps::collider_add(cc, bp, p, tf_at( 5, 0, 0));
+    u_int32_t id_a = rbps::create_collider(cc, bp, p, tf_at(-5, 0, 0));
+    u_int32_t id_b = rbps::create_collider(cc, bp, p, tf_at( 0, 0, 0));
+    u_int32_t id_c = rbps::create_collider(cc, bp, p, tf_at( 5, 0, 0));
 
     rbps::collider_remove(cc, bp, id_b);
 
@@ -247,12 +247,12 @@ TEST(remove_then_add_reuses_bp_slot)
     rbps::ColliderParams p;
     p.shape = rbc::Sphere(1.0);
 
-    u_int32_t first = rbps::collider_add(cc, bp, p, identity_tf());
+    u_int32_t first = rbps::create_collider(cc, bp, p, identity_tf());
     rbc::BPHandle first_bph = cc.bp_handle[cc.index_of(first)];
 
     rbps::collider_remove(cc, bp, first);
 
-    u_int32_t second = rbps::collider_add(cc, bp, p, identity_tf());
+    u_int32_t second = rbps::create_collider(cc, bp, p, identity_tf());
     rbc::BPHandle second_bph = cc.bp_handle[cc.index_of(second)];
 
     // BPHandle should be recycled (same slot)
@@ -273,7 +273,7 @@ TEST(world_tf_no_local_offset)
     p.local_pos = m3d::vec3(0, 0, 0);
     p.local_rot = m3d::quat(1, 0, 0, 0);
 
-    u_int32_t id  = rbps::collider_add(cc, bp, p, identity_tf());
+    u_int32_t id  = rbps::create_collider(cc, bp, p, identity_tf());
     size_t  idx = cc.index_of(id);
 
     m3d::tf world = rbps::collider_world_tf(cc, idx,
@@ -297,7 +297,7 @@ TEST(world_tf_with_local_offset)
     p.local_pos = m3d::vec3(0, 2, 0);
     p.local_rot = m3d::quat(1, 0, 0, 0);
 
-    u_int32_t id  = rbps::collider_add(cc, bp, p, identity_tf());
+    u_int32_t id  = rbps::create_collider(cc, bp, p, identity_tf());
     size_t  idx = cc.index_of(id);
 
     m3d::tf world = rbps::collider_world_tf(cc, idx,

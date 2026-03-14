@@ -53,7 +53,7 @@ static void add_sphere_collider(rbps::ColliderCollection &cc,
     m3d::tf init_tf = tf_at(bc.position[body_idx].x,
                              bc.position[body_idx].y,
                              bc.position[body_idx].z);
-    rbps::collider_add(cc, bp, p, init_tf);
+    rbps::create_collider(cc, bp, p, init_tf);
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -142,9 +142,9 @@ TEST(pipeline_same_body_two_colliders_no_self_contact)
     p.shape     = rbc::Sphere(1.0);
     p.body_id   = b0;
     p.local_pos = m3d::vec3(-0.3f, 0, 0);
-    rbps::collider_add(cc, bp, p, tf_at(0, 0, 0));
+    rbps::create_collider(cc, bp, p, tf_at(0, 0, 0));
     p.local_pos = m3d::vec3( 0.3f, 0, 0);
-    rbps::collider_add(cc, bp, p, tf_at(0, 0, 0));
+    rbps::create_collider(cc, bp, p, tf_at(0, 0, 0));
     rbps::ContactList contacts;
     rbps::CollisionPipelineConfig cfg;
     cfg.use_velocity_expansion = false;
@@ -167,14 +167,14 @@ TEST(pipeline_contact_material_mixing)
     p0.restitution      = 0.8;
     p0.static_friction  = 0.6;
     p0.dynamic_friction = 0.4;
-    rbps::collider_add(cc, bp, p0, tf_at(0, 0, 0));
+    rbps::create_collider(cc, bp, p0, tf_at(0, 0, 0));
     rbps::ColliderParams p1;
     p1.shape            = rbc::Sphere(1.0);
     p1.body_id          = b1;
     p1.restitution      = 0.4;
     p1.static_friction  = 0.2;
     p1.dynamic_friction = 0.2;
-    rbps::collider_add(cc, bp, p1, tf_at(1.5f, 0, 0));
+    rbps::create_collider(cc, bp, p1, tf_at(1.5f, 0, 0));
     rbps::ContactList contacts;
     rbps::CollisionPipelineConfig cfg;
     cfg.use_velocity_expansion = false;

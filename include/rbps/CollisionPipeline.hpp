@@ -34,7 +34,7 @@ namespace rbps
     // -----------------------------------------------------------------------
     struct ContactList
     {
-        size_t n_contacts = 0;
+        uint32_t n_contacts = 0;
 
         // Which bodies are involved
         std::vector<uint32_t> body_a;
@@ -135,6 +135,12 @@ namespace rbps
                                 m3d::scalar dt,
                                 ContactList &contacts_out,
                                 const CollisionPipelineConfig &cfg = {});
+    
+    
+    static void run_narrow_phase(const rbc::BroadPhaseState    &bp,
+                                 const rbps::ColliderCollection  &cc,
+                                 const BodyCollection           &bc,
+                                 ContactList                    &out);
 
     // -----------------------------------------------------------------------
     //  Graph coloring — independent contact groups for parallel solving.
@@ -148,7 +154,7 @@ namespace rbps
     //
     //  Call this after run_collision_pipeline().
     // -----------------------------------------------------------------------
-    std::vector<std::vector<size_t>>
+    std::vector<std::vector<u_int32_t>>
     get_collision_groups(const ContactList &contacts,
                          const BodyCollection &bc);
 

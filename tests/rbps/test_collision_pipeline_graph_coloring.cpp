@@ -42,16 +42,16 @@ static uint32_t add_static(rbps::BodyCollection &bc, m3d::vec3 pos = m3d::vec3(0
 // share a DYNAMIC body.
 static void assert_groups_independent(const rbps::ContactList  &contacts,
                                       const rbps::BodyCollection &bc,
-                                      const std::vector<std::vector<size_t>> &groups)
+                                      const std::vector<std::vector<u_int32_t>> &groups)
 {
     for (const auto &group : groups)
     {
-        for (size_t i = 0; i < group.size(); ++i)
+        for (u_int32_t i = 0; i < group.size(); ++i)
         {
-            for (size_t j = i + 1; j < group.size(); ++j)
+            for (u_int32_t j = i + 1; j < group.size(); ++j)
             {
-                const size_t ci = group[i];
-                const size_t cj = group[j];
+                const u_int32_t ci = group[i];
+                const u_int32_t cj = group[j];
 
                 // Only dynamic bodies matter — static ones don't create races
                 auto is_dyn = [&](uint32_t bid) {
@@ -73,14 +73,14 @@ static void assert_groups_independent(const rbps::ContactList  &contacts,
 }
 
 // Verify every contact index appears in exactly one group.
-static void assert_groups_complete(size_t n_contacts,
-                                   const std::vector<std::vector<size_t>> &groups)
+static void assert_groups_complete(u_int32_t n_contacts,
+                                   const std::vector<std::vector<u_int32_t>> &groups)
 {
-    std::vector<size_t> seen(n_contacts, 0);
+    std::vector<u_int32_t> seen(n_contacts, 0);
     for (const auto &g : groups)
-        for (size_t ci : g)
+        for (u_int32_t ci : g)
             seen[ci]++;
-    for (size_t ci = 0; ci < n_contacts; ++ci)
+    for (u_int32_t ci = 0; ci < n_contacts; ++ci)
         ASSERT_EQ(seen[ci], 1u);
 }
 
@@ -333,7 +333,7 @@ TEST(groups_sorted_by_size_descending)
     auto groups = rbps::get_collision_groups(contacts, bc);
 
     assert_groups_complete(contacts.n_contacts, groups);
-    for (size_t i = 1; i < groups.size(); ++i)
+    for (u_int32_t i = 1; i < groups.size(); ++i)
         ASSERT_TRUE(groups[i - 1].size() >= groups[i].size());
 }
 

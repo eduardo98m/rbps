@@ -17,7 +17,7 @@ namespace rbps
                                   m3d::scalar               dt,
                                   bool                      use_velocity_expansion)
     {
-        for (size_t i = 0; i < cc.count(); ++i)
+        for (u_int32_t i = 0; i < cc.count(); ++i)
         {
             // ── STATIC BODY OPTIMISATION ──────────────────────────────────────
             // Static bodies never move. Their AABB was inserted at creation time
@@ -51,7 +51,7 @@ namespace rbps
         // The pattern is:
         //
         //   for (auto &plane : cc.static_planes)
-        //       for (size_t i = 0; i < cc.count(); ++i)
+        //       for (u_int32_t i = 0; i < cc.count(); ++i)
         //           if (!cc.is_static[i] && aabb_vs_plane(cc tight_aabb[i], plane))
         //               emit_pair_for_narrow_phase(i, plane);
         //
@@ -114,8 +114,8 @@ namespace rbps
         //
         // OPTIMISATION NOTE: in a large scene you can cache this map and update
         // it only when colliders are added or removed.
-        std::vector<size_t> uid_to_slot(cc.count());
-        for (size_t i = 0; i < cc.count(); ++i)
+        std::vector<u_int32_t> uid_to_slot(cc.count());
+        for (u_int32_t i = 0; i < cc.count(); ++i)
             uid_to_slot[i] = i; // user_id == slot for now (see collider_add)
 
         for (const rbc::BroadPhasePair &pair : bp.pairs)
@@ -123,8 +123,8 @@ namespace rbps
             // Recover collider slot from user_id.
             // user_id was set to ivc::ID.value in collider_add(); since we
             // use ivc which compacts slots, slot == user_id here.
-            const size_t ca = pair.id_a;
-            const size_t cb = pair.id_b;
+            const u_int32_t ca = pair.id_a;
+            const u_int32_t cb = pair.id_b;
 
             if (ca >= cc.count() || cb >= cc.count())
                 continue;
@@ -218,21 +218,21 @@ namespace rbps
     //  can use work-stealing effectively.
     // =========================================================================
 
-    std::vector<std::vector<size_t>>
+    std::vector<std::vector<u_int32_t>>
     get_collision_groups(const ContactList   &contacts,
                          const BodyCollection &bc)
     {
         if (contacts.n_contacts == 0)
             return {};
 
-        const size_t n = contacts.n_contacts;
+        const u_int32_t n = contacts.n_contacts;
 
         // Build adjacency: dynamic body_id → list of contact indices.
         // Static bodies are intentionally excluded: they create no edges.
-        std::unordered_map<uint32_t, std::vector<size_t>> body_to_contacts;
+        std::unordered_map<uint32_t, std::vector<u_int32_t>> body_to_contacts;
         body_to_contacts.reserve(n * 2);
 
-        for (size_t i = 0; i < n; ++i)
+        for (u_int32_t i = 0; i < n; ++i)
         {
             if (bc.type[contacts.body_a[i]] == DYNAMIC)
                 body_to_contacts[contacts.body_a[i]].push_back(i);
@@ -240,15 +240,15 @@ namespace rbps
                 body_to_contacts[contacts.body_b[i]].push_back(i);
         }
 
-        std::vector<size_t> color(n, SIZE_MAX);
+        std::vector<u_int32_t> color(n, UINT32_MAX);
 
         // Sort contacts: highest dynamic-body degree first (better greedy result).
         // FIX: original code had body_b[b] twice instead of body_a[b] + body_b[b].
-        std::vector<size_t> order(n);
+        std::vector<u_int32_t> order(n);
         std::iota(order.begin(), order.end(), 0);
-        std::sort(order.begin(), order.end(), [&](size_t a, size_t b) {
-            auto deg = [&](size_t ci) {
-                size_t d = 0;
+        std::sort(order.begin(), order.end(), [&](u_int32_t a, u_int32_t b) {
+            auto deg = [&](u_int32_t ci) {
+                u_int32_t d = 0;
                 auto it_a = body_to_contacts.find(contacts.body_a[ci]);
                 auto it_b = body_to_contacts.find(contacts.body_b[ci]);
                 if (it_a != body_to_contacts.end()) d += it_a->second.size();
@@ -259,9 +259,9 @@ namespace rbps
         });
 
         // Greedy coloring — only propagate edges through dynamic bodies.
-        for (size_t ci : order)
+        for (u_int32_t ci : order)
         {
-            std::unordered_set<size_t> used_colors;
+            std::unordered_set<u_int32_t> used_colors;
 
             for (uint32_t bid : {contacts.body_a[ci], contacts.body_b[ci]})
             {
@@ -269,24 +269,24 @@ namespace rbps
                 if (it == body_to_contacts.end())
                     continue;
 
-                for (size_t neighbor : it->second)
+                for (u_int32_t neighbor : it->second)
                 {
                     if (neighbor != ci && color[neighbor] != SIZE_MAX)
                         used_colors.insert(color[neighbor]);
                 }
             }
 
-            size_t c = 0;
+            u_int32_t c = 0;
             while (used_colors.count(c)) ++c;
             color[ci] = c;
         }
 
         // Collect groups by color, sort descending by size.
-        std::unordered_map<size_t, std::vector<size_t>> color_groups;
-        for (size_t i = 0; i < n; ++i)
+        std::unordered_map<u_int32_t, std::vector<u_int32_t>> color_groups;
+        for (u_int32_t i = 0; i < n; ++i)
             color_groups[color[i]].push_back(i);
 
-        std::vector<std::vector<size_t>> groups;
+        std::vector<std::vector<u_int32_t>> groups;
         groups.reserve(color_groups.size());
         for (auto &[_, g] : color_groups)
             groups.push_back(std::move(g));

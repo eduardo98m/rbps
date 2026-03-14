@@ -24,18 +24,18 @@ namespace rbps
     // -----------------------------------------------------------------------
 
     /// Register a collider and insert it into the broad phase.
-    /// Returns a stable ivc::ID (never changes even after other removes).
-    inline u_int32_t collider_add(ColliderCollection &cc,
+    /// Returns a stable uint32_t ID for referencing this collider later (e.g. to remove it).
+    inline u_int32_t create_collider(ColliderCollection &cc,
                                 rbc::BroadPhaseState &bp,
                                 const ColliderParams &p,
-                                const m3d::tf &initial_world_tf)
+                                const m3d::tf &body_world_tf)
     {
         u_int32_t id = cc.add();
         uint32_t i = cc.index_of(id);
 
         // Compute the world-space transform for the initial AABB
-        m3d::vec3 world_pos = initial_world_tf.pos + m3d::rotate(initial_world_tf.rot, p.local_pos);
-        m3d::quat world_rot = initial_world_tf.rot * p.local_rot;
+        m3d::vec3 world_pos = body_world_tf.pos + m3d::rotate(body_world_tf.rot, p.local_pos);
+        m3d::quat world_rot = body_world_tf.rot * p.local_rot;
         m3d::tf world_tf{world_pos, world_rot};
 
         rbc::AABB tight = compute_aabb(p.shape, world_tf);
