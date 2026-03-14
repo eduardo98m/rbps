@@ -25,12 +25,13 @@ namespace rbps
 
     /// Register a collider and insert it into the broad phase.
     /// Returns a stable ivc::ID (never changes even after other removes).
-    inline ivc::ID collider_add(ColliderCollection &cc,
+    inline u_int32_t collider_add(ColliderCollection &cc,
                                 rbc::BroadPhaseState &bp,
                                 const ColliderParams &p,
                                 const m3d::tf &initial_world_tf)
     {
-        ivc::ID id = ivc::add(cc._ivc);
+        u_int32_t id = cc.add();
+        uint32_t i = cc.index_of(id);
 
         // Compute the world-space transform for the initial AABB
         m3d::vec3 world_pos = initial_world_tf.pos + m3d::rotate(initial_world_tf.rot, p.local_pos);
@@ -44,45 +45,28 @@ namespace rbps
                            ? rbc::broad_phase_insert(bp, static_cast<uint32_t>(id), tight)
                            : rbc::broad_phase_insert(bp, static_cast<uint32_t>(id), tight);
 
-        cc.shape.push_back(p.shape);
-        cc.local_pos.push_back(p.local_pos);
-        cc.local_rot.push_back(p.local_rot);
-        cc.body_id.push_back(p.body_id);
-        cc.bp_handle.push_back(bph);
-        cc.is_static.push_back(p.is_static);
-        cc.restitution.push_back(p.restitution);
-        cc.static_friction.push_back(p.static_friction);
-        cc.dynamic_friction.push_back(p.dynamic_friction);
+        cc.shape[i] = p.shape;
+        cc.local_pos[i] = p.local_pos;
+        cc.local_rot[i] = p.local_rot;
+        cc.body_id[i] = p.body_id;
+        cc.bp_handle[i] = bph;
+        cc.is_static[i] = p.is_static;
+        cc.restitution[i] = p.restitution;
+        cc.static_friction[i] = p.static_friction;
+        cc.dynamic_friction[i] = p.dynamic_friction;
 
         return id;
     }
 
-    inline void swap_collider_arrays(ColliderCollection &cc, size_t a, size_t b)
-    {
-        using std::swap;
-#define SWAP_FIELD(type, name) swap(cc.name[a], cc.name[b]);
-        COLLIDER_FIELDS(SWAP_FIELD)
-#undef SWAP_FIELD
-    }
-
-    inline void pop_back_collider(ColliderCollection &cc)
-    {
-#define POP_FIELD(type, name) cc.name.pop_back();
-        COLLIDER_FIELDS(POP_FIELD)
-#undef POP_FIELD
-    }
 
     /// Remove a collider and unregister it from the broad phase.
     inline void collider_remove(ColliderCollection &cc,
                                 rbc::BroadPhaseState &bp,
-                                ivc::ID id)
+                                u_int32_t id)
     {
-        size_t idx = ivc::index(cc._ivc, id);
+        size_t idx =  cc.index_of(id);
         rbc::broad_phase_remove(bp, cc.bp_handle[idx]);
-        ivc::erase(cc._ivc, id,
-                   [&](size_t a, size_t b)
-                   { swap_collider_arrays(cc, a, b); });
-        pop_back_collider(cc);
+        cc.remove(id);
     }
 
 } // namespace rbps

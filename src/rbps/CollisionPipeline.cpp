@@ -17,7 +17,7 @@ namespace rbps
                                   m3d::scalar               dt,
                                   bool                      use_velocity_expansion)
     {
-        for (size_t i = 0; i < cc.n_colliders; ++i)
+        for (size_t i = 0; i < cc.count(); ++i)
         {
             // ── STATIC BODY OPTIMISATION ──────────────────────────────────────
             // Static bodies never move. Their AABB was inserted at creation time
@@ -51,7 +51,7 @@ namespace rbps
         // The pattern is:
         //
         //   for (auto &plane : cc.static_planes)
-        //       for (size_t i = 0; i < cc.n_colliders; ++i)
+        //       for (size_t i = 0; i < cc.count(); ++i)
         //           if (!cc.is_static[i] && aabb_vs_plane(cc tight_aabb[i], plane))
         //               emit_pair_for_narrow_phase(i, plane);
         //
@@ -114,8 +114,8 @@ namespace rbps
         //
         // OPTIMISATION NOTE: in a large scene you can cache this map and update
         // it only when colliders are added or removed.
-        std::vector<size_t> uid_to_slot(cc.n_colliders);
-        for (size_t i = 0; i < cc.n_colliders; ++i)
+        std::vector<size_t> uid_to_slot(cc.count());
+        for (size_t i = 0; i < cc.count(); ++i)
             uid_to_slot[i] = i; // user_id == slot for now (see collider_add)
 
         for (const rbc::BroadPhasePair &pair : bp.pairs)
@@ -126,7 +126,7 @@ namespace rbps
             const size_t ca = pair.id_a;
             const size_t cb = pair.id_b;
 
-            if (ca >= cc.n_colliders || cb >= cc.n_colliders)
+            if (ca >= cc.count() || cb >= cc.count())
                 continue;
 
             const uint32_t ba = cc.body_id[ca];

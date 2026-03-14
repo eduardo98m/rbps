@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
-#include <ivc/ivc.hpp>
+#include <storage/Soa.hpp>
+#include <math3d/math3d.hpp>
 #include "rbc/AABB.hpp"
 #include "rbc/BroadPhase.hpp"
 #include "rbc/shapes/ShapeTypes.hpp"
@@ -53,15 +54,17 @@ namespace rbps
     //  ColliderCollection — owns all collider data.
     //  Use ColliderAPI functions to add/remove colliders safely.
     // -----------------------------------------------------------------------
-    struct ColliderCollection
-    {
-        IVC_CORE;
-        size_t &n_colliders = _ivc.n_items;
+//     struct ColliderCollection
+//     {
+//         IVC_CORE;
+//         size_t &n_colliders = _ivc.n_items;
 
-#define DECLARE_VEC(type, name) std::vector<type> name;
-        COLLIDER_FIELDS(DECLARE_VEC)
-#undef DECLARE_VEC
-    };
+// #define DECLARE_VEC(type, name) std::vector<type> name;
+//         COLLIDER_FIELDS(DECLARE_VEC)
+// #undef DECLARE_VEC
+//     };
+
+    DEFINE_DYN_SOA(ColliderCollection, uint32_t, /*GenerationBits=*/8, COLLIDER_FIELDS)
 
 
 
