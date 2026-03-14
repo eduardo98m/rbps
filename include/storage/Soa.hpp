@@ -33,7 +33,8 @@
  */
 template <typename Derived, typename IdType, IdType Capacity,
           uint8_t GenerationBits>
-struct SoABase {
+struct SoABase
+{
   // ── Compile-time helpers ─────────────────────────────────────────────────
 
   static constexpr uint8_t SLOT_BITS = sizeof(IdType) * 8 - GenerationBits;
@@ -59,7 +60,8 @@ struct SoABase {
   IdType _free_slots[Capacity]; ///< recycled slot stack
   IdType _generation[Capacity]; ///< slot → generation counter
 
-  SoABase() {
+  SoABase()
+  {
     for (IdType i = 0; i < Capacity; ++i)
       _generation[i] = 0;
   }
@@ -80,7 +82,8 @@ struct SoABase {
    *
    * @return Stable versioned ID. Store it to reference this item later.
    */
-  IdType add() {
+  IdType add()
+  {
     IdType slot = (_n_free > 0) ? _free_slots[--_n_free] : _next_slot++;
     IdType data_idx = _size;
     IdType gen = _generation[slot];
@@ -112,7 +115,9 @@ struct SoABase {
    *   });
    * @endcode
    */
-  template <typename Fn> IdType emplace(Fn &&fn) {
+  template <typename Fn>
+  IdType emplace(Fn &&fn)
+  {
     IdType id = add();
     fn(id, self());
     return id;
@@ -127,7 +132,9 @@ struct SoABase {
    * @param  n        Number of items to allocate.
    * @param  on_added Called once per new item.
    */
-  template <typename Fn> void add_n(IdType n, Fn &&on_added) {
+  template <typename Fn>
+  void add_n(IdType n, Fn &&on_added)
+  {
     for (IdType i = 0; i < n; ++i)
       on_added(add());
   }
@@ -142,7 +149,8 @@ struct SoABase {
    *
    * @param id  Stable ID returned by add() or emplace().
    */
-  void remove(IdType id) {
+  void remove(IdType id)
+  {
     if (!_size)
       return;
 
@@ -204,7 +212,8 @@ struct SoABase {
    *
    * @param id  ID to test (may be stale or out-of-range).
    */
-  bool contains(IdType id) const {
+  bool contains(IdType id) const
+  {
     const IdType slot = slot_of(id);
     if (slot >= _next_slot)
       return false;
@@ -223,13 +232,17 @@ struct SoABase {
    *
    * @tparam Fn  Callable with signature `void(IdType data_index)`.
    */
-  template <typename Fn> void for_each_index(Fn &&fn) {
+  template <typename Fn>
+  void for_each_index(Fn &&fn)
+  {
     for (IdType i = 0; i < _size; ++i)
       fn(i);
   }
 
   /// @copydoc for_each_index
-  template <typename Fn> void for_each_index(Fn &&fn) const {
+  template <typename Fn>
+  void for_each_index(Fn &&fn) const
+  {
     for (IdType i = 0; i < _size; ++i)
       fn(i);
   }
@@ -239,13 +252,17 @@ struct SoABase {
    *
    * @tparam Fn  Callable with signature `void(IdType id)`.
    */
-  template <typename Fn> void for_each_id(Fn &&fn) {
+  template <typename Fn>
+  void for_each_id(Fn &&fn)
+  {
     for (IdType i = 0; i < _size; ++i)
       fn(_ids[i]);
   }
 
   /// @copydoc for_each_id
-  template <typename Fn> void for_each_id(Fn &&fn) const {
+  template <typename Fn>
+  void for_each_id(Fn &&fn) const
+  {
     for (IdType i = 0; i < _size; ++i)
       fn(_ids[i]);
   }
@@ -262,7 +279,8 @@ struct SoABase {
    * @brief Remove all items. Generation counters are preserved so old IDs stay
    * stale.
    */
-  void clear() {
+  void clear()
+  {
     _size = 0;
     _n_free = 0;
     _next_slot = 0;
@@ -272,7 +290,8 @@ struct SoABase {
 
   static constexpr IdType slot_of(IdType id) { return id & SLOT_MASK; }
   static constexpr IdType gen_of(IdType id) { return id >> SLOT_BITS; }
-  static constexpr IdType make_id(IdType slot, IdType g) {
+  static constexpr IdType make_id(IdType slot, IdType g)
+  {
     return slot | (g << SLOT_BITS);
   }
 };
@@ -316,21 +335,23 @@ struct SoABase {
  *   pc.contains(id); // false
  * @endcode
  */
-#define DEFINE_SOA(Name, IdType, Cap, GenBits, FIELDS_MACRO)                   \
-  struct Name : SoABase<Name, IdType, Cap, GenBits> {                          \
-    /* Make Cap available as a plain name inside the struct body so that       \
-       DEFINE_SOA_ARRAY_ can use it as an array bound. Template parameters     \
-       of the base class are NOT directly in scope in the derived struct. */   \
-    static constexpr IdType _cap = Cap;                                        \
-                                                                               \
-    /* ── Named data arrays ── */                                              \
-    FIELDS_MACRO(DEFINE_SOA_ARRAY_)                                            \
-                                                                               \
-    /* ── swap_elements: called by SoABase::remove() via CRTP ── */            \
-    void swap_elements(IdType _a, IdType _b) {                                 \
-      using std::swap;                                                         \
-      FIELDS_MACRO(DEFINE_SOA_SWAP_)                                           \
-    }                                                                          \
+#define DEFINE_SOA(Name, IdType, Cap, GenBits, FIELDS_MACRO)                 \
+  struct Name : SoABase<Name, IdType, Cap, GenBits>                          \
+  {                                                                          \
+    /* Make Cap available as a plain name inside the struct body so that     \
+       DEFINE_SOA_ARRAY_ can use it as an array bound. Template parameters   \
+       of the base class are NOT directly in scope in the derived struct. */ \
+    static constexpr IdType _cap = Cap;                                      \
+                                                                             \
+    /* ── Named data arrays ── */                                            \
+    FIELDS_MACRO(DEFINE_SOA_ARRAY_)                                          \
+                                                                             \
+    /* ── swap_elements: called by SoABase::remove() via CRTP ── */          \
+    void swap_elements(IdType _a, IdType _b)                                 \
+    {                                                                        \
+      using std::swap;                                                       \
+      FIELDS_MACRO(DEFINE_SOA_SWAP_)                                         \
+    }                                                                        \
   };
 
 // Per-field helpers consumed by DEFINE_SOA — not for direct use.
@@ -354,7 +375,8 @@ struct SoABase {
  * @tparam GenerationBits Bits reserved for the generation counter.
  */
 template <typename Derived, typename IdType, uint8_t GenerationBits>
-struct DynSoABase {
+struct DynSoABase
+{
   static constexpr uint8_t SLOT_BITS = sizeof(IdType) * 8 - GenerationBits;
   static constexpr IdType SLOT_MASK =
       (GenerationBits == 0) ? ~IdType(0)
@@ -370,7 +392,8 @@ struct DynSoABase {
   std::vector<IdType> _free_slots;
   std::vector<IdType> _generation;
 
-  explicit DynSoABase(IdType initial_capacity = 0) {
+  explicit DynSoABase(IdType initial_capacity = 0)
+  {
     if (initial_capacity > 0)
       _reserve_bookkeeping(initial_capacity);
   }
@@ -385,7 +408,8 @@ struct DynSoABase {
    * After reserving, pointers returned by data arrays are stable until
    * capacity is exceeded again.
    */
-  void reserve(IdType n) {
+  void reserve(IdType n)
+  {
     _reserve_bookkeeping(n);
     self().reserve_data(n); // CRTP: each concrete struct reserves its vectors
   }
@@ -393,12 +417,16 @@ struct DynSoABase {
   /**
    * @brief Allocate a new item and return its stable ID.
    */
-  IdType add() {
+  IdType add()
+  {
     IdType slot;
-    if (_n_free > 0) {
+    if (_n_free > 0)
+    {
       slot = _free_slots[--_n_free];
       _free_slots.pop_back();
-    } else {
+    }
+    else
+    {
       slot = _next_slot++;
       _data_index.push_back(INVALID);
       _generation.push_back(0);
@@ -417,19 +445,24 @@ struct DynSoABase {
     return id;
   }
 
-  template <typename Fn> IdType emplace(Fn &&fn) {
+  template <typename Fn>
+  IdType emplace(Fn &&fn)
+  {
     IdType id = add();
     fn(id, self());
     return id;
   }
 
-  template <typename Fn> void add_n(IdType n, Fn &&on_added) {
+  template <typename Fn>
+  void add_n(IdType n, Fn &&on_added)
+  {
     reserve(_size + n);
     for (IdType i = 0; i < n; ++i)
       on_added(add());
   }
 
-  void remove(IdType id) {
+  void remove(IdType id)
+  {
     if (!_size)
       return;
     const IdType slot = slot_of(id);
@@ -462,7 +495,8 @@ struct DynSoABase {
 
   IdType index_of(IdType id) const { return _data_index[slot_of(id)]; }
 
-  bool contains(IdType id) const {
+  bool contains(IdType id) const
+  {
     const IdType slot = slot_of(id);
     if (slot >= _next_slot)
       return false;
@@ -474,26 +508,35 @@ struct DynSoABase {
     return true;
   }
 
-  template <typename Fn> void for_each_index(Fn &&fn) {
+  template <typename Fn>
+  void for_each_index(Fn &&fn)
+  {
     for (IdType i = 0; i < _size; ++i)
       fn(i);
   }
-  template <typename Fn> void for_each_index(Fn &&fn) const {
+  template <typename Fn>
+  void for_each_index(Fn &&fn) const
+  {
     for (IdType i = 0; i < _size; ++i)
       fn(i);
   }
-  template <typename Fn> void for_each_id(Fn &&fn) {
+  template <typename Fn>
+  void for_each_id(Fn &&fn)
+  {
     for (IdType i = 0; i < _size; ++i)
       fn(_ids[i]);
   }
-  template <typename Fn> void for_each_id(Fn &&fn) const {
+  template <typename Fn>
+  void for_each_id(Fn &&fn) const
+  {
     for (IdType i = 0; i < _size; ++i)
       fn(_ids[i]);
   }
 
   IdType count() const { return _size; }
 
-  void clear() {
+  void clear()
+  {
     self().clear_data();
     _ids.clear();
     _size = 0;
@@ -503,12 +546,14 @@ struct DynSoABase {
 
   static constexpr IdType slot_of(IdType id) { return id & SLOT_MASK; }
   static constexpr IdType gen_of(IdType id) { return id >> SLOT_BITS; }
-  static constexpr IdType make_id(IdType s, IdType g) {
+  static constexpr IdType make_id(IdType s, IdType g)
+  {
     return s | (g << SLOT_BITS);
   }
 
 private:
-  void _reserve_bookkeeping(IdType n) {
+  void _reserve_bookkeeping(IdType n)
+  {
     _data_index.reserve(n);
     _ids.reserve(n);
     _free_slots.reserve(n);
@@ -538,27 +583,29 @@ private:
  *       pc.position[i] += pc.velocity[i] * dt;
  * @endcode
  */
-#define DEFINE_DYN_SOA(Name, IdType, GenBits, FIELDS_MACRO)                    \
-  struct Name : DynSoABase<Name, IdType, GenBits> {                            \
-    /* ── Named field vectors ── */                                            \
-    FIELDS_MACRO(DEFINE_DYN_SOA_VEC_)                                          \
-                                                                               \
-    explicit Name(IdType initial_capacity = 0)                                 \
-        : DynSoABase<Name, IdType, GenBits>(initial_capacity) {}               \
-                                                                               \
-    /* Called by DynSoABase::reserve() */                                      \
-    void reserve_data(IdType n) { FIELDS_MACRO(DEFINE_DYN_SOA_RESERVE_) }      \
-    /* Called by DynSoABase::add() */                                          \
-    void push_back_data() { FIELDS_MACRO(DEFINE_DYN_SOA_PUSH_) }               \
-    /* Called by DynSoABase::remove() */                                       \
-    void pop_back_data() { FIELDS_MACRO(DEFINE_DYN_SOA_POP_) }                 \
-    /* Called by DynSoABase::clear() */                                        \
-    void clear_data() { FIELDS_MACRO(DEFINE_DYN_SOA_CLEAR_) }                  \
-    /* Called by DynSoABase::remove() */                                       \
-    void swap_elements(IdType _a, IdType _b) {                                 \
-      using std::swap;                                                         \
-      FIELDS_MACRO(DEFINE_SOA_SWAP_)                                           \
-    }                                                                          \
+#define DEFINE_DYN_SOA(Name, IdType, GenBits, FIELDS_MACRO)               \
+  struct Name : DynSoABase<Name, IdType, GenBits>                         \
+  {                                                                       \
+    /* ── Named field vectors ── */                                       \
+    FIELDS_MACRO(DEFINE_DYN_SOA_VEC_)                                     \
+                                                                          \
+    explicit Name(IdType initial_capacity = 0)                            \
+        : DynSoABase<Name, IdType, GenBits>(initial_capacity) {}          \
+                                                                          \
+    /* Called by DynSoABase::reserve() */                                 \
+    void reserve_data(IdType n) { FIELDS_MACRO(DEFINE_DYN_SOA_RESERVE_) } \
+    /* Called by DynSoABase::add() */                                     \
+    void push_back_data() { FIELDS_MACRO(DEFINE_DYN_SOA_PUSH_) }          \
+    /* Called by DynSoABase::remove() */                                  \
+    void pop_back_data() { FIELDS_MACRO(DEFINE_DYN_SOA_POP_) }            \
+    /* Called by DynSoABase::clear() */                                   \
+    void clear_data() { FIELDS_MACRO(DEFINE_DYN_SOA_CLEAR_) }             \
+    /* Called by DynSoABase::remove() */                                  \
+    void swap_elements(IdType _a, IdType _b)                              \
+    {                                                                     \
+      using std::swap;                                                    \
+      FIELDS_MACRO(DEFINE_SOA_SWAP_)                                      \
+    }                                                                     \
   };
 
 // Per-field helpers for DEFINE_DYN_SOA — not for direct use.
