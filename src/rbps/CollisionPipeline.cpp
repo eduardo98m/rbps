@@ -64,35 +64,49 @@ namespace rbps
     //  Helper: emit one contact into the ContactList
     // =========================================================================
 
-    static void emit_contact(ContactList             &out,
-                              const rbc::Contact      &c,
-                              uint32_t                 ba, uint32_t bb,
-                              uint32_t                 ca, uint32_t cb,
-                              const rbps::ColliderCollection &cc)
+        static void emit_contact(ContactList                    &out,
+                              const rbc::Contact             &c,
+                              uint32_t                        ba, uint32_t bb,
+                              uint32_t                        ca, uint32_t cb,
+                              const rbps::ColliderCollection &cc,
+                              const BodyCollection           &bc)
     {
-        // Contact point split symmetrically along the normal
+        // World-space contact points split symmetrically along the normal.
         const m3d::scalar half_depth = c.penetration_depth * 0.5;
         const m3d::vec3   p_on_a     = c.pos + c.normal * half_depth;
         const m3d::vec3   p_on_b     = c.pos - c.normal * half_depth;
-
-        // Material mixing:  average friction, minimum restitution
-        const m3d::scalar rest = m3d::min(cc.restitution[ca],      cc.restitution[cb]);
+ 
+        // Convert world-space lever arms to body-LOCAL space (eq. 26).
+        // conjugate(q) == inverse for unit quaternions.
+        const m3d::vec3 r_a_wc    = p_on_a - bc.position[ba];
+        const m3d::vec3 r_b_wc    = p_on_b - bc.position[bb];
+        const m3d::vec3 r_a_local = m3d::rotate(m3d::conjugate(bc.orientation[ba]), r_a_wc);
+        const m3d::vec3 r_b_local = m3d::rotate(m3d::conjugate(bc.orientation[bb]), r_b_wc);
+ 
+        // Material mixing: average friction, minimum restitution.
+        const m3d::scalar rest = m3d::min(cc.restitution[ca],     cc.restitution[cb]);
         const m3d::scalar sf   = (cc.static_friction[ca]  + cc.static_friction[cb])  * 0.5;
         const m3d::scalar df   = (cc.dynamic_friction[ca] + cc.dynamic_friction[cb]) * 0.5;
-
+ 
         out.body_a           .push_back(ba);
         out.body_b           .push_back(bb);
         out.collider_a       .push_back(ca);
         out.collider_b       .push_back(cb);
+        out.r_a_local        .push_back(r_a_local);
+        out.r_b_local        .push_back(r_b_local);
         out.normal           .push_back(c.normal);
-        out.point_on_a       .push_back(p_on_a);
-        out.point_on_b       .push_back(p_on_b);
-        out.penetration_depth.push_back(c.penetration_depth);
         out.restitution      .push_back(rest);
         out.static_friction  .push_back(sf);
         out.dynamic_friction .push_back(df);
-        out.normal_lambda    .push_back(0);
-        out.tangent_lambda   .push_back(0);
+        out.normal_lambda    .push_back(0.0);
+        out.tangent_lambda   .push_back(0.0);
+        // Substep fields — sized but not filled; apply_constraint_position_level
+        // reconstructs them each substep from r_local + current body transforms.
+        out.point_on_a       .push_back(p_on_a);   // initial value, overwritten each substep
+        out.point_on_b       .push_back(p_on_b);
+        out.penetration_depth.push_back(c.penetration_depth);
+        out.collision        .push_back(false);
+        out.relative_velocity.push_back(0.0);
         out.normal_force     .push_back(m3d::vec3(0));
         out.tangent_force    .push_back(m3d::vec3(0));
         ++out.n_contacts;
@@ -169,7 +183,7 @@ namespace rbps
                              ba, bb,
                              static_cast<uint32_t>(ca),
                              static_cast<uint32_t>(cb),
-                             cc);
+                             cc, bc);
             }
         }
     }

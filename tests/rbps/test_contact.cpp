@@ -28,26 +28,32 @@ static BodyCollection create_test_bodies(uint32_t n)
 }
 
 
-// Helper to create a contact collection
-ContactCollection create_contact_collection(size_t n)
+// Helper to create a ContactList with n pre-populated contacts
+// body_a defaults to slot 0, body_b to slot 1
+static ContactList create_contact_list(size_t n)
 {
-    ContactCollection cc;
-    cc.n_contacts = n;
-    cc.body_1.resize(n, 0);
-    cc.body_2.resize(n, 1);
-    cc.normal.resize(n, vec3{0, 1, 0});
-    cc.p_1.resize(n, vec3{0, 0, 0});
-    cc.p_2.resize(n, vec3{0, 0, 0});
-    cc.collision.resize(n, false);
-    cc.static_friction.resize(n, 0.5);
-    cc.dynamic_friction.resize(n, 0.3);
-    cc.restitution.resize(n, 0.5);
-    cc.relative_velocity.resize(n, 0.0);
-    cc.normal_constraint_lagrange_multiplier.resize(n, 0.0);
-    cc.tangencial_constraint_lagrange_multiplier.resize(n, 0.0);
-    cc.normal_force.resize(n, vec3{0, 0, 0});
-    cc.tangencial_force.resize(n, vec3{0, 0, 0});
-    return cc;
+    ContactList cl;
+    cl.n_contacts = static_cast<uint32_t>(n);
+    cl.body_a               .resize(n, 0);
+    cl.body_b               .resize(n, 1);
+    cl.collider_a           .resize(n, 0);
+    cl.collider_b           .resize(n, 1);
+    cl.r_a_local            .resize(n, vec3{0, 0, 0});
+    cl.r_b_local            .resize(n, vec3{0, 0, 0});
+    cl.normal               .resize(n, vec3{0, 1, 0});
+    cl.point_on_a           .resize(n, vec3{0, 0, 0});
+    cl.point_on_b           .resize(n, vec3{0, 0, 0});
+    cl.penetration_depth    .resize(n, 0.0);
+    cl.static_friction      .resize(n, 0.5);
+    cl.dynamic_friction     .resize(n, 0.3);
+    cl.restitution          .resize(n, 0.5);
+    cl.collision            .resize(n, false);
+    cl.relative_velocity    .resize(n, 0.0);
+    cl.normal_lambda        .resize(n, 0.0);
+    cl.tangent_lambda       .resize(n, 0.0);
+    cl.normal_force         .resize(n, vec3{0, 0, 0});
+    cl.tangent_force        .resize(n, vec3{0, 0, 0});
+    return cl;
 }
 
 // ============================================================================
@@ -57,7 +63,7 @@ ContactCollection create_contact_collection(size_t n)
 TEST(solve_normal_constraint_no_penetration)
 {
     BodyCollection bc = create_test_bodies(2);
-    ContactCollection cc = create_contact_collection(1);
+    ContactList cc = create_contact_list(1);
     
     // No penetration
     scalar magnitude = 0.0;
@@ -68,14 +74,14 @@ TEST(solve_normal_constraint_no_penetration)
     solve_normal_constraint(cc, 0, bc, inv_dt, magnitude, r_1_wc, r_2_wc);
     
     // No impulse should be applied
-    ASSERT_NEAR(cc.normal_constraint_lagrange_multiplier[0], 0.0, 0.001);
+    ASSERT_NEAR(cc.normal_lambda[0], 0.0, 0.001);
     ASSERT_NEAR(m3d::magnitude(cc.normal_force[0]), 0.0, 0.001);
 }
 
 TEST(solve_normal_constraint_with_penetration)
 {
     BodyCollection bc = create_test_bodies(2);
-    ContactCollection cc = create_contact_collection(1);
+    ContactList cc = create_contact_list(1);
     
     // Bodies penetrating 0.1 units
     cc.normal[0] = vec3{0, 1, 0};
@@ -90,7 +96,7 @@ TEST(solve_normal_constraint_with_penetration)
     solve_normal_constraint(cc, 0, bc, inv_dt, magnitude, r_1_wc, r_2_wc);
     
     // Lagrange multiplier should be negative (opposite direction of normal)
-    ASSERT_TRUE(cc.normal_constraint_lagrange_multiplier[0] < 0.0);
+    ASSERT_TRUE(cc.normal_lambda[0] < 0.0);
     
     // Bodies should separate
     scalar separation = bc.position[1].y - bc.position[0].y;
@@ -103,7 +109,7 @@ TEST(solve_normal_constraint_with_penetration)
 TEST(solve_normal_constraint_with_lever_arm)
 {
     BodyCollection bc = create_test_bodies(2);
-    ContactCollection cc = create_contact_collection(1);
+    ContactList cc = create_contact_list(1);
     
     // Contact point offset from center of mass
     cc.normal[0] = vec3{0, 1, 0};
@@ -127,7 +133,7 @@ TEST(solve_normal_constraint_static_body)
     bc.inverse_mass[1] = 0.0;
     bc.inverse_inertia_tensor_world[1] = smat3(0, 0, 0, 0, 0, 0);
     
-    ContactCollection cc = create_contact_collection(1);
+    ContactList cc = create_contact_list(1);
     
     cc.normal[0] = vec3{0, 1, 0};
     scalar magnitude = 0.1;
@@ -150,91 +156,91 @@ TEST(solve_normal_constraint_static_body)
 // TANGENTIAL CONSTRAINT TESTS
 // ============================================================================
 
-TEST(solve_tangencial_constraint_no_slip)
+TEST(solve_tangent_constraint_no_slip)
 {
     BodyCollection bc = create_test_bodies(2);
-    ContactCollection cc = create_contact_collection(1);
+    ContactList cc = create_contact_list(1);
     
     // No tangential slip
-    cc.p_1[0] = vec3{0, 0, 0};
-    cc.p_2[0] = vec3{0, 0, 0};
+    cc.point_on_a[0] = vec3{0, 0, 0};
+    cc.point_on_b[0] = vec3{0, 0, 0};
     bc.prev_position[0] = vec3{0, 0, 0};
     bc.prev_position[1] = vec3{0, 0, 0};
     
-    solve_tangencial_constraint(cc, 0, bc, 100.0);
+    solve_tangent_constraint(cc, 0, bc, 100.0);
     
     // No friction impulse should be applied
-    ASSERT_NEAR(cc.tangencial_constraint_lagrange_multiplier[0], 0.0, 0.001);
+    ASSERT_NEAR(cc.tangent_lambda[0], 0.0, 0.001);
 }
 
-TEST(solve_tangencial_constraint_with_slip)
+TEST(solve_tangent_constraint_with_slip)
 {
     BodyCollection bc = create_test_bodies(2);
-    ContactCollection cc = create_contact_collection(1);
+    ContactList cc = create_contact_list(1);
     
     // Setup tangential slip
     cc.normal[0] = vec3{0, 1, 0};
-    cc.p_1[0] = vec3{0.1, 0, 0}; // Body 1 moved in X
-    cc.p_2[0] = vec3{0, 0, 0};
+    cc.point_on_a[0] = vec3{0.1, 0, 0}; // Body 1 moved in X
+    cc.point_on_b[0] = vec3{0, 0, 0};
     bc.prev_position[0] = vec3{0, 0, 0};
     bc.prev_position[1] = vec3{0, 0, 0};
     bc.position[0] = vec3{0.1, 0, 0};
     
     // Need normal force to apply friction
-    cc.normal_constraint_lagrange_multiplier[0] = 1.0;
+    cc.normal_lambda[0] = 1.0;
     cc.static_friction[0] = 0.5;
     
-    solve_tangencial_constraint(cc, 0, bc, 100.0);
+    solve_tangent_constraint(cc, 0, bc, 100.0);
     
     // Friction constraint should be applied if within static friction cone
-    ASSERT_TRUE(cc.tangencial_constraint_lagrange_multiplier[0] != 0.0 ||
-                cc.tangencial_constraint_lagrange_multiplier[0] == 0.0); // May or may not apply depending on magnitude
+    ASSERT_TRUE(cc.tangent_lambda[0] != 0.0 ||
+                cc.tangent_lambda[0] == 0.0); // May or may not apply depending on magnitude
 }
 
-TEST(solve_tangencial_constraint_exceeds_static_friction)
+TEST(solve_tangent_constraint_exceeds_static_friction)
 {
     BodyCollection bc = create_test_bodies(2);
-    ContactCollection cc = create_contact_collection(1);
+    ContactList cc = create_contact_list(1);
     
     // Large tangential slip
     cc.normal[0] = vec3{0, 1, 0};
-    cc.p_1[0] = vec3{1.0, 0, 0}; // Large slip
-    cc.p_2[0] = vec3{0, 0, 0};
+    cc.point_on_a[0] = vec3{1.0, 0, 0}; // Large slip
+    cc.point_on_b[0] = vec3{0, 0, 0};
     bc.prev_position[0] = vec3{0, 0, 0};
     bc.prev_position[1] = vec3{0, 0, 0};
     bc.position[0] = vec3{1.0, 0, 0};
     
     // Setup normal force
-    cc.normal_constraint_lagrange_multiplier[0] = 1.0;
+    cc.normal_lambda[0] = 1.0;
     cc.static_friction[0] = 0.5;
     
     vec3 pos1_initial = bc.position[0];
     
-    solve_tangencial_constraint(cc, 0, bc, 100.0);
+    solve_tangent_constraint(cc, 0, bc, 100.0);
     
     // Check if friction was applied (position might change)
     // The constraint may or may not be applied depending on friction cone
 }
 
-TEST(solve_tangencial_constraint_with_rotation)
+TEST(solve_tangent_constraint_with_rotation)
 {
     BodyCollection bc = create_test_bodies(2);
-    ContactCollection cc = create_contact_collection(1);
+    ContactList cc = create_contact_list(1);
     
     // Setup with previous orientation
     cc.normal[0] = vec3{0, 1, 0};
-    cc.p_1[0] = vec3{0.1, 0, 0};
-    cc.p_2[0] = vec3{0, 0, 0};
+    cc.point_on_a[0] = vec3{0.1, 0, 0};
+    cc.point_on_b[0] = vec3{0, 0, 0};
     bc.prev_orientation[0] = quat(1, 0, 0, 0);
     bc.orientation[0] = quat::from_rpy(0, 0, 0.1); // Small rotation
     bc.position[0] = vec3{0.1, 0, 0};
     bc.prev_position[0] = vec3{0, 0, 0};
     bc.prev_position[1] = vec3{0, 0, 0};
     
-    cc.normal_constraint_lagrange_multiplier[0] = 1.0;
+    cc.normal_lambda[0] = 1.0;
     cc.static_friction[0] = 0.5;
     
-    solve_tangencial_constraint(cc, 0, bc, 100.0);
+    solve_tangent_constraint(cc, 0, bc, 100.0);
     
     // Should handle rotational contribution to slip
     // Test passes if no crash occurs
@@ -247,12 +253,12 @@ TEST(solve_tangencial_constraint_with_rotation)
 TEST(apply_constraint_position_level_no_collision)
 {
     BodyCollection bc = create_test_bodies(2);
-    ContactCollection cc = create_contact_collection(1);
+    ContactList cc = create_contact_list(1);
     
     // Bodies separated (negative penetration)
     cc.normal[0] = vec3{0, 1, 0};
-    cc.p_1[0] = vec3{0, 0, 0};
-    cc.p_2[0] = vec3{0, 1, 0}; // 1 unit apart
+    cc.point_on_a[0] = vec3{0, 0, 0};
+    cc.point_on_b[0] = vec3{0, 1, 0}; // 1 unit apart
     bc.position[0] = vec3{0, 0, 0};
     bc.position[1] = vec3{0, 1, 0};
     
@@ -265,72 +271,64 @@ TEST(apply_constraint_position_level_no_collision)
 TEST(apply_constraint_position_level_with_collision)
 {
     BodyCollection bc = create_test_bodies(2);
-    ContactCollection cc = create_contact_collection(1);
-    
-    // Bodies penetrating
-    cc.normal[0] = vec3{0, 1, 0};
-    cc.p_1[0] = vec3{0, 0.05, 0};
-    cc.p_2[0] = vec3{0, -0.05, 0};
+    ContactList cc = create_contact_list(1);
+
+    cc.normal[0]    = vec3{0,  1, 0};
+    cc.point_on_a[0] = vec3{0,  0.05, 0};
+    cc.point_on_b[0] = vec3{0, -0.05, 0};
+    cc.r_a_local[0]  = vec3{0,  0.05, 0};  // point_on_a - position[0]({0,0,0})
+    cc.r_b_local[0]  = vec3{0, -0.05, 0};  // point_on_b - position[1]({0,0,0})
     bc.position[0] = vec3{0, 0, 0};
     bc.position[1] = vec3{0, 0, 0};
     bc.prev_position[0] = vec3{0, 0, 0};
     bc.prev_position[1] = vec3{0, 0, 0};
-    
+
     apply_constraint_position_level(cc, 0, bc, 100.0);
-    
-    // Should mark as collision
+
     ASSERT_TRUE(cc.collision[0]);
-    
-    // Should have computed relative velocity
-    // (may be zero in this case)
 }
 
 TEST(apply_constraint_position_level_with_velocity)
 {
     BodyCollection bc = create_test_bodies(2);
-    ContactCollection cc = create_contact_collection(1);
-    
-    // Bodies penetrating with velocity
-    cc.normal[0] = vec3{0, 1, 0};
-    cc.p_1[0] = vec3{0, 0.05, 0};
-    cc.p_2[0] = vec3{0, -0.05, 0};
+    ContactList cc = create_contact_list(1);
+
+    cc.normal[0]    = vec3{0,  1, 0};
+    cc.point_on_a[0] = vec3{0,  0.05, 0};
+    cc.point_on_b[0] = vec3{0, -0.05, 0};
+    cc.r_a_local[0]  = vec3{0,  0.05, 0};
+    cc.r_b_local[0]  = vec3{0, -0.05, 0};
     bc.position[0] = vec3{0, 0, 0};
     bc.position[1] = vec3{0, 0, 0};
     bc.prev_position[0] = vec3{0, 0, 0};
     bc.prev_position[1] = vec3{0, 0, 0};
-    bc.linear_velocity[0] = vec3{0, -1, 0}; // Moving toward each other
-    bc.linear_velocity[1] = vec3{0, 1, 0};
-    
+    bc.linear_velocity[0] = vec3{0, -1, 0};
+    bc.linear_velocity[1] = vec3{0,  1, 0};
+
     apply_constraint_position_level(cc, 0, bc, 100.0);
-    
-    // Should mark as collision
+
     ASSERT_TRUE(cc.collision[0]);
-    
-    // Should have non-zero relative velocity
     ASSERT_TRUE(cc.relative_velocity[0] != 0.0);
 }
 
 TEST(apply_constraint_position_level_resolves_penetration)
 {
     BodyCollection bc = create_test_bodies(2);
-    ContactCollection cc = create_contact_collection(1);
-    
-    // Significant penetration
-    cc.normal[0] = vec3{0, 1, 0};
-    cc.p_1[0] = vec3{0, 0.1, 0};
-    cc.p_2[0] = vec3{0, -0.1, 0};
+    ContactList cc = create_contact_list(1);
+
+    cc.normal[0]    = vec3{0,  1, 0};
+    cc.point_on_a[0] = vec3{0,  0.1, 0};
+    cc.point_on_b[0] = vec3{0, -0.1, 0};
+    cc.r_a_local[0]  = vec3{0,  0.1, 0};
+    cc.r_b_local[0]  = vec3{0, -0.1, 0};
     bc.position[0] = vec3{0, 0, 0};
     bc.position[1] = vec3{0, 0, 0};
     bc.prev_position[0] = vec3{0, 0, 0};
     bc.prev_position[1] = vec3{0, 0, 0};
-    
-    scalar initial_overlap = cc.p_1[0].y - cc.p_2[0].y;
-    
+
     apply_constraint_position_level(cc, 0, bc, 100.0);
-    
-    // Bodies should be pushed apart
-    scalar final_distance = bc.position[1].y - bc.position[0].y;
-    ASSERT_TRUE(final_distance > 0.0);
+
+    ASSERT_TRUE(bc.position[1].y - bc.position[0].y > 0.0);
 }
 
 // ============================================================================
@@ -340,12 +338,13 @@ TEST(apply_constraint_position_level_resolves_penetration)
 TEST(apply_constraint_velocity_level_no_collision)
 {
     BodyCollection bc = create_test_bodies(2);
-    ContactCollection cc = create_contact_collection(1);
+    ContactList cc = create_contact_list(1);
     
     // No penetration
     cc.normal[0] = vec3{0, 1, 0};
-    cc.p_1[0] = vec3{0, 0, 0};
-    cc.p_2[0] = vec3{0, 1, 0};
+    cc.collision[0] = false; // Simulate that position level marked as collision
+    cc.point_on_a[0] = vec3{0, 0, 0};
+    cc.point_on_b[0] = vec3{0, 1, 0};
     bc.position[0] = vec3{0, 0, 0};
     bc.position[1] = vec3{0, 1, 0};
     
@@ -358,12 +357,13 @@ TEST(apply_constraint_velocity_level_no_collision)
 TEST(apply_constraint_velocity_level_with_restitution)
 {
     BodyCollection bc = create_test_bodies(2);
-    ContactCollection cc = create_contact_collection(1);
+    ContactList cc = create_contact_list(1);
     
     // Bodies in contact with approach velocity
     cc.normal[0] = vec3{0, 1, 0};
-    cc.p_1[0] = vec3{0, 0.05, 0};
-    cc.p_2[0] = vec3{0, -0.05, 0};
+    cc.collision[0] = true; // Simulate that position level marked as collision
+    cc.point_on_a[0] = vec3{0, 0.05, 0};
+    cc.point_on_b[0] = vec3{0, -0.05, 0};
     bc.position[0] = vec3{0, 0, 0};
     bc.position[1] = vec3{0, 0, 0};
     bc.linear_velocity[0] = vec3{0, -1, 0}; // Approaching
@@ -371,7 +371,7 @@ TEST(apply_constraint_velocity_level_with_restitution)
     
     cc.restitution[0] = 0.8;
     cc.relative_velocity[0] = -1.0; // Stored from position level
-    cc.normal_constraint_lagrange_multiplier[0] = 1.0;
+    cc.normal_lambda[0] = 1.0;
     
     scalar initial_vel = bc.linear_velocity[0].y;
     
@@ -382,39 +382,58 @@ TEST(apply_constraint_velocity_level_with_restitution)
     ASSERT_TRUE(bc.linear_velocity[0].y != initial_vel);
 }
 
+
 TEST(apply_constraint_velocity_level_no_restitution_slow_impact)
 {
+    // When |v_n| <= 2*g*dt the restitution coefficient is clamped to zero.
+    // 2*g*dt = 2*9.8*0.01 = 0.196, so approach velocity -0.1 triggers the clamp.
+    //
+    // With e=0, delta_v = n*(-v_n) which drives the RELATIVE normal velocity
+    // to zero.  The impulse is split between both bodies via 1/(w_a+w_b), so
+    // each body's individual velocity does NOT go to zero — the relative one does.
+    //
+    //   Body 0: v_n = -0.1 →  -0.05  (gains +0.05)
+    //   Body 1: v_n =  0.0 →  -0.05  (gains -0.05)
+    //   Relative v_n after = -0.05 - (-0.05) = 0  ✓
     BodyCollection bc = create_test_bodies(2);
-    ContactCollection cc = create_contact_collection(1);
-    
-    // Slow collision (below restitution threshold)
-    cc.normal[0] = vec3{0, 1, 0};
-    cc.p_1[0] = vec3{0, 0.05, 0};
-    cc.p_2[0] = vec3{0, -0.05, 0};
+    ContactList cl = create_contact_list(1);
+ 
+    cl.normal[0] = vec3{0, 1, 0};
+    cl.point_on_a[0] = vec3{0,  0.05, 0};
+    cl.point_on_b[0] = vec3{0, -0.05, 0};
+    cl.collision[0] = true;
     bc.position[0] = vec3{0, 0, 0};
     bc.position[1] = vec3{0, 0, 0};
-    bc.linear_velocity[0] = vec3{0, -0.1, 0}; // Slow approach
-    bc.linear_velocity[1] = vec3{0, 0, 0};
-    
-    cc.restitution[0] = 0.8;
-    cc.relative_velocity[0] = -0.1; // Below 2 * 9.8 * dt threshold
-    cc.normal_constraint_lagrange_multiplier[0] = 1.0;
-    
-    apply_constraint_velocity_level(cc, 0, bc, 0.01);
-    
-    // Should apply constraint but minimal restitution
-    ASSERT_TRUE(cc.collision[0]);
+    bc.linear_velocity[0] = vec3{0, -0.1, 0};
+    bc.linear_velocity[1] = vec3{0,  0.0, 0};
+ 
+    cl.restitution[0] = 0.8;        // high e, but clamped to 0 by slow-impact threshold
+    cl.relative_velocity[0] = -0.1;
+    cl.normal_lambda[0] = -1.0;
+ 
+    apply_constraint_velocity_level(cl, 0, bc, 0.01);
+ 
+    // Relative normal velocity at the contact point must be near zero.
+    const m3d::vec3 r_a_wc = cl.point_on_a[0] - bc.position[0];
+    const m3d::vec3 r_b_wc = cl.point_on_b[0] - bc.position[1];
+    const m3d::vec3 v_rel =
+        (bc.linear_velocity[0] + m3d::cross(bc.angular_velocity[0], r_a_wc)) -
+        (bc.linear_velocity[1] + m3d::cross(bc.angular_velocity[1], r_b_wc));
+    const scalar v_n_rel = m3d::dot(v_rel, cl.normal[0]);
+    ASSERT_NEAR(v_n_rel, 0.0, 0.01);
+ 
+    // Sanity: no bounce — body 0 must not be moving away faster than it came in.
+    ASSERT_TRUE(m3d::dot(bc.linear_velocity[0], cl.normal[0]) >= -0.1 - 0.001);
 }
-
 TEST(apply_constraint_velocity_level_with_friction)
 {
     BodyCollection bc = create_test_bodies(2);
-    ContactCollection cc = create_contact_collection(1);
+    ContactList cc = create_contact_list(1);
     
     // Bodies in contact with tangential velocity
     cc.normal[0] = vec3{0, 1, 0};
-    cc.p_1[0] = vec3{0, 0.05, 0};
-    cc.p_2[0] = vec3{0, -0.05, 0};
+    cc.point_on_a[0] = vec3{0, 0.05, 0};
+    cc.point_on_b[0] = vec3{0, -0.05, 0};
     bc.position[0] = vec3{0, 0, 0};
     bc.position[1] = vec3{0, 0, 0};
     bc.linear_velocity[0] = vec3{1, 0, 0}; // Sliding
@@ -422,38 +441,45 @@ TEST(apply_constraint_velocity_level_with_friction)
     
     cc.dynamic_friction[0] = 0.5;
     cc.relative_velocity[0] = 0.0;
-    cc.normal_constraint_lagrange_multiplier[0] = -1.0;
+    cc.normal_lambda[0] = -1.0;
+    cc.collision[0] = true; // Simulate that position level marked as collision
+
     
     scalar initial_vel_x = bc.linear_velocity[0].x;
     
     apply_constraint_velocity_level(cc, 0, bc, 0.01);
     
     // Tangential velocity should be reduced by friction
-    ASSERT_TRUE(cc.collision[0]);
     ASSERT_TRUE(m3d::magnitude(bc.linear_velocity[0]) <= initial_vel_x);
 }
 
 TEST(apply_constraint_velocity_level_zero_normal_force)
 {
     BodyCollection bc = create_test_bodies(2);
-    ContactCollection cc = create_contact_collection(1);
+    ContactList cc = create_contact_list(1);
     
     // Contact but no normal force (shouldn't happen but test robustness)
     cc.normal[0] = vec3{0, 1, 0};
-    cc.p_1[0] = vec3{0, 0.05, 0};
-    cc.p_2[0] = vec3{0, -0.05, 0};
+    cc.collision[0] = true; // Simulate that position level marked as collision
+    cc.point_on_a[0] = vec3{0, 0.05, 0};
+    cc.point_on_b[0] = vec3{0, -0.05, 0};
     bc.position[0] = vec3{0, 0, 0};
     bc.position[1] = vec3{0, 0, 0};
     bc.linear_velocity[0] = vec3{1, 0, 0};
     
-    cc.normal_constraint_lagrange_multiplier[0] = 0.0; // No normal force
+    cc.normal_lambda[0] = 0.0; // No normal force
     cc.dynamic_friction[0] = 0.5;
     
+    const vec3 vel_before = bc.linear_velocity[0];
+
     apply_constraint_velocity_level(cc, 0, bc, 0.01);
     
     // Should still mark collision but minimal effect
-    ASSERT_TRUE(cc.collision[0]);
+    // Tangential velocity must be unchanged (no friction without normal force).
+    ASSERT_NEAR(bc.linear_velocity[0].x, vel_before.x, 0.001);
+    ASSERT_NEAR(bc.linear_velocity[0].z, vel_before.z, 0.001);
 }
+
 
 // ============================================================================
 // BATCH PROCESSING TESTS
@@ -462,18 +488,19 @@ TEST(apply_constraint_velocity_level_zero_normal_force)
 TEST(solve_contacts_velocity_level_single_contact)
 {
     BodyCollection bc = create_test_bodies(2);
-    ContactCollection cc = create_contact_collection(1);
+    ContactList cc = create_contact_list(1);
     
     cc.normal[0] = vec3{0, 1, 0};
-    cc.p_1[0] = vec3{0, 0.05, 0};
-    cc.p_2[0] = vec3{0, -0.05, 0};
+    cc.point_on_a[0] = vec3{0, 0.05, 0};
+    cc.point_on_b[0] = vec3{0, -0.05, 0};
     bc.position[0] = vec3{0, 0, 0};
     bc.position[1] = vec3{0, 0, 0};
     bc.linear_velocity[0] = vec3{0, -1, 0};
     
     cc.restitution[0] = 0.5;
     cc.relative_velocity[0] = -1.0;
-    cc.normal_constraint_lagrange_multiplier[0] = 1.0;
+    cc.normal_lambda[0] = 1.0;
+    cc.collision[0] = true;
     
     solve_contacts_velocity_level(cc, bc, 0.01);
     
@@ -484,21 +511,21 @@ TEST(solve_contacts_velocity_level_single_contact)
 TEST(solve_contacts_velocity_level_multiple_contacts)
 {
     BodyCollection bc = create_test_bodies(3);
-    ContactCollection cc = create_contact_collection(2);
+    ContactList cc = create_contact_list(2);
     
     // First contact: body 0 and 1
-    cc.body_1[0] = 0;
-    cc.body_2[0] = 1;
+    cc.body_a[0] = 0;
+    cc.body_b[0] = 1;
     cc.normal[0] = vec3{0, 1, 0};
-    cc.p_1[0] = vec3{0, 0.05, 0};
-    cc.p_2[0] = vec3{0, -0.05, 0};
+    cc.point_on_a[0] = vec3{0, 0.05, 0};
+    cc.point_on_b[0] = vec3{0, -0.05, 0};
     
     // Second contact: body 1 and 2
-    cc.body_1[1] = 1;
-    cc.body_2[1] = 2;
+    cc.body_a[1] = 1;
+    cc.body_b[1] = 2;
     cc.normal[1] = vec3{1, 0, 0};
-    cc.p_1[1] = vec3{0.05, 0, 0};
-    cc.p_2[1] = vec3{-0.05, 0, 0};
+    cc.point_on_a[1] = vec3{0.05, 0, 0};
+    cc.point_on_b[1] = vec3{-0.05, 0, 0};
     
     bc.position[0] = vec3{0, 0, 0};
     bc.position[1] = vec3{0, 0, 0};
@@ -512,8 +539,10 @@ TEST(solve_contacts_velocity_level_multiple_contacts)
     cc.restitution[1] = 0.5;
     cc.relative_velocity[0] = -1.0;
     cc.relative_velocity[1] = 1.0;
-    cc.normal_constraint_lagrange_multiplier[0] = 1.0;
-    cc.normal_constraint_lagrange_multiplier[1] = 1.0;
+    cc.normal_lambda[0] = 1.0;
+    cc.normal_lambda[1] = 1.0;
+    cc.collision[0] = true;
+    cc.collision[1] = true;
     
     solve_contacts_velocity_level(cc, bc, 0.01);
     
@@ -525,7 +554,7 @@ TEST(solve_contacts_velocity_level_multiple_contacts)
 TEST(solve_contacts_velocity_level_no_contacts)
 {
     BodyCollection bc = create_test_bodies(2);
-    ContactCollection cc;
+    ContactList cc;
     cc.n_contacts = 0;
     
     // Should not crash with no contacts
@@ -539,12 +568,12 @@ TEST(solve_contacts_velocity_level_no_contacts)
 TEST(contact_resolution_full_cycle)
 {
     BodyCollection bc = create_test_bodies(2);
-    ContactCollection cc = create_contact_collection(1);
+    ContactList cc = create_contact_list(1);
     
     // Setup collision scenario
     cc.normal[0] = vec3{0, 1, 0};
-    cc.p_1[0] = vec3{0, 0.1, 0};
-    cc.p_2[0] = vec3{0, -0.1, 0};
+    cc.point_on_a[0] = vec3{0, 0.1, 0};
+    cc.point_on_b[0] = vec3{0, -0.1, 0};
     bc.position[0] = vec3{0, 0.2, 0};
     bc.position[1] = vec3{0, -0.2, 0};
     bc.prev_position[0] = vec3{0, 0.2, 0};
@@ -561,7 +590,7 @@ TEST(contact_resolution_full_cycle)
     
     ASSERT_TRUE(cc.collision[0]);
     scalar penetration_after_position = 
-        m3d::dot(cc.p_1[0] - cc.p_2[0], cc.normal[0]);
+        m3d::dot(cc.point_on_a[0] - cc.point_on_b[0], cc.normal[0]);
     
     // Velocity level
     apply_constraint_velocity_level(cc, 0, bc, 0.01);
@@ -573,21 +602,21 @@ TEST(contact_resolution_full_cycle)
 TEST(contact_with_angular_velocity)
 {
     BodyCollection bc = create_test_bodies(2);
-    ContactCollection cc = create_contact_collection(1);
-    
-    // Contact point offset with angular velocity
-    cc.normal[0] = vec3{0, 1, 0};
-    cc.p_1[0] = vec3{1, 0.05, 0};
-    cc.p_2[0] = vec3{1, -0.05, 0};
+    ContactList cc = create_contact_list(1);
+
+    cc.normal[0]    = vec3{0,  1, 0};
+    cc.point_on_a[0] = vec3{1,  0.05, 0};
+    cc.point_on_b[0] = vec3{1, -0.05, 0};
+    cc.r_a_local[0]  = vec3{1,  0.05, 0};  // position[0] = {0,0,0}
+    cc.r_b_local[0]  = vec3{1, -0.05, 0};  // position[1] = {0,0,0}
     bc.position[0] = vec3{0, 0, 0};
     bc.position[1] = vec3{0, 0, 0};
     bc.prev_position[0] = vec3{0, 0, 0};
     bc.prev_position[1] = vec3{0, 0, 0};
-    bc.angular_velocity[0] = vec3{0, 0, 1}; // Spinning
-    
+    bc.angular_velocity[0] = vec3{0, 0, 1};
+
     apply_constraint_position_level(cc, 0, bc, 100.0);
-    
-    // Should handle angular contribution to relative velocity
+
     ASSERT_TRUE(cc.collision[0]);
 }
 
@@ -599,11 +628,11 @@ TEST(contact_between_static_bodies)
     bc.inverse_mass[0] = 0.0;
     bc.inverse_mass[1] = 0.0;
     
-    ContactCollection cc = create_contact_collection(1);
+    ContactList cc = create_contact_list(1);
     
     cc.normal[0] = vec3{0, 1, 0};
-    cc.p_1[0] = vec3{0, 0.05, 0};
-    cc.p_2[0] = vec3{0, -0.05, 0};
+    cc.point_on_a[0] = vec3{0, 0.05, 0};
+    cc.point_on_b[0] = vec3{0, -0.05, 0};
     bc.position[0] = vec3{0, 0, 0};
     bc.position[1] = vec3{0, 0, 0};
     bc.prev_position[0] = vec3{0, 0, 0};
@@ -622,29 +651,30 @@ TEST(contact_between_static_bodies)
 TEST(contact_normal_force_accumulation)
 {
     BodyCollection bc = create_test_bodies(2);
-    ContactCollection cc = create_contact_collection(1);
-    
-    cc.normal[0] = vec3{0, 1, 0};
-    cc.p_1[0] = vec3{0, 0.1, 0};
-    cc.p_2[0] = vec3{0, -0.1, 0};
+    ContactList cc = create_contact_list(1);
+
+    cc.normal[0]    = vec3{0,  1, 0};
+    cc.point_on_a[0] = vec3{0,  0.1, 0};
+    cc.point_on_b[0] = vec3{0, -0.1, 0};
+    cc.r_a_local[0]  = vec3{0,  0.1, 0};
+    cc.r_b_local[0]  = vec3{0, -0.1, 0};
     bc.position[0] = vec3{0, 0, 0};
     bc.position[1] = vec3{0, 0, 0};
     bc.prev_position[0] = vec3{0, 0, 0};
     bc.prev_position[1] = vec3{0, 0, 0};
-    
-    // First iteration
+
     apply_constraint_position_level(cc, 0, bc, 100.0);
-    scalar lambda_1 = cc.normal_constraint_lagrange_multiplier[0];
-    
-    // Simulate another iteration with remaining penetration
-    cc.p_1[0] = bc.position[0] + vec3{0, 0.05, 0};
-    cc.p_2[0] = bc.position[1] + vec3{0, -0.05, 0};
-    
+    scalar lambda_1 = cc.normal_lambda[0];
+
+    // Update r_local to reflect new body positions after first solve
+    cc.r_a_local[0] = vec3{0,  0.05, 0};
+    cc.r_b_local[0] = vec3{0, -0.05, 0};
+
     apply_constraint_position_level(cc, 0, bc, 100.0);
-    scalar lambda_2 = cc.normal_constraint_lagrange_multiplier[0];
-    
-    // Lagrange multiplier should accumulate
-    ASSERT_TRUE(lambda_2 >= lambda_1);
+    scalar lambda_2 = cc.normal_lambda[0];
+
+    ASSERT_TRUE(lambda_1 < 0.0);   // first solve actually did something
+    ASSERT_TRUE(lambda_2 <= lambda_1); // lambda is negative and grows more negative
 }
 
 TEST_SUITE(
@@ -655,10 +685,10 @@ TEST_SUITE(
     RUN_TEST(solve_normal_constraint_static_body),
     
     // Tangential Constraint Tests
-    RUN_TEST(solve_tangencial_constraint_no_slip),
-    RUN_TEST(solve_tangencial_constraint_with_slip),
-    RUN_TEST(solve_tangencial_constraint_exceeds_static_friction),
-    RUN_TEST(solve_tangencial_constraint_with_rotation),
+    RUN_TEST(solve_tangent_constraint_no_slip),
+    RUN_TEST(solve_tangent_constraint_with_slip),
+    RUN_TEST(solve_tangent_constraint_exceeds_static_friction),
+    RUN_TEST(solve_tangent_constraint_with_rotation),
     
     // Position Level Constraint Tests
     RUN_TEST(apply_constraint_position_level_no_collision),
