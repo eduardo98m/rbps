@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-03-14 07:35:33</td>
+            <td class="headerValue">2026-03-14 10:23:28</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -218,29 +218,29 @@
 <span id="L156"><span class="lineNum">     156</span>              :     //  Usage:</span>
 <span id="L157"><span class="lineNum">     157</span>              :     //    broad_phase_move_swept(bp, handle, tight_aabb, body.linear_vel, dt);</span>
 <span id="L158"><span class="lineNum">     158</span>              :     // -------------------------------------------------------------------------</span>
-<span id="L159"><span class="lineNum">     159</span> <span class="tlaGNC tlaBgGNC">           4 :     inline void broad_phase_move_swept(BroadPhaseState &amp;bp,</span></span>
+<span id="L159"><span class="lineNum">     159</span> <span class="tlaGNC tlaBgGNC">        1179 :     inline void broad_phase_move_swept(BroadPhaseState &amp;bp,</span></span>
 <span id="L160"><span class="lineNum">     160</span>              :                                        BPHandle         h,</span>
 <span id="L161"><span class="lineNum">     161</span>              :                                        const AABB      &amp;tight_aabb,</span>
 <span id="L162"><span class="lineNum">     162</span>              :                                        const m3d::vec3 &amp;linear_velocity,</span>
 <span id="L163"><span class="lineNum">     163</span>              :                                        m3d::scalar      dt)</span>
 <span id="L164"><span class="lineNum">     164</span>              :     {</span>
-<span id="L165"><span class="lineNum">     165</span> <span class="tlaGNC">           4 :         const m3d::scalar margin = bp.config.fat_margin;</span></span>
-<span id="L166"><span class="lineNum">     166</span> <span class="tlaGNC">           4 :         const m3d::vec3   dv     = linear_velocity * dt;</span></span>
+<span id="L165"><span class="lineNum">     165</span> <span class="tlaGNC">        1179 :         const m3d::scalar margin = bp.config.fat_margin;</span></span>
+<span id="L166"><span class="lineNum">     166</span> <span class="tlaGNC">        1179 :         const m3d::vec3   dv     = linear_velocity * dt;</span></span>
 <span id="L167"><span class="lineNum">     167</span>              : </span>
 <span id="L168"><span class="lineNum">     168</span>              :         // Expand min side where velocity is negative, max side where positive.</span>
 <span id="L169"><span class="lineNum">     169</span>              :         const m3d::vec3 expand_min(</span>
-<span id="L170"><span class="lineNum">     170</span> <span class="tlaGNC">           4 :             margin + (dv.x &lt; 0 ? -dv.x : m3d::scalar(0)),</span></span>
-<span id="L171"><span class="lineNum">     171</span> <span class="tlaGNC">           4 :             margin + (dv.y &lt; 0 ? -dv.y : m3d::scalar(0)),</span></span>
-<span id="L172"><span class="lineNum">     172</span> <span class="tlaGNC">          12 :             margin + (dv.z &lt; 0 ? -dv.z : m3d::scalar(0)));</span></span>
+<span id="L170"><span class="lineNum">     170</span> <span class="tlaGNC">        1179 :             margin + (dv.x &lt; 0 ? -dv.x : m3d::scalar(0)),</span></span>
+<span id="L171"><span class="lineNum">     171</span> <span class="tlaGNC">        1179 :             margin + (dv.y &lt; 0 ? -dv.y : m3d::scalar(0)),</span></span>
+<span id="L172"><span class="lineNum">     172</span> <span class="tlaGNC">        3537 :             margin + (dv.z &lt; 0 ? -dv.z : m3d::scalar(0)));</span></span>
 <span id="L173"><span class="lineNum">     173</span>              : </span>
 <span id="L174"><span class="lineNum">     174</span>              :         const m3d::vec3 expand_max(</span>
-<span id="L175"><span class="lineNum">     175</span> <span class="tlaGNC">           4 :             margin + (dv.x &gt; 0 ?  dv.x : m3d::scalar(0)),</span></span>
-<span id="L176"><span class="lineNum">     176</span> <span class="tlaGNC">           4 :             margin + (dv.y &gt; 0 ?  dv.y : m3d::scalar(0)),</span></span>
-<span id="L177"><span class="lineNum">     177</span> <span class="tlaGNC">          12 :             margin + (dv.z &gt; 0 ?  dv.z : m3d::scalar(0)));</span></span>
+<span id="L175"><span class="lineNum">     175</span> <span class="tlaGNC">        1179 :             margin + (dv.x &gt; 0 ?  dv.x : m3d::scalar(0)),</span></span>
+<span id="L176"><span class="lineNum">     176</span> <span class="tlaGNC">        1179 :             margin + (dv.y &gt; 0 ?  dv.y : m3d::scalar(0)),</span></span>
+<span id="L177"><span class="lineNum">     177</span> <span class="tlaGNC">        3537 :             margin + (dv.z &gt; 0 ?  dv.z : m3d::scalar(0)));</span></span>
 <span id="L178"><span class="lineNum">     178</span>              : </span>
-<span id="L179"><span class="lineNum">     179</span> <span class="tlaGNC">           8 :         broad_phase_move(bp, h, AABB{tight_aabb.min - expand_min,</span></span>
-<span id="L180"><span class="lineNum">     180</span> <span class="tlaGNC">           4 :                                      tight_aabb.max + expand_max});</span></span>
-<span id="L181"><span class="lineNum">     181</span> <span class="tlaGNC">           4 :     }</span></span>
+<span id="L179"><span class="lineNum">     179</span> <span class="tlaGNC">        2358 :         broad_phase_move(bp, h, AABB{tight_aabb.min - expand_min,</span></span>
+<span id="L180"><span class="lineNum">     180</span> <span class="tlaGNC">        1179 :                                      tight_aabb.max + expand_max});</span></span>
+<span id="L181"><span class="lineNum">     181</span> <span class="tlaGNC">        1179 :     }</span></span>
 <span id="L182"><span class="lineNum">     182</span>              : </span>
 <span id="L183"><span class="lineNum">     183</span>              :     // Convenience: shape + transform + velocity.</span>
 <span id="L184"><span class="lineNum">     184</span>              :     inline void broad_phase_move_shape_swept(BroadPhaseState &amp;bp,</span>

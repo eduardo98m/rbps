@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-03-14 07:35:33</td>
+            <td class="headerValue">2026-03-14 10:23:28</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -275,12 +275,12 @@
 <span id="L213"><span class="lineNum">     213</span> <span class="tlaGNC">           5 :         bc.angular_velocity[b2] -= delta_omega;</span></span>
 <span id="L214"><span class="lineNum">     214</span> <span class="tlaGNC">           5 :     };</span></span>
 <span id="L215"><span class="lineNum">     215</span>              : </span>
-<span id="L216"><span class="lineNum">     216</span> <span class="tlaGNC">           1 :     void compute_joint_errors(JointCollection &amp;jc,</span></span>
+<span id="L216"><span class="lineNum">     216</span> <span class="tlaGNC">       13441 :     void compute_joint_errors(JointCollection &amp;jc,</span></span>
 <span id="L217"><span class="lineNum">     217</span>              :                               BodyCollection &amp;bc,</span>
 <span id="L218"><span class="lineNum">     218</span>              :                               ConstraintCollection &amp;cc,</span>
 <span id="L219"><span class="lineNum">     219</span>              :                               scalar time_step)</span>
 <span id="L220"><span class="lineNum">     220</span>              :     {</span>
-<span id="L221"><span class="lineNum">     221</span> <span class="tlaGNC">           4 :         for (uint32_t i = 0; i &lt; jc.count(); ++i)</span></span>
+<span id="L221"><span class="lineNum">     221</span> <span class="tlaGNC">       13444 :         for (uint32_t i = 0; i &lt; jc.count(); ++i)</span></span>
 <span id="L222"><span class="lineNum">     222</span>              :         {</span>
 <span id="L223"><span class="lineNum">     223</span> <span class="tlaGNC">           3 :             switch (jc.type[i])</span></span>
 <span id="L224"><span class="lineNum">     224</span>              :             {</span>
@@ -297,16 +297,16 @@
 <span id="L235"><span class="lineNum">     235</span> <span class="tlaUNC">           0 :                 break;</span></span>
 <span id="L236"><span class="lineNum">     236</span>              :             }</span>
 <span id="L237"><span class="lineNum">     237</span>              :         }</span>
-<span id="L238"><span class="lineNum">     238</span> <span class="tlaGNC tlaBgGNC">           1 :     }</span></span>
+<span id="L238"><span class="lineNum">     238</span> <span class="tlaGNC tlaBgGNC">       13441 :     }</span></span>
 <span id="L239"><span class="lineNum">     239</span>              : </span>
 <span id="L240"><span class="lineNum">     240</span>              :     /**</span>
 <span id="L241"><span class="lineNum">     241</span>              :      * @brief Applies joint damping</span>
 <span id="L242"><span class="lineNum">     242</span>              :      */</span>
-<span id="L243"><span class="lineNum">     243</span> <span class="tlaGNC">           1 :     void apply_joint_damping(JointCollection &amp;jc,</span></span>
+<span id="L243"><span class="lineNum">     243</span> <span class="tlaGNC">       13441 :     void apply_joint_damping(JointCollection &amp;jc,</span></span>
 <span id="L244"><span class="lineNum">     244</span>              :                              BodyCollection &amp;bc,</span>
 <span id="L245"><span class="lineNum">     245</span>              :                              scalar time_step)</span>
 <span id="L246"><span class="lineNum">     246</span>              :     {</span>
-<span id="L247"><span class="lineNum">     247</span> <span class="tlaGNC">           3 :         for (uint32_t i = 0; i &lt; jc.count(); ++i)</span></span>
+<span id="L247"><span class="lineNum">     247</span> <span class="tlaGNC">       13443 :         for (uint32_t i = 0; i &lt; jc.count(); ++i)</span></span>
 <span id="L248"><span class="lineNum">     248</span>              :         {</span>
 <span id="L249"><span class="lineNum">     249</span> <span class="tlaGNC">           2 :             switch (jc.type[i])</span></span>
 <span id="L250"><span class="lineNum">     250</span>              :             {</span>
@@ -320,7 +320,7 @@
 <span id="L258"><span class="lineNum">     258</span> <span class="tlaUNC">           0 :                 break;</span></span>
 <span id="L259"><span class="lineNum">     259</span>              :             }</span>
 <span id="L260"><span class="lineNum">     260</span>              :         }</span>
-<span id="L261"><span class="lineNum">     261</span> <span class="tlaGNC tlaBgGNC">           1 :     }</span></span>
+<span id="L261"><span class="lineNum">     261</span> <span class="tlaGNC tlaBgGNC">       13441 :     }</span></span>
 <span id="L262"><span class="lineNum">     262</span>              : }</span>
         </pre>
               </td>

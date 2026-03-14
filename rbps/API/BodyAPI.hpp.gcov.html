@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-03-14 07:35:33</td>
+            <td class="headerValue">2026-03-14 10:23:28</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -108,33 +108,33 @@
 <span id="L46"><span class="lineNum">      46</span>              :      *   uint32_t i    = bc.index_of(ball);    // packed index for direct array access</span>
 <span id="L47"><span class="lineNum">      47</span>              :      * @endcode</span>
 <span id="L48"><span class="lineNum">      48</span>              :      */</span>
-<span id="L49"><span class="lineNum">      49</span> <span class="tlaGNC tlaBgGNC">          83 :     inline uint32_t create_body(BodyCollection &amp;bc, const BodyParams &amp;params = {})</span></span>
+<span id="L49"><span class="lineNum">      49</span> <span class="tlaGNC tlaBgGNC">         103 :     inline uint32_t create_body(BodyCollection &amp;bc, const BodyParams &amp;params = {})</span></span>
 <span id="L50"><span class="lineNum">      50</span>              :     {</span>
-<span id="L51"><span class="lineNum">      51</span> <span class="tlaGNC">          83 :         uint32_t id = bc.add();       // allocates slot, zero-inits all field vectors</span></span>
-<span id="L52"><span class="lineNum">      52</span> <span class="tlaGNC">          83 :         uint32_t i = bc.index_of(id); // packed data index of the new item</span></span>
+<span id="L51"><span class="lineNum">      51</span> <span class="tlaGNC">         103 :         uint32_t id = bc.add();       // allocates slot, zero-inits all field vectors</span></span>
+<span id="L52"><span class="lineNum">      52</span> <span class="tlaGNC">         103 :         uint32_t i = bc.index_of(id); // packed data index of the new item</span></span>
 <span id="L53"><span class="lineNum">      53</span>              : </span>
-<span id="L54"><span class="lineNum">      54</span> <span class="tlaGNC">          83 :         const scalar inv_mass = (params.type == STATIC) ? scalar(0) : scalar(1) / params.mass;</span></span>
-<span id="L55"><span class="lineNum">      55</span> <span class="tlaGNC">          83 :         const smat3 I_inv = (params.type == STATIC) ? smat3{} : params.inertia_tensor.inverse();</span></span>
+<span id="L54"><span class="lineNum">      54</span> <span class="tlaGNC">         103 :         const scalar inv_mass = (params.type == STATIC) ? scalar(0) : scalar(1) / params.mass;</span></span>
+<span id="L55"><span class="lineNum">      55</span> <span class="tlaGNC">         103 :         const smat3 I_inv = (params.type == STATIC) ? smat3{} : params.inertia_tensor.inverse();</span></span>
 <span id="L56"><span class="lineNum">      56</span>              : </span>
-<span id="L57"><span class="lineNum">      57</span> <span class="tlaGNC">          83 :         bc.force[i] = vec3{0, -9.8f * params.mass, 0};</span></span>
-<span id="L58"><span class="lineNum">      58</span> <span class="tlaGNC">          83 :         bc.torque[i] = vec3(0);</span></span>
-<span id="L59"><span class="lineNum">      59</span> <span class="tlaGNC">          83 :         bc.mass[i] = params.mass;</span></span>
-<span id="L60"><span class="lineNum">      60</span> <span class="tlaGNC">          83 :         bc.inverse_mass[i] = inv_mass;</span></span>
-<span id="L61"><span class="lineNum">      61</span> <span class="tlaGNC">          83 :         bc.type[i] = params.type;</span></span>
-<span id="L62"><span class="lineNum">      62</span> <span class="tlaGNC">          83 :         bc.position[i] = params.position;</span></span>
-<span id="L63"><span class="lineNum">      63</span> <span class="tlaGNC">          83 :         bc.orientation[i] = params.orientation;</span></span>
-<span id="L64"><span class="lineNum">      64</span> <span class="tlaGNC">          83 :         bc.linear_velocity[i] = params.linear_velocity;</span></span>
-<span id="L65"><span class="lineNum">      65</span> <span class="tlaGNC">          83 :         bc.angular_velocity[i] = params.angular_velocity;</span></span>
-<span id="L66"><span class="lineNum">      66</span> <span class="tlaGNC">          83 :         bc.prev_position[i] = params.position;</span></span>
-<span id="L67"><span class="lineNum">      67</span> <span class="tlaGNC">          83 :         bc.prev_orientation[i] = params.orientation;</span></span>
-<span id="L68"><span class="lineNum">      68</span> <span class="tlaGNC">          83 :         bc.prev_linear_velocity[i] = params.linear_velocity;</span></span>
-<span id="L69"><span class="lineNum">      69</span> <span class="tlaGNC">          83 :         bc.prev_angular_velocity[i] = params.angular_velocity;</span></span>
-<span id="L70"><span class="lineNum">      70</span> <span class="tlaGNC">          83 :         bc.inertia_tensor[i] = params.inertia_tensor;</span></span>
-<span id="L71"><span class="lineNum">      71</span> <span class="tlaGNC">          83 :         bc.inverse_inertia_tensor[i] = I_inv;</span></span>
-<span id="L72"><span class="lineNum">      72</span> <span class="tlaGNC">          83 :         bc.inertia_tensor_world[i] = params.inertia_tensor;</span></span>
-<span id="L73"><span class="lineNum">      73</span> <span class="tlaGNC">          83 :         bc.inverse_inertia_tensor_world[i] = I_inv;</span></span>
+<span id="L57"><span class="lineNum">      57</span> <span class="tlaGNC">         103 :         bc.force[i] = vec3{0, -9.8f * params.mass, 0};</span></span>
+<span id="L58"><span class="lineNum">      58</span> <span class="tlaGNC">         103 :         bc.torque[i] = vec3(0);</span></span>
+<span id="L59"><span class="lineNum">      59</span> <span class="tlaGNC">         103 :         bc.mass[i] = params.mass;</span></span>
+<span id="L60"><span class="lineNum">      60</span> <span class="tlaGNC">         103 :         bc.inverse_mass[i] = inv_mass;</span></span>
+<span id="L61"><span class="lineNum">      61</span> <span class="tlaGNC">         103 :         bc.type[i] = params.type;</span></span>
+<span id="L62"><span class="lineNum">      62</span> <span class="tlaGNC">         103 :         bc.position[i] = params.position;</span></span>
+<span id="L63"><span class="lineNum">      63</span> <span class="tlaGNC">         103 :         bc.orientation[i] = params.orientation;</span></span>
+<span id="L64"><span class="lineNum">      64</span> <span class="tlaGNC">         103 :         bc.linear_velocity[i] = params.linear_velocity;</span></span>
+<span id="L65"><span class="lineNum">      65</span> <span class="tlaGNC">         103 :         bc.angular_velocity[i] = params.angular_velocity;</span></span>
+<span id="L66"><span class="lineNum">      66</span> <span class="tlaGNC">         103 :         bc.prev_position[i] = params.position;</span></span>
+<span id="L67"><span class="lineNum">      67</span> <span class="tlaGNC">         103 :         bc.prev_orientation[i] = params.orientation;</span></span>
+<span id="L68"><span class="lineNum">      68</span> <span class="tlaGNC">         103 :         bc.prev_linear_velocity[i] = params.linear_velocity;</span></span>
+<span id="L69"><span class="lineNum">      69</span> <span class="tlaGNC">         103 :         bc.prev_angular_velocity[i] = params.angular_velocity;</span></span>
+<span id="L70"><span class="lineNum">      70</span> <span class="tlaGNC">         103 :         bc.inertia_tensor[i] = params.inertia_tensor;</span></span>
+<span id="L71"><span class="lineNum">      71</span> <span class="tlaGNC">         103 :         bc.inverse_inertia_tensor[i] = I_inv;</span></span>
+<span id="L72"><span class="lineNum">      72</span> <span class="tlaGNC">         103 :         bc.inertia_tensor_world[i] = params.inertia_tensor;</span></span>
+<span id="L73"><span class="lineNum">      73</span> <span class="tlaGNC">         103 :         bc.inverse_inertia_tensor_world[i] = I_inv;</span></span>
 <span id="L74"><span class="lineNum">      74</span>              : </span>
-<span id="L75"><span class="lineNum">      75</span> <span class="tlaGNC">          83 :         return id;</span></span>
+<span id="L75"><span class="lineNum">      75</span> <span class="tlaGNC">         103 :         return id;</span></span>
 <span id="L76"><span class="lineNum">      76</span>              :     }</span>
 <span id="L77"><span class="lineNum">      77</span>              : </span>
 <span id="L78"><span class="lineNum">      78</span>              :     /**</span>
