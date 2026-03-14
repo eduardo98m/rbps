@@ -65,7 +65,7 @@ namespace rbc
 
             const m3d::scalar min_pen = m3d::min(px, m3d::min(py, pz));
 
-            out.normal = tf_box.rotate_vector(local_normal);
+            out.normal = -tf_box.rotate_vector(local_normal); // normal points from box (A) to sphere (B) (the direction the sphere needs to move to exit)
             out.penetration_depth = sphere.radius + min_pen;
             out.pos = tf_sphere.pos - out.normal * sphere.radius; // deepest point of sphere
             return true;
