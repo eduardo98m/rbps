@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-03-14 04:59:24</td>
+            <td class="headerValue">2026-03-14 07:35:33</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -86,18 +86,18 @@
 <span id="L24"><span class="lineNum">      24</span>              :     // -----------------------------------------------------------------------</span>
 <span id="L25"><span class="lineNum">      25</span>              : </span>
 <span id="L26"><span class="lineNum">      26</span>              :     /// Register a collider and insert it into the broad phase.</span>
-<span id="L27"><span class="lineNum">      27</span>              :     /// Returns a stable ivc::ID (never changes even after other removes).</span>
-<span id="L28"><span class="lineNum">      28</span> <span class="tlaGNC tlaBgGNC">          33 :     inline u_int32_t collider_add(ColliderCollection &amp;cc,</span></span>
+<span id="L27"><span class="lineNum">      27</span>              :     /// Returns a stable uint32_t ID for referencing this collider later (e.g. to remove it).</span>
+<span id="L28"><span class="lineNum">      28</span> <span class="tlaGNC tlaBgGNC">          33 :     inline u_int32_t create_collider(ColliderCollection &amp;cc,</span></span>
 <span id="L29"><span class="lineNum">      29</span>              :                                 rbc::BroadPhaseState &amp;bp,</span>
 <span id="L30"><span class="lineNum">      30</span>              :                                 const ColliderParams &amp;p,</span>
-<span id="L31"><span class="lineNum">      31</span>              :                                 const m3d::tf &amp;initial_world_tf)</span>
+<span id="L31"><span class="lineNum">      31</span>              :                                 const m3d::tf &amp;body_world_tf)</span>
 <span id="L32"><span class="lineNum">      32</span>              :     {</span>
 <span id="L33"><span class="lineNum">      33</span> <span class="tlaGNC">          33 :         u_int32_t id = cc.add();</span></span>
 <span id="L34"><span class="lineNum">      34</span> <span class="tlaGNC">          33 :         uint32_t i = cc.index_of(id);</span></span>
 <span id="L35"><span class="lineNum">      35</span>              : </span>
 <span id="L36"><span class="lineNum">      36</span>              :         // Compute the world-space transform for the initial AABB</span>
-<span id="L37"><span class="lineNum">      37</span> <span class="tlaGNC">          33 :         m3d::vec3 world_pos = initial_world_tf.pos + m3d::rotate(initial_world_tf.rot, p.local_pos);</span></span>
-<span id="L38"><span class="lineNum">      38</span> <span class="tlaGNC">          33 :         m3d::quat world_rot = initial_world_tf.rot * p.local_rot;</span></span>
+<span id="L37"><span class="lineNum">      37</span> <span class="tlaGNC">          33 :         m3d::vec3 world_pos = body_world_tf.pos + m3d::rotate(body_world_tf.rot, p.local_pos);</span></span>
+<span id="L38"><span class="lineNum">      38</span> <span class="tlaGNC">          33 :         m3d::quat world_rot = body_world_tf.rot * p.local_rot;</span></span>
 <span id="L39"><span class="lineNum">      39</span> <span class="tlaGNC">          33 :         m3d::tf world_tf{world_pos, world_rot};</span></span>
 <span id="L40"><span class="lineNum">      40</span>              : </span>
 <span id="L41"><span class="lineNum">      41</span> <span class="tlaGNC">          33 :         rbc::AABB tight = compute_aabb(p.shape, world_tf);</span></span>
