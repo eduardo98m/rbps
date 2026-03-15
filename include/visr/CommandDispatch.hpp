@@ -22,8 +22,16 @@ namespace visr
                    {
                        using T = std::decay_t<decltype(c)>;
 
+                       // ── Pause/resume (handled at DebugChannel level; no-op here) ───────
+                       if constexpr (std::is_same_v<T, CmdPause>)
+                       {
+                       }
+                       else if constexpr (std::is_same_v<T, CmdResume>)
+                       {
+                       }
+
                        // ── Simulation config ────────────────────────────────────────
-                       if constexpr (std::is_same_v<T, CmdSetTimestep>)
+                       else if constexpr (std::is_same_v<T, CmdSetTimestep>)
                        {
                            world.timestep = c.timestep;
                            world.substeps = c.substeps;

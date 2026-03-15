@@ -54,86 +54,80 @@ target_link_libraries(rbps_lib PUBLIC rbc_lib)
 #    • CMake handles the dependency graph; targets are available immediately.
 #    • To update a dep: change the GIT_TAG line and re-run cmake.
 # ============================================================================
-
-
-cmake_minimum_required(VERSION 3.14)
  
-option(RBPS_BUILD_VISR "Build the rbps visualizer (requires Raylib + ImGui)" OFF)
+ option(RBPS_BUILD_VISR "Build the rbps visualizer (requires Raylib + ImGui)" OFF)
  
-if(NOT RBPS_BUILD_VISR)
-    return()
-endif()
+if(RBPS_BUILD_VISR)
+    include(FetchContent)
  
-include(FetchContent)
+    # ── 1. Raylib ──────────────────────────────────────────────────────────
+    find_package(raylib 5.0 QUIET)
+    if(NOT raylib_FOUND)
+        message(STATUS "[visr] raylib not found, fetching 5.5...")
+        fetchcontent_declare(raylib
+            GIT_REPOSITORY https://github.com/raysan5/raylib.git
+            GIT_TAG        5.5
+            GIT_SHALLOW    TRUE
+        )
+        set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+        set(BUILD_GAMES    OFF CACHE BOOL "" FORCE)
+        fetchcontent_makeavailable(raylib)
+    else()
+        message(STATUS "[visr] using system raylib ${raylib_VERSION}")
+    endif()
  
-# ── 1. Raylib ─────────────────────────────────────────────────────────────────
-find_package(raylib 5.0 QUIET)
- 
-if(NOT raylib_FOUND)
-    message(STATUS "[visr] raylib not found, fetching 5.5...")
-    fetchcontent_declare(raylib
-        GIT_REPOSITORY https://github.com/raysan5/raylib.git
-        GIT_TAG        5.5
+    # ── 2. Dear ImGui ──────────────────────────────────────────────────────
+    #  Must be >= 1.92.1 — rlImGui uses the new Font API introduced there.
+    fetchcontent_declare(imgui
+        GIT_REPOSITORY https://github.com/ocornut/imgui.git
+        GIT_TAG        v1.92.6
         GIT_SHALLOW    TRUE
     )
-    set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-    set(BUILD_GAMES    OFF CACHE BOOL "" FORCE)
-    fetchcontent_makeavailable(raylib)
-else()
-    message(STATUS "[visr] using system raylib ${raylib_VERSION}")
-endif()
+    fetchcontent_makeavailable(imgui)
  
-# ── 2. Dear ImGui ─────────────────────────────────────────────────────────────
-#  Must be >= 1.92.1 — rlImGui uses the new Font API introduced there.
-#  Pin to v1.92.6 (latest as of 2025-03).
-fetchcontent_declare(imgui
-    GIT_REPOSITORY https://github.com/ocornut/imgui.git
-    GIT_TAG        v1.92.6
-    GIT_SHALLOW    TRUE
-)
-fetchcontent_makeavailable(imgui)
+    add_library(imgui_rbps STATIC
+        ${imgui_SOURCE_DIR}/imgui.cpp
+        ${imgui_SOURCE_DIR}/imgui_draw.cpp
+        ${imgui_SOURCE_DIR}/imgui_tables.cpp
+        ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+    )
+    target_include_directories(imgui_rbps PUBLIC ${imgui_SOURCE_DIR})
  
-add_library(imgui_rbps STATIC
-    ${imgui_SOURCE_DIR}/imgui.cpp
-    ${imgui_SOURCE_DIR}/imgui_draw.cpp
-    ${imgui_SOURCE_DIR}/imgui_tables.cpp
-    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
-)
-target_include_directories(imgui_rbps PUBLIC ${imgui_SOURCE_DIR})
+    # ── 3. rlImGui ─────────────────────────────────────────────────────────
+    #  No release tags exist — pin to a known-good commit SHA.
+    #  To update: grab a new SHA from:
+    #    https://github.com/raylib-extras/rlImGui/commits/main
+    fetchcontent_declare(rlimgui
+        GIT_REPOSITORY https://github.com/raylib-extras/rlImGui.git
+        GIT_TAG        4d8a618
+        GIT_SHALLOW    FALSE   # shallow clone cannot resolve a commit SHA
+    )
+    fetchcontent_makeavailable(rlimgui)
  
-# ── 3. rlImGui ────────────────────────────────────────────────────────────────
-#  rlImGui has NO release tags — we pin to a commit SHA.
-#  4d8a618 = latest main as of 2025-03, compatible with ImGui >= 1.92.1.
-#  To update: grab a new SHA from https://github.com/raylib-extras/rlImGui/commits/main
-fetchcontent_declare(rlimgui
-    GIT_REPOSITORY https://github.com/raylib-extras/rlImGui.git
-    GIT_TAG        4d8a618
-    GIT_SHALLOW    FALSE   # shallow clone cannot be used with a commit SHA
-)
-fetchcontent_makeavailable(rlimgui)
+    add_library(rlimgui_rbps STATIC
+        ${rlimgui_SOURCE_DIR}/rlImGui.cpp
+    )
+    target_include_directories(rlimgui_rbps PUBLIC ${rlimgui_SOURCE_DIR})
+    target_link_libraries(rlimgui_rbps PUBLIC raylib imgui_rbps)
  
-add_library(rlimgui_rbps STATIC
-    ${rlimgui_SOURCE_DIR}/rlImGui.cpp
-)
-target_include_directories(rlimgui_rbps PUBLIC ${rlimgui_SOURCE_DIR})
-target_link_libraries(rlimgui_rbps PUBLIC raylib imgui_rbps)
+    # ── 4. visr full target (headers + raylib + imgui) ─────────────────────
+    add_library(visr_lib INTERFACE)
+    target_include_directories(visr_lib INTERFACE ${CMAKE_SOURCE_DIR}/include)
+    target_link_libraries(visr_lib INTERFACE rbps_lib raylib imgui_rbps rlimgui_rbps)
  
-# ── 4. visr (header-only interface target) ────────────────────────────────────
-add_library(visr_lib INTERFACE)
-target_include_directories(visr_lib INTERFACE ${CMAKE_SOURCE_DIR}/include)
-target_link_libraries(visr_lib INTERFACE
-    rbps_lib
-    raylib
-    imgui_rbps
-    rlimgui_rbps
-)
+    # ── 5. visr headless target (headers only, no raylib/imgui) ───────────
+    #  Used exclusively by the unit tests so they never link a display lib.
+    add_library(visr_headless INTERFACE)
+    target_include_directories(visr_headless INTERFACE ${CMAKE_SOURCE_DIR}/include)
+    target_link_libraries(visr_headless INTERFACE rbps_lib)
+ 
+    # ── 6. Demo application ────────────────────────────────────────────────
+    add_executable(visr_demo src/visr_demo/main.cpp)
+    target_link_libraries(visr_demo PRIVATE visr_lib)
+ 
+    message(STATUS "[visr] targets: visr_lib, visr_headless, visr_demo")
+endif() # RBPS_BUILD_VISR
 
-# ── 5. Demo application ───────────────────────────────────────────────────────
-#Replace src/visr_demo/main.cpp with your own scene setup.
-add_executable(visr_demo src/visr_demo/main.cpp)
-target_link_libraries(visr_demo PRIVATE visr_lib)
-
-message(STATUS "[visr] visualizer targets built: visr_lib, visr_demo")
 
 #----------------------------------------------------------
 
@@ -269,3 +263,21 @@ add_test(NAME test_colliderAPI COMMAND test_colliderAPI)
 add_executable(test_world tests/rbps/API/test_world.cpp)
 target_link_libraries(test_world PRIVATE rbps_lib)
 add_test(NAME test_world COMMAND test_world)
+
+# VISR Tests
+if(RBPS_BUILD_VISR)
+    # ── 7. visr unit tests ─────────────────────────────────────────────────
+    #  These test SnapshotBuilder, Transport, DebugChannel, CommandDispatch.
+    #  No window or GPU required — headless target, safe in CI.
+    function(add_visr_test name)
+        add_executable(${name} tests/visr/${name}.cpp)
+        target_include_directories(${name} PRIVATE tests/visr)
+        target_link_libraries(${name} PRIVATE visr_headless)
+        add_test(NAME ${name} COMMAND ${name})
+    endfunction()
+ 
+    add_visr_test(test_snapshot_builder)
+    add_visr_test(test_transport)
+    add_visr_test(test_debug_channel)
+    add_visr_test(test_command_dispatch)
+endif() # RBPS_BUILD_VISR

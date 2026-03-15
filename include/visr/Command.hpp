@@ -100,9 +100,18 @@ namespace visr
 
     struct CmdSetGravity { m3d::vec3 gravity; };
 
+    // ── Simulation pause / resume ────────────────────────────────────────────
+
+    /// Pause the simulation (physics thread stops calling world.step()).
+    struct CmdPause  {};
+    /// Resume a previously paused simulation.
+    struct CmdResume {};
+
     // ── Variant ─────────────────────────────────────────────────────────────
 
     using Command = std::variant<
+        CmdPause,
+        CmdResume,
         CmdSetTimestep,
         CmdSelectBody,
         CmdSelectCollider,

@@ -41,6 +41,7 @@ static void build_scene(rbps::World &world)
 
     // ADAPT: replace field names to match your ColliderParams struct
     rbps::ColliderParams ground_col{};
+    ground_col.shape            = rbc::Box({5.0f, 0.3f, 5.0f});
     ground_col.body_id          = ground_id;
     ground_col.local_pos        = m3d::vec3{0, 0, 0};
     ground_col.local_rot        = m3d::quat{0, 0, 0, 1};
@@ -71,13 +72,13 @@ static void build_scene(rbps::World &world)
         stack_ids[i] = world.create_body(bp);
 
         rbps::ColliderParams cp{};
+        cp.shape            = rbc::Box({BOX_HALF, BOX_HALF, BOX_HALF});
         cp.body_id          = stack_ids[i];
         cp.local_pos        = m3d::vec3{0, 0, 0};
         cp.local_rot        = m3d::quat{0, 0, 0, 1};
         cp.restitution      = 0.2f;
         cp.static_friction  = 0.5f;
         cp.dynamic_friction = 0.3f;
-        // ADAPT: cp.shape = rbc::Shape::make_box({BOX_HALF, BOX_HALF, BOX_HALF});
         world.create_collider(cp);
     }
 
@@ -106,7 +107,7 @@ static void build_scene(rbps::World &world)
     bob_col.restitution      = 0.5f;
     bob_col.static_friction  = 0.3f;
     bob_col.dynamic_friction = 0.2f;
-    // ADAPT: bob_col.shape = rbc::Shape::make_sphere(0.2f);
+    bob_col.shape = rbc::Sphere(0.2);
     world.create_collider(bob_col);
 
     // ADAPT: replace field names to match your RevoluteJointParams struct
@@ -205,7 +206,7 @@ int main()
         });
 
         // Render thread (must be the main thread on macOS/Windows)
-        InitWindow(1440, 900, "rbps visualizer — demo");
+        InitWindow(1440, 900, "rbps visr — demo");
         SetTargetFPS(60);
         rlImGuiSetup(true);
 
