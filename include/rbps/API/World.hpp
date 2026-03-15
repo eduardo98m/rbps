@@ -140,14 +140,15 @@ namespace rbps
             rbc::broad_phase_update(broad_phase_state);
 
             // 3. Discard last frame's contacts (resets lambdas too).
-            contacts.clear();
-            contacts.reserve(broad_phase_state.pairs.size() * 2); // rough pre-alloc
-            // 4. Narrow phase dispatch → contacts
-            rbps::run_narrow_phase(broad_phase_state, colliders, bodies, contacts);
+            
 
             // ── SUBSTEP LOOP ──────────────────────────────────────────────
             for (int i = 0; i < substeps; ++i)
             {   
+                contacts.clear();
+                contacts.reserve(broad_phase_state.pairs.size() * 2); // rough pre-alloc
+                // 4. Narrow phase dispatch → contacts
+                rbps::run_narrow_phase(broad_phase_state, colliders, bodies, contacts);
                 update_position_and_orientation(bodies, h);
                 solve_positions(inv_h, h);
                 update_velocities(bodies, inv_h);

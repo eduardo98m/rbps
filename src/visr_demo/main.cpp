@@ -55,32 +55,32 @@ static void build_scene(rbps::World &world)
 
     // ── Stack of dynamic boxes ────────────────────────────────────────────
 
-    uint32_t stack_ids[STACK_COUNT];
-    for (int i = 0; i < STACK_COUNT; ++i)
-    {
-        const float y = GROUND_Y + 0.3f + BOX_HALF + i * (BOX_HALF * 2.0f + 0.02f);
+    // uint32_t stack_ids[STACK_COUNT];
+    // for (int i = 0; i < STACK_COUNT; ++i)
+    // {
+    //     const float y = GROUND_Y + 0.3f + BOX_HALF + i * (BOX_HALF * 2.0f + 0.02f);
 
-        rbps::BodyParams bp{};
-        bp.type     = rbps::BodyType::DYNAMIC;
-        bp.position = m3d::vec3{0.0f, y, 0.0f};
-        bp.mass     = 1.0f;
-        // ADAPT: inertia tensor for a uniform box:
-        //   I = mass/12 * (h²+d², w²+d², w²+h²)  with w=h=d=2*BOX_HALF
-        const float side = BOX_HALF * 2.0f;
-        const float I    = (1.0f / 6.0f) * bp.mass * side * side;
-        bp.inertia_tensor = m3d::smat3(I, I, I, 0, 0, 0);
-        stack_ids[i] = world.create_body(bp);
+    //     rbps::BodyParams bp{};
+    //     bp.type     = rbps::BodyType::DYNAMIC;
+    //     bp.position = m3d::vec3{0.0f, y, 0.0f};
+    //     bp.mass     = 1.0f;
+    //     // ADAPT: inertia tensor for a uniform box:
+    //     //   I = mass/12 * (h²+d², w²+d², w²+h²)  with w=h=d=2*BOX_HALF
+    //     const float side = BOX_HALF * 2.0f;
+    //     const float I    = (1.0f / 6.0f) * bp.mass * side * side;
+    //     bp.inertia_tensor = m3d::smat3(I, I, I, 0, 0, 0);
+    //     stack_ids[i] = world.create_body(bp);
 
-        rbps::ColliderParams cp{};
-        cp.shape            = rbc::Box({BOX_HALF, BOX_HALF, BOX_HALF});
-        cp.body_id          = stack_ids[i];
-        cp.local_pos        = m3d::vec3{0, 0, 0};
-        cp.local_rot        = m3d::quat{0, 0, 0, 1};
-        cp.restitution      = 0.2f;
-        cp.static_friction  = 0.5f;
-        cp.dynamic_friction = 0.3f;
-        world.create_collider(cp);
-    }
+    //     rbps::ColliderParams cp{};
+    //     cp.shape            = rbc::Box({BOX_HALF, BOX_HALF, BOX_HALF});
+    //     cp.body_id          = stack_ids[i];
+    //     cp.local_pos        = m3d::vec3{0, 0, 0};
+    //     cp.local_rot        = m3d::quat{0, 0, 0, 1};
+    //     cp.restitution      = 0.2f;
+    //     cp.static_friction  = 0.5f;
+    //     cp.dynamic_friction = 0.3f;
+    //     world.create_collider(cp);
+    // }
 
     // ── Pendulum (revolute joint) ─────────────────────────────────────────
     //  pivot_body is static, bob hangs from it via a revolute joint.
@@ -122,6 +122,52 @@ static void build_scene(rbps::World &world)
     rjp.limited   = false;
     rjp.damping   = 0.05f;
     world.create_revolute_joint(rjp);
+
+
+
+    rbps::BodyParams ball_params{};
+    rbps::ColliderParams ball_collider{};
+
+    ball_params.type     = rbps::BodyType::DYNAMIC;
+    ball_params.position = m3d::vec3{0.0, 5.0f, 0.0f};  // offset 1.5m
+    ball_params.mass     = 1.5f;
+
+    ball_collider.shape = rbc::Sphere(0.2);
+
+    ball_params.inertia_tensor = rbc::compute_inertia_tensor(ball_collider.shape.sphere);
+    const uint32_t ball_id = world.create_body(ball_params);
+
+
+    ball_collider.body_id          = ball_id;
+    ball_collider.local_pos        = m3d::vec3{0, 0, 0};
+    ball_collider.local_rot        = m3d::quat{0, 0, 0, 1};
+    ball_collider.restitution      = 0.5f;
+    ball_collider.static_friction  = 0.3f;
+    ball_collider.dynamic_friction = 0.2f;
+    world.create_collider(ball_collider);
+
+
+    rbps::BodyParams box_params{};
+    rbps::ColliderParams box_collider{};
+
+    box_params.type     = rbps::BodyType::DYNAMIC;
+    box_params.position = m3d::vec3{0.0, 5.0f, 2.0f};  // offset 1.5m
+    box_params.mass     = 1.5f;
+
+    box_collider.shape = rbc::Box({0.2, 0.2, 0.2});
+
+    box_params.inertia_tensor = rbc::compute_inertia_tensor(box_collider.shape.box);
+    const uint32_t box_id = world.create_body(box_params);
+
+
+    box_collider.body_id          = box_id;
+    box_collider.local_pos        = m3d::vec3{0, 0, 0};
+    box_collider.local_rot        = m3d::quat{0, 0, 0, 1};
+    box_collider.restitution      = 0.5f;
+    box_collider.static_friction  = 0.3f;
+    box_collider.dynamic_friction = 0.2f;
+    world.create_collider(box_collider);
+
 }
 
 // ── Extra ImGui overlay ───────────────────────────────────────────────────────
@@ -145,9 +191,9 @@ static void draw_demo_overlay(visr::InProcessTransport &transport,
             kick.world_point= b.position;
             // Random-ish lateral kick
             kick.impulse    = m3d::vec3{
-                (b.id % 3 == 0) ?  5.0f : -5.0f,
-                3.0f,
-                (b.id % 2 == 0) ?  2.0f : -2.0f
+                (b.id % 3 == 0) ?  0.2 : -0.2,
+                0.1,
+                (b.id % 2 == 0) ?  0.1 : -0.1
             };
             transport.push_command(kick);
         }
@@ -179,7 +225,7 @@ int main()
 
     // Configure the world
     app.world.timestep = 1.0 / 60.0;
-    app.world.substeps = 20;
+    app.world.substeps = 60;
 
     // Populate the scene
     build_scene(app.world);
