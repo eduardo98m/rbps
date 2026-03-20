@@ -4,6 +4,7 @@
 #include <string>
 #include <cmath>
 #include <cstring>
+#include <ctime>
 #include <algorithm>
 #include "visr/Snapshot.hpp"
 #include "visr/Command.hpp"
@@ -13,26 +14,49 @@
 // ============================================================================
 //  visr/ui/Panels.hpp
 //
-//  Self-contained ImGui/ImPlot panels for the visr debugger.
+//  Graph panel v4 changes:
+//    - x-axis uses sim_time (seconds) instead of raw frame index.
+//    - No samples are recorded while paused (DebugChannel fix).
+//    - Export button opens a modal with filename input, upscale selector,
+//      and output-size preview.  On confirm, RenderSystem takes a post-frame
+//      screenshot, crops to the plot rect, and writes the PNG.
+//    - CSV clipboard copies frame, sim_time, and all series values.
 //
-//  Global flags (inline variables, C++17):
-//    g_screenshot_requested  set by graph panel, read+cleared by RenderSystem
-//    g_export_status         last export result string, shown as toast
-//    g_export_status_time    GetTime() at last export, for toast fade-out
-//
-//  Changelog v4:
-//    - draw_graph_panel: replaced ImGui::PlotLines with ImPlot, added
-//      "Copy CSV" clipboard export and "Save PNG" screenshot request.
-//    - Root bug fix is in DebugChannel::poll() (see DebugChannel.hpp).
+//  Global state (inline, C++17 — one definition across all TUs):
+//    g_plot_export_request  — written by the modal; read + cleared by RenderSystem
+//    g_export_status        — result string shown as a toast
+//    g_export_status_time   — GetTime() of last export (for 4-second toast)
 // ============================================================================
 
 namespace visr::ui
 {
-    // ── Global flags shared with RenderSystem ─────────────────────────────────
-    // These are inline so they have exactly one definition across TUs.
-    inline bool        g_screenshot_requested = false;
-    inline std::string g_export_status;
-    inline double      g_export_status_time   = -999.0;
+    // ── Export request: written by modal, consumed by RenderSystem ────────────
+    struct PlotExportRequest
+    {
+        bool    pending  = false;
+        ImVec2  pos      = {0, 0};     // plot screen position (ImGui coords)
+        ImVec2  size     = {0, 0};     // plot screen size     (ImGui coords)
+        int     upscale  = 1;          // 1, 2, or 4
+        char    filename[128] = "visr_plot";
+    };
+
+    inline PlotExportRequest g_plot_export_request;
+    inline std::string       g_export_status;
+    inline double            g_export_status_time = -999.0;
+
+    // ── Full decorated plot widget rect (set BEFORE BeginPlot each frame) ──────
+    // Covers the ENTIRE ImPlot widget: inner canvas + tick labels + axis names.
+    // GetPlotPos/Size (inner canvas only) must NOT be used for the PNG crop —
+    // that was the original bug where axis labels were missing from exports.
+    inline ImVec2 g_last_plot_pos  = {0, 0};
+    inline ImVec2 g_last_plot_size = {0, 0};
+
+    // ── Modal open flag (set by Export button, cleared by modal) ─────────────
+    inline bool g_export_modal_open = false;
+
+    // ── Auto-fit toggle: re-fit view to data every frame when ON. ────────────
+    // When OFF the user can freely pan/zoom; hit "Fit" to snap back to data.
+    inline bool g_auto_fit = true;
 
     // -------------------------------------------------------------------------
     //  Shared selection state
@@ -45,16 +69,13 @@ namespace visr::ui
         uint32_t contact_idx = UINT32_MAX;
     };
 
-    // -------------------------------------------------------------------------
-    //  Colour helpers
-    // -------------------------------------------------------------------------
+    // ── Colour helpers ────────────────────────────────────────────────────────
     static inline ImVec4 depth_color(float depth, float max_depth = 0.15f)
     {
         const float t = std::min(depth / max_depth, 1.0f);
         if (t < 0.5f) return ImVec4(t * 2.0f, 1.0f, 0.0f, 1.0f);
         return             ImVec4(1.0f, 1.0f - (t - 0.5f) * 2.0f, 0.0f, 1.0f);
     }
-
     static inline ImVec4 lambda_color(float lambda)
     {
         const float t = std::min(std::fabs(lambda) / 5.0f, 1.0f);
@@ -62,7 +83,6 @@ namespace visr::ui
             ? ImVec4(1.0f - t * 0.5f, 1.0f - t * 0.5f, 1.0f, 1.0f)
             : ImVec4(1.0f, 1.0f - t * 0.5f, 1.0f - t * 0.5f, 1.0f);
     }
-
     static void show_vec3(const char *label, const m3d::vec3 &v)
     {
         ImGui::Text("%-22s  %8.4f  %8.4f  %8.4f", label, v.x, v.y, v.z);
@@ -73,9 +93,8 @@ namespace visr::ui
     // =========================================================================
     inline void draw_help_panel()
     {
-        ImGui::SetNextWindowSize({340, 320}, ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize({340, 330}, ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowPos ({10,  840}, ImGuiCond_FirstUseEver);
-
         if (!ImGui::Begin("Help / Controls")) { ImGui::End(); return; }
 
         ImGui::SeparatorText("Camera");
@@ -85,27 +104,35 @@ namespace visr::ui
         ImGui::TextDisabled("  E / LCtrl         down");
         ImGui::TextDisabled("  RMB drag          look (yaw + pitch)");
         ImGui::TextDisabled("  Scroll wheel      zoom (FOV)");
-        ImGui::TextDisabled("  Camera panel      adjust speed & sensitivity");
+        ImGui::TextDisabled("  Camera panel      speed & sensitivity sliders");
 
         ImGui::SeparatorText("Selection");
         ImGui::TextDisabled("  LMB click         select body");
         ImGui::TextDisabled("  LMB same body     deselect");
-        ImGui::TextDisabled("  LMB empty space   deselect all");
-        ImGui::TextDisabled("  ESC               deselect all");
-        ImGui::TextDisabled("  Contact/Joint row click to select, click again to deselect");
+        ImGui::TextDisabled("  LMB empty / ESC   deselect all");
+        ImGui::TextDisabled("  Contact/Joint row click = select, re-click = deselect");
 
         ImGui::SeparatorText("Simulation");
         ImGui::TextDisabled("  Space             pause / resume");
-        ImGui::TextDisabled("  Step Once button  advance 1 frame while paused");
+        ImGui::TextDisabled("  Step Once         advance 1 frame while paused");
 
         ImGui::SeparatorText("Graphs");
-        ImGui::TextDisabled("  Copy CSV          all series → clipboard");
-        ImGui::TextDisabled("  Save PNG          full-window screenshot → PNG file");
-        ImGui::TextDisabled("  Stop button       remove a tracked series");
+        ImGui::TextDisabled("  x-axis              simulation time (seconds)");
+        ImGui::TextDisabled("  Paused              graph flatlines (no new points)");
+        ImGui::TextDisabled("  Auto-fit checkbox   ON = re-fit to data every frame");
+        ImGui::TextDisabled("                      OFF = free pan/zoom");
+        ImGui::TextDisabled("  Fit button          snap view to all data once");
+        ImGui::TextDisabled("  Scroll wheel        zoom in/out on hovered axis");
+        ImGui::TextDisabled("  Click + drag        pan the view");
+        ImGui::TextDisabled("  Double-click        reset zoom to default");
+        ImGui::TextDisabled("  Copy CSV            all series to clipboard");
+        ImGui::TextDisabled("  Export Plot PNG     opens modal (full widget incl. axes)");
+        ImGui::TextDisabled("    Rename axes in the modal before exporting");
+        ImGui::TextDisabled("  Stop button         remove a tracked series");
 
         ImGui::SeparatorText("Colour coding");
         ImGui::TextDisabled("  Depth cell        green=shallow  red=deep");
-        ImGui::TextDisabled("  λ cell            blue=compression  pink=tension");
+        ImGui::TextDisabled("  lambda cell       blue=compression  pink=tension");
         ImGui::TextDisabled("  |normal| check    red warning if not unit length");
 
         ImGui::End();
@@ -121,7 +148,6 @@ namespace visr::ui
                                        SelectionState      &sel)
     {
         ImGui::Begin("Simulation");
-
         ImGui::Text("Frame : %llu", (unsigned long long)snap.frame_index);
         ImGui::Text("Time  : %.4f s", snap.sim_time);
         ImGui::Separator();
@@ -129,11 +155,9 @@ namespace visr::ui
         const bool paused = channel.is_paused();
         if (ImGui::Button(paused ? "Resume [Space]" : "Pause  [Space]"))
             paused ? channel.resume() : channel.pause();
-
         ImGui::SameLine();
         if (paused && ImGui::Button("Step Once"))
             channel.request_step_once();
-
         if (paused)
         {
             ImGui::SameLine(0, 12);
@@ -141,7 +165,6 @@ namespace visr::ui
         }
 
         ImGui::Separator();
-
         if (ImGui::Button("Deselect All [ESC]"))
         {
             sel.body_id = sel.collider_id = sel.joint_id = sel.contact_idx = UINT32_MAX;
@@ -149,18 +172,16 @@ namespace visr::ui
         }
 
         ImGui::Separator();
-
         static double ts       = snap.timestep;
         static int    substeps = snap.substeps;
         bool changed = false;
-        changed |= ImGui::InputDouble("Timestep",  &ts,      0.001, 0.0, "%.6f");
-        changed |= ImGui::InputInt   ("Substeps",  &substeps);
+        changed |= ImGui::InputDouble("Timestep", &ts, 0.001, 0.0, "%.6f");
+        changed |= ImGui::InputInt("Substeps", &substeps);
         if (substeps < 1) substeps = 1;
         if (changed && ImGui::Button("Apply##ts"))
             transport.push_command(CmdSetTimestep{ts, substeps});
 
         ImGui::Separator();
-
         const size_t active_n = std::count_if(snap.contacts.begin(), snap.contacts.end(),
                                               [](const ContactSnap &c){ return c.active; });
         ImGui::Text("BP pairs   : %u",    snap.broad_phase_pairs);
@@ -173,14 +194,13 @@ namespace visr::ui
         for (const auto &c : snap.contacts)
             max_depth = std::max(max_depth, (float)c.penetration_depth);
         if (max_depth > 0.0f)
-            ImGui::TextColored(depth_color(max_depth),
-                               "Max depth: %.5f m", max_depth);
+            ImGui::TextColored(depth_color(max_depth), "Max depth: %.5f m", max_depth);
 
         ImGui::End();
     }
 
     // =========================================================================
-    //  Body list + inspector panel
+    //  Body panel
     // =========================================================================
     inline void draw_body_panel(const FrameSnapshot &snap,
                                 InProcessTransport  &transport,
@@ -201,9 +221,8 @@ namespace visr::ui
                 if (ImGui::Selectable(label, selected))
                 {
                     sel.body_id = selected ? UINT32_MAX : b.id;
-                    transport.push_command(selected
-                        ? Command{CmdClearSelection{}}
-                        : Command{CmdSelectBody{b.id}});
+                    transport.push_command(selected ? Command{CmdClearSelection{}}
+                                                    : Command{CmdSelectBody{b.id}});
                 }
             }
         }
@@ -211,7 +230,7 @@ namespace visr::ui
         ImGui::Separator();
 
         if (sel.body_id == UINT32_MAX)
-        { ImGui::TextDisabled("(click a body or LMB in 3D to inspect)"); ImGui::End(); return; }
+        { ImGui::TextDisabled("(click a body or LMB in 3D)"); ImGui::End(); return; }
 
         const BodySnap *found = nullptr;
         for (const auto &b : snap.bodies)
@@ -219,7 +238,6 @@ namespace visr::ui
         if (!found) { ImGui::End(); return; }
 
         const BodySnap &b = *found;
-
         ImGui::TextColored(b.is_static ? ImVec4(0.6f,0.6f,0.6f,1) : ImVec4(0.4f,0.8f,1,1),
                            b.is_static ? "STATIC" : "DYNAMIC");
         ImGui::SameLine(); ImGui::Text("  Body #%u", b.id);
@@ -231,18 +249,15 @@ namespace visr::ui
         show_vec3("force",        b.force);
         show_vec3("torque",       b.torque);
 
-        const float lspeed = (float)std::sqrt(
-            b.linear_velocity.x * b.linear_velocity.x +
-            b.linear_velocity.y * b.linear_velocity.y +
-            b.linear_velocity.z * b.linear_velocity.z);
-        const float aspeed = (float)std::sqrt(
-            b.angular_velocity.x * b.angular_velocity.x +
-            b.angular_velocity.y * b.angular_velocity.y +
-            b.angular_velocity.z * b.angular_velocity.z);
+        const float lspeed = std::sqrt((float)(b.linear_velocity.x * b.linear_velocity.x +
+                                               b.linear_velocity.y * b.linear_velocity.y +
+                                               b.linear_velocity.z * b.linear_velocity.z));
+        const float aspeed = std::sqrt((float)(b.angular_velocity.x * b.angular_velocity.x +
+                                               b.angular_velocity.y * b.angular_velocity.y +
+                                               b.angular_velocity.z * b.angular_velocity.z));
         ImGui::Text("%-22s  %8.4f  m/s",   "|lin_velocity|", lspeed);
         ImGui::Text("%-22s  %8.4f  rad/s", "|ang_velocity|", aspeed);
-        ImGui::Text("%-22s  %8.4f", "mass",     b.mass);
-        ImGui::Text("%-22s  %8.4f", "inv_mass", b.inverse_mass);
+        ImGui::Text("%-22s  %8.4f", "mass", b.mass);
 
         ImGui::Separator();
         ImGui::TextDisabled("Contacts involving this body:");
@@ -253,11 +268,11 @@ namespace visr::ui
             if (c.body_a != b.id && c.body_b != b.id) continue;
             ++ncont;
             const bool is_sel = (sel.contact_idx == i);
-            char clabel[80];
-            std::snprintf(clabel, sizeof(clabel), "  ct#%u  depth=%.4f  λn=%.3f  %s",
+            char cl[80];
+            std::snprintf(cl, sizeof(cl), "  ct#%u  depth=%.4f  λn=%.3f  %s",
                           i, c.penetration_depth, c.normal_lambda,
                           c.active ? "" : "[inactive]");
-            if (ImGui::Selectable(clabel, is_sel))
+            if (ImGui::Selectable(cl, is_sel))
                 sel.contact_idx = is_sel ? UINT32_MAX : i;
         }
         if (ncont == 0) ImGui::TextDisabled("  (none)");
@@ -265,8 +280,7 @@ namespace visr::ui
         ImGui::Separator();
         if (!b.is_static)
         {
-            if (ImGui::Button("Zero Velocity"))
-                transport.push_command(CmdZeroVelocity{b.id});
+            if (ImGui::Button("Zero Velocity")) transport.push_command(CmdZeroVelocity{b.id});
             ImGui::SameLine();
             if (ImGui::Button("Teleport to origin"))
                 transport.push_command(CmdTeleportBody{b.id, {}, {}});
@@ -279,7 +293,7 @@ namespace visr::ui
             ImGui::SliderFloat("Magnitude##imp", &imp_mag, 0.0f, 200.0f);
             if (ImGui::Button("Apply##imp"))
             {
-                const float len = std::sqrt(imp[0]*imp[0] + imp[1]*imp[1] + imp[2]*imp[2]);
+                const float len = std::sqrt(imp[0]*imp[0]+imp[1]*imp[1]+imp[2]*imp[2]);
                 if (len > 1e-6f)
                 {
                     const float s = imp_mag / len;
@@ -292,7 +306,7 @@ namespace visr::ui
     }
 
     // =========================================================================
-    //  Collider inspector panel
+    //  Collider panel
     // =========================================================================
     static const char *shape_name(const ShapeSnap &s)
     {
@@ -340,7 +354,7 @@ namespace visr::ui
         ImGui::Text("Body #%u  |  %s", found->body_id,
                     found->is_static ? "STATIC" : "DYNAMIC");
         ImGui::Separator();
-        show_vec3("world_pos",      found->world_pos);
+        show_vec3("world_pos", found->world_pos);
         ImGui::Text("%-22s  %.4f", "restitution",    found->restitution);
         ImGui::Text("%-22s  %.4f", "static_friction", found->static_friction);
         ImGui::Text("%-22s  %.4f", "dyn_friction",   found->dynamic_friction);
@@ -349,7 +363,7 @@ namespace visr::ui
         {
             using T = std::decay_t<decltype(sh)>;
             if      constexpr (std::is_same_v<T, SpherSnap>)
-                ImGui::Text("radius       = %.4f", sh.radius);
+                ImGui::Text("radius = %.4f", sh.radius);
             else if constexpr (std::is_same_v<T, BoxSnap>)
                 ImGui::Text("half_extents = %.3f  %.3f  %.3f",
                             sh.half_extents.x, sh.half_extents.y, sh.half_extents.z);
@@ -361,7 +375,7 @@ namespace visr::ui
             else if constexpr (std::is_same_v<T, ConeSnap>)
                 ImGui::Text("radius=%.4f  height=%.4f", sh.radius, sh.height);
             else if constexpr (std::is_same_v<T, EllipsoidSnap>)
-                ImGui::Text("semi_axes = %.3f  %.3f  %.3f",
+                ImGui::Text("semi_axes=%.3f  %.3f  %.3f",
                             sh.semi_axes.x, sh.semi_axes.y, sh.semi_axes.z);
             else if constexpr (std::is_same_v<T, HeightmapSnap>)
                 ImGui::Text("grid %u × %u  cell=%.4f", sh.cols, sh.rows, sh.cell_size);
@@ -476,10 +490,10 @@ namespace visr::ui
                 char buf[256]; std::snprintf(buf, sizeof(buf), fmt, args...);
                 ImGui::TextUnformatted(buf);
             };
-            row("Body A",        "%u", c.body_a);
-            row("Body B",        "%u", c.body_b);
-            row("Collider A",    "%u", c.collider_a);
-            row("Collider B",    "%u", c.collider_b);
+            row("Body A",    "%u", c.body_a);
+            row("Body B",    "%u", c.body_b);
+            row("Collider A","%u", c.collider_a);
+            row("Collider B","%u", c.collider_b);
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0); ImGui::TextUnformatted("Penetration");
             ImGui::TableSetColumnIndex(1);
@@ -493,8 +507,7 @@ namespace visr::ui
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0); ImGui::TextUnformatted("λ normal");
             ImGui::TableSetColumnIndex(1);
-            ImGui::TextColored(lambda_color((float)c.normal_lambda),
-                               "%.7f", c.normal_lambda);
+            ImGui::TextColored(lambda_color((float)c.normal_lambda), "%.7f", c.normal_lambda);
             row("λ tangential", "%.7f",       c.tangent_lambda);
             row("Relative vel", "%.5f m/s",   c.relative_velocity);
             row("Normal force", "(%.4f,  %.4f,  %.4f)",
@@ -507,11 +520,11 @@ namespace visr::ui
         ImGui::Separator();
         ImGui::TextDisabled("Normal components  [-1 … 1]:");
         const float nx = (float)c.normal.x, ny = (float)c.normal.y, nz = (float)c.normal.z;
-        const float bar_w = ImGui::GetContentRegionAvail().x - 46.0f;
+        const float bw = ImGui::GetContentRegionAvail().x - 46.0f;
         auto bar = [&](const char *lbl, float val)
         {
             char ov[24]; std::snprintf(ov, sizeof(ov), "%.3f", val);
-            ImGui::ProgressBar((val + 1.0f) * 0.5f, ImVec2(bar_w, 12), ov);
+            ImGui::ProgressBar((val + 1.0f) * 0.5f, ImVec2(bw, 12), ov);
             ImGui::SameLine(0, 6); ImGui::TextUnformatted(lbl);
         };
         bar("X", nx); bar("Y", ny); bar("Z", nz);
@@ -566,18 +579,17 @@ namespace visr::ui
 
         if (j.limited)
         {
-            const float pos   = (float)j.current_position;
-            const float lo    = (float)j.lower_limit;
-            const float hi    = (float)j.upper_limit;
-            const bool  out   = (pos < lo || pos > hi);
+            const float pos = (float)j.current_position;
+            const float lo  = (float)j.lower_limit, hi = (float)j.upper_limit;
+            const bool  out = (pos < lo || pos > hi);
             ImGui::Text("pos = %.4f   [%.3f, %.3f]", pos, lo, hi);
             const float range = hi - lo;
             const float frac  = range > 1e-6f
                 ? std::max(0.0f, std::min((pos - lo) / range, 1.0f)) : 0.5f;
-            char overlay[32]; std::snprintf(overlay, sizeof(overlay), "%.3f", pos);
+            char ov[32]; std::snprintf(ov, sizeof(ov), "%.3f", pos);
             ImGui::PushStyleColor(ImGuiCol_PlotHistogram,
                 out ? ImVec4(1, 0.3f, 0.3f, 1) : ImVec4(0.3f, 0.9f, 0.3f, 1));
-            ImGui::ProgressBar(frac, ImVec2(-1, 14), overlay);
+            ImGui::ProgressBar(frac, ImVec2(-1, 14), ov);
             ImGui::PopStyleColor();
             if (out) ImGui::TextColored({1, 0.3f, 0.3f, 1}, "  OUTSIDE LIMITS");
         }
@@ -587,8 +599,7 @@ namespace visr::ui
         ImGui::Separator();
         const float lo_f = j.limited ? (float)j.lower_limit : -10.0f;
         const float hi_f = j.limited ? (float)j.upper_limit :  10.0f;
-        float target  = (float)j.current_position;
-        float damping = (float)j.damping;
+        float target = (float)j.current_position, damping = (float)j.damping;
         ImGui::SliderFloat("Target##jt",  &target,  lo_f,   hi_f);
         if (ImGui::Button("Set Target##jt"))
             transport.push_command(CmdSetJointTarget{j.id, (m3d::scalar)target});
@@ -599,94 +610,170 @@ namespace visr::ui
     }
 
     // =========================================================================
-    //  Graph panel — ImPlot line charts with CSV clipboard + PNG screenshot
+    //  Graph panel — ImPlot, sim_time x-axis, CSV + plot-image export
     // =========================================================================
 
-    // Human-readable label for each TrackTarget enum value.
     static inline const char *track_target_name(TrackTarget t)
     {
         switch (t)
         {
-        case TrackTarget::BodyLinearSpeed:       return "LinSpeed";
-        case TrackTarget::BodyAngularSpeed:      return "AngSpeed";
-        case TrackTarget::BodyPositionX:         return "PosX";
-        case TrackTarget::BodyPositionY:         return "PosY";
-        case TrackTarget::BodyPositionZ:         return "PosZ";
-        case TrackTarget::ContactNormalLambda:   return "λ_normal";
-        case TrackTarget::ContactTangentLambda:  return "λ_tangent";
-        case TrackTarget::ContactPenetrationDepth: return "Depth";
-        case TrackTarget::JointPosition:         return "JointPos";
-        case TrackTarget::JointError:            return "JointErr";
-        case TrackTarget::ConstraintLambda:      return "ConstraintλG";
-        default:                                 return "Value";
+        case TrackTarget::BodyLinearSpeed:          return "LinSpeed";
+        case TrackTarget::BodyAngularSpeed:         return "AngSpeed";
+        case TrackTarget::BodyPositionX:            return "PosX";
+        case TrackTarget::BodyPositionY:            return "PosY";
+        case TrackTarget::BodyPositionZ:            return "PosZ";
+        case TrackTarget::ContactNormalLambda:      return "lam_n";
+        case TrackTarget::ContactTangentLambda:     return "lam_t";
+        case TrackTarget::ContactPenetrationDepth:  return "Depth";
+        case TrackTarget::JointPosition:            return "JointPos";
+        case TrackTarget::JointError:               return "JointErr";
+        case TrackTarget::ConstraintLambda:         return "ConstraintLam";
+        default:                                    return "Value";
         }
     }
 
-    // Linearise a ring buffer into chronological order.
-    // Returns x (frame index) and y (value) arrays ready for ImPlot.
-    static inline void linearise_series(const TrackedSeries &series,
-                                        std::vector<double> &xs,
-                                        std::vector<double> &ys)
+    // Unroll the ring buffer into chronological (sim_time, value) arrays.
+    static inline void linearise(const TrackedSeries     &s,
+                                 std::vector<double>     &xs,
+                                 std::vector<double>     &ys)
     {
-        const size_t n = series.samples.size();
+        const size_t n = s.samples.size();
         xs.clear(); ys.clear();
         if (n == 0) return;
         xs.reserve(n); ys.reserve(n);
 
-        // When the ring is full, head_ points to the oldest slot.
-        // When not full, samples are in append order starting at index 0.
-        const bool is_full = (n >= TRACK_HISTORY_DEPTH);
-        const size_t start = is_full ? (series.head_ % n) : 0;
-
+        const bool   is_full = (n >= TRACK_HISTORY_DEPTH);
+        const size_t start   = is_full ? (s.head_ % n) : 0;
         for (size_t k = 0; k < n; ++k)
         {
-            const auto &s = series.samples[(start + k) % n];
-            xs.push_back(static_cast<double>(s.frame));
-            ys.push_back(static_cast<double>(s.value));
+            const auto &samp = s.samples[(start + k) % n];
+            xs.push_back(samp.sim_time);   // ← sim seconds, not frame number
+            ys.push_back(static_cast<double>(samp.value));
         }
     }
 
-    template<typename T>
-    inline void draw_graph_panel(DebugChannel<T>     &channel,
-                                 InProcessTransport  &transport)
+    // ── Axis labels — edited in the modal, applied live every frame ──────────
+    // Stored as char arrays so InputText can edit them directly.
+    inline char g_x_label[64] = "sim time (s)";
+    inline char g_y_label[64] = "value";
+
+    // Flag set by "Fit" button; consumed inside draw_graph_panel one frame later.
+    inline bool g_fit_plot = false;
+
+    // ── Plot export modal ─────────────────────────────────────────────────────
+    // Called every frame; only visible when g_export_modal_open is true.
+    inline void draw_export_modal()
     {
-        ImGui::SetNextWindowSize({520, 420}, ImGuiCond_FirstUseEver);
+        if (g_export_modal_open)
+            ImGui::OpenPopup("Export Plot Image");
+
+        // AlwaysAutoResize keeps the modal tight around its content.
+        if (!ImGui::BeginPopupModal("Export Plot Image", nullptr,
+                                    ImGuiWindowFlags_AlwaysAutoResize))
+            return;
+
+        g_export_modal_open = false;   // consumed — popup manages its own state
+
+        // ── Filename ──────────────────────────────────────────────────────
+        ImGui::Text("Filename  (.png appended if missing):");
+        ImGui::SetNextItemWidth(300);
+        ImGui::InputText("##fname", g_plot_export_request.filename,
+                         sizeof(g_plot_export_request.filename));
+
+        ImGui::Separator();
+
+        // ── Axis labels ───────────────────────────────────────────────────
+        // Editing these updates the live plot immediately (same globals used
+        // in SetupAxes every frame), so the screenshot captures the new labels
+        // without any special handling.
+        ImGui::Text("Axis labels:");
+        ImGui::SetNextItemWidth(240);
+        ImGui::InputText("X label##xl", g_x_label, sizeof(g_x_label));
+        ImGui::SetNextItemWidth(240);
+        ImGui::InputText("Y label##yl", g_y_label, sizeof(g_y_label));
+        ImGui::TextDisabled("  (labels update the live plot immediately)");
+
+        ImGui::Separator();
+
+        // ── Resolution ────────────────────────────────────────────────────
+        const float pw = g_last_plot_size.x;
+        const float ph = g_last_plot_size.y;
+        ImGui::Text("Plot region on screen: %.0f × %.0f px", pw, ph);
+
+        static int scale_idx = 0;
+        const char *scale_labels[] = { "1×  (screen res)", "2×  (upscaled)", "4×  (upscaled)" };
+        const int   scale_values[] = { 1, 2, 4 };
+        ImGui::SetNextItemWidth(200);
+        ImGui::Combo("Output scale", &scale_idx, scale_labels, 3);
+        const int upscale = scale_values[scale_idx];
+
+        ImGui::TextColored({0.6f, 0.9f, 0.6f, 1},
+                           "Output size: %.0f × %.0f px",
+                           pw * upscale, ph * upscale);
+
+        ImGui::Separator();
+        ImGui::TextDisabled("The plot area (axes + lines, including axis labels)");
+        ImGui::TextDisabled("will be cropped from the current frame and saved.");
+
+        ImGui::Separator();
+
+        // ── Buttons ───────────────────────────────────────────────────────
+        if (ImGui::Button("Export", {120, 0}))
+        {
+            g_plot_export_request.pending  = true;
+            g_plot_export_request.pos      = g_last_plot_pos;
+            g_plot_export_request.size     = g_last_plot_size;
+            g_plot_export_request.upscale  = upscale;
+            // filename already written into g_plot_export_request.filename
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", {120, 0}))
+            ImGui::CloseCurrentPopup();
+
+        ImGui::EndPopup();
+    }
+
+    template<typename T>
+    inline void draw_graph_panel(DebugChannel<T>    &channel,
+                                 InProcessTransport &transport)
+    {
+        ImGui::SetNextWindowSize({520, 460}, ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowPos ({900, 480}, ImGuiCond_FirstUseEver);
         ImGui::Begin("Graphs");
 
         // ── Track-quantity selector ────────────────────────────────────────
         static uint32_t track_id = 0;
+        ImGui::SetNextItemWidth(80);
         ImGui::InputScalar("Body ID##tid", ImGuiDataType_U32, &track_id);
+        ImGui::SameLine();
+        ImGui::TextDisabled("Add:");
+        ImGui::SameLine();
 
-        if (ImGui::Button("Lin Speed"))
-            transport.push_command(CmdTrackQuantity{TrackTarget::BodyLinearSpeed, track_id, true});
+        if (ImGui::SmallButton("LinSpd")) transport.push_command(CmdTrackQuantity{TrackTarget::BodyLinearSpeed,  track_id, true});
         ImGui::SameLine();
-        if (ImGui::Button("Ang Speed"))
-            transport.push_command(CmdTrackQuantity{TrackTarget::BodyAngularSpeed, track_id, true});
+        if (ImGui::SmallButton("AngSpd")) transport.push_command(CmdTrackQuantity{TrackTarget::BodyAngularSpeed, track_id, true});
         ImGui::SameLine();
-        if (ImGui::Button("Pos X"))
-            transport.push_command(CmdTrackQuantity{TrackTarget::BodyPositionX, track_id, true});
+        if (ImGui::SmallButton("PosX"))   transport.push_command(CmdTrackQuantity{TrackTarget::BodyPositionX, track_id, true});
         ImGui::SameLine();
-        if (ImGui::Button("Pos Y"))
-            transport.push_command(CmdTrackQuantity{TrackTarget::BodyPositionY, track_id, true});
+        if (ImGui::SmallButton("PosY"))   transport.push_command(CmdTrackQuantity{TrackTarget::BodyPositionY, track_id, true});
         ImGui::SameLine();
-        if (ImGui::Button("Pos Z"))
-            transport.push_command(CmdTrackQuantity{TrackTarget::BodyPositionZ, track_id, true});
+        if (ImGui::SmallButton("PosZ"))   transport.push_command(CmdTrackQuantity{TrackTarget::BodyPositionZ, track_id, true});
 
         ImGui::Separator();
 
-        const auto &all_series = channel.tracked_series();
+        // Take a VALUE COPY of the series vector, not a reference.
+        // tracked_series() now returns by value precisely to prevent a
+        // dangling-reference segfault if the vector reallocates mid-frame.
+        const auto all_series = channel.tracked_series();
 
-        // ── Export buttons ─────────────────────────────────────────────────
+        // ── Export toolbar ─────────────────────────────────────────────────
         if (!all_series.empty())
         {
-            // ── Copy CSV to clipboard ──────────────────────────────────────
-            // One header row + one data row per sample.
-            // Columns: frame, then one column per series.
+            // CSV clipboard
             if (ImGui::Button("Copy CSV"))
             {
-                // Build header
-                std::string csv = "frame";
+                std::string csv = "frame,sim_time_s";
                 for (const auto &s : all_series)
                 {
                     csv += ',';
@@ -696,25 +783,26 @@ namespace visr::ui
                 }
                 csv += '\n';
 
-                // Find the max number of samples across all series
-                size_t max_n = 0;
-                for (const auto &s : all_series) max_n = std::max(max_n, s.samples.size());
-
-                // Linearise each series once
+                // Linearise all series first
                 std::vector<std::vector<double>> all_xs(all_series.size());
                 std::vector<std::vector<double>> all_ys(all_series.size());
+                size_t max_n = 0;
                 for (size_t si = 0; si < all_series.size(); ++si)
-                    linearise_series(all_series[si], all_xs[si], all_ys[si]);
+                {
+                    linearise(all_series[si], all_xs[si], all_ys[si]);
+                    max_n = std::max(max_n, all_xs[si].size());
+                }
 
-                // Data rows — align on frame index of the longest series
                 for (size_t k = 0; k < max_n; ++k)
                 {
-                    // Use the frame column from the first series that has index k
-                    double frame_val = (k < all_xs[0].size()) ? all_xs[0][k]
-                                     : static_cast<double>(k);
-                    char row[64]; std::snprintf(row, sizeof(row), "%.0f", frame_val);
+                    // Frame + sim_time from the longest series
+                    const uint64_t fr = (k < all_series[0].samples.size())
+                        ? all_series[0].samples[k].frame : k;
+                    const double   t  = (k < all_xs[0].size()) ? all_xs[0][k] : 0.0;
+                    char row[64];
+                    std::snprintf(row, sizeof(row), "%llu,%.6f",
+                                  (unsigned long long)fr, t);
                     csv += row;
-
                     for (size_t si = 0; si < all_series.size(); ++si)
                     {
                         csv += ',';
@@ -724,28 +812,30 @@ namespace visr::ui
                             std::snprintf(cell, sizeof(cell), "%.6f", all_ys[si][k]);
                             csv += cell;
                         }
-                        // else: empty cell (series has fewer samples)
                     }
                     csv += '\n';
                 }
-
                 ImGui::SetClipboardText(csv.c_str());
             }
 
             ImGui::SameLine();
 
-            // ── Save PNG (full-window screenshot) ──────────────────────────
-            // Sets g_screenshot_requested; RenderSystem takes the screenshot
-            // after EndDrawing() of this frame.
-            if (ImGui::Button("Save PNG"))
-                g_screenshot_requested = true;
+            // Plot PNG export — opens the modal
+            if (ImGui::Button("Export Plot PNG"))
+                g_export_modal_open = true;
 
-            // Toast: show export status for ~3 seconds after the last export
+            // Toast: show result for ~4 seconds
             if (!g_export_status.empty())
             {
-                ImGui::SameLine(0, 16);
-                // Fade out after 3 seconds
-                ImGui::TextColored({0.4f, 1.0f, 0.4f, 1.0f}, "%s", g_export_status.c_str());
+                const double elapsed = GetTime() - g_export_status_time;
+                if (elapsed < 4.0)
+                {
+                    const float alpha = (elapsed < 3.0) ? 1.0f
+                                      : 1.0f - (float)((elapsed - 3.0) / 1.0);
+                    ImGui::SameLine(0, 16);
+                    ImGui::TextColored({0.4f, 1.0f, 0.4f, alpha},
+                                       "%s", g_export_status.c_str());
+                }
             }
 
             ImGui::Separator();
@@ -756,100 +846,112 @@ namespace visr::ui
             ImGui::Separator();
         }
 
-        // ── Active series list with stop buttons ───────────────────────────
-        uint32_t stop_id       = UINT32_MAX;
-        TrackTarget stop_target = TrackTarget::BodyLinearSpeed;
+        // ── Active series list (stop buttons + last-value readout) ─────────
         {
-            char label[80];
+            uint32_t    stop_id     = UINT32_MAX;
+            TrackTarget stop_target = TrackTarget::BodyLinearSpeed;
+
             for (const auto &s : all_series)
             {
-                std::snprintf(label, sizeof(label), "Stop  %s id=%u",
+                char lbl[80];
+                std::snprintf(lbl, sizeof(lbl), "Stop %s[%u]",
                               track_target_name(s.target), s.id);
-                if (ImGui::SmallButton(label))
-                {
-                    stop_id     = s.id;
-                    stop_target = s.target;
-                }
-                ImGui::SameLine(0, 12);
-                ImGui::TextDisabled("%s  id=%u  (%zu samples)",
-                                    track_target_name(s.target), s.id,
-                                    s.samples.size());
+                if (ImGui::SmallButton(lbl))
+                { stop_id = s.id; stop_target = s.target; }
+                ImGui::SameLine(0, 10);
+                ImGui::TextDisabled("= %.5f  (t=%.3f s)",
+                                    s.last_value(), s.last_sim_time());
             }
+            if (stop_id != UINT32_MAX)
+                transport.push_command(CmdTrackQuantity{stop_target, stop_id, false});
         }
-        if (stop_id != UINT32_MAX)
-            transport.push_command(CmdTrackQuantity{stop_target, stop_id, false});
 
-        if (!all_series.empty())
-            ImGui::Separator();
+        if (!all_series.empty()) ImGui::Separator();
 
-        // ── ImPlot: one line per series, all in the same plot ──────────────
+        // ── ImPlot ────────────────────────────────────────────────────────
         if (!all_series.empty())
         {
-            // Compute overall x range across all series for axis setup
+            // Linearise all series and compute full-data axis ranges.
+            // These are used only when the user requests a fit, NOT every frame —
+            // that was the bug: setting limits with ImGuiCond_Always each frame
+            // overrode any scroll/zoom the user had applied.
+            std::vector<std::vector<double>> all_xs(all_series.size());
+            std::vector<std::vector<double>> all_ys(all_series.size());
             double x_min =  1e18, x_max = -1e18;
             double y_min =  1e18, y_max = -1e18;
 
-            std::vector<std::vector<double>> xs_cache(all_series.size());
-            std::vector<std::vector<double>> ys_cache(all_series.size());
-
             for (size_t si = 0; si < all_series.size(); ++si)
             {
-                linearise_series(all_series[si], xs_cache[si], ys_cache[si]);
-                for (double v : xs_cache[si]) { x_min = std::min(x_min, v); x_max = std::max(x_max, v); }
-                for (double v : ys_cache[si]) { y_min = std::min(y_min, v); y_max = std::max(y_max, v); }
+                linearise(all_series[si], all_xs[si], all_ys[si]);
+                for (double v : all_xs[si]) { x_min = std::min(x_min, v); x_max = std::max(x_max, v); }
+                for (double v : all_ys[si]) { y_min = std::min(y_min, v); y_max = std::max(y_max, v); }
             }
 
-            // Add a small margin around y range so lines aren't flush with axes
-            const double y_margin = (y_max - y_min) * 0.08 + 1e-6;
-            y_min -= y_margin; y_max += y_margin;
+            if (x_max <= x_min) x_max = x_min + 1.0;
+            const double ym = (y_max - y_min) * 0.08 + 1e-6;
+            y_min -= ym; y_max += ym;
 
-            ImPlot::SetNextAxesLimits(x_min, x_max, y_min, y_max, ImGuiCond_Always);
+            // ── Fit / zoom controls ───────────────────────────────────────
+            // Fit button: snap view to data once.
+            // Auto-fit checkbox: re-fit every frame (good while data is growing;
+            // turn off when you want to inspect a specific time window).
+            if (ImGui::SmallButton("Fit")) g_fit_plot = true;
+            ImGui::SameLine(0, 8);
+            ImGui::Checkbox("Auto-fit##af", &g_auto_fit);
+            ImGui::SameLine(0, 16);
+            ImGui::TextDisabled("scroll=zoom  drag=pan  dbl-click=reset");
 
-            if (ImPlot::BeginPlot("##tracked", ImVec2(-1, 220),
-                                  ImPlotFlags_NoTitle))
+            // When auto-fit is on OR the Fit button was just pressed, push
+            // the full-data limits into ImPlot for the coming frame.
+            // ImGuiCond_Always forces the update even after user interaction.
+            const bool do_fit = g_auto_fit || g_fit_plot;
+            if (do_fit)
             {
-                ImPlot::SetupAxes("frame", "value",
-                                  ImPlotAxisFlags_AutoFit,
-                                  ImPlotAxisFlags_AutoFit);
+                ImPlot::SetNextAxesLimits(x_min, x_max, y_min, y_max,
+                                          ImGuiCond_Always);
+            }
+            g_fit_plot = false; // consume the one-shot flag regardless
+
+            // ── Capture the FULL widget rect (including axis decorations) ──
+            // Must be done BEFORE BeginPlot so the cursor hasn't been consumed.
+            // We save this as the export crop rect — it covers tick labels and
+            // axis names that live outside the inner data canvas.
+            static constexpr float PLOT_H = 220.0f; // matches BeginPlot height
+            g_last_plot_pos  = ImGui::GetCursorScreenPos();
+            g_last_plot_size = ImVec2(ImGui::GetContentRegionAvail().x, PLOT_H);
+
+            if (ImPlot::BeginPlot("##tracked", ImVec2(-1, PLOT_H), ImPlotFlags_NoTitle))
+            {
+                // ImPlotAxisFlags_None: ImPlot owns zoom state between frames.
+                // Limits only change via SetNextAxesLimits (above) or user input.
+                ImPlot::SetupAxes(g_x_label, g_y_label,
+                                  ImPlotAxisFlags_None,
+                                  ImPlotAxisFlags_None);
 
                 for (size_t si = 0; si < all_series.size(); ++si)
                 {
-                    const auto &xs = xs_cache[si];
-                    const auto &ys = ys_cache[si];
-                    if (xs.empty()) continue;
-
-                    char series_label[64];
-                    std::snprintf(series_label, sizeof(series_label),
-                                  "%s[%u]",
+                    if (all_xs[si].empty()) continue;
+                    char label[64];
+                    std::snprintf(label, sizeof(label), "%s[%u]",
                                   track_target_name(all_series[si].target),
                                   all_series[si].id);
-
-                    ImPlot::PlotLine(series_label,
-                                     xs.data(), ys.data(),
-                                     static_cast<int>(xs.size()));
+                    ImPlot::PlotLine(label,
+                                     all_xs[si].data(), all_ys[si].data(),
+                                     (int)all_xs[si].size());
                 }
 
                 ImPlot::EndPlot();
             }
-
-            // ── Last-value readout below the plot ──────────────────────────
-            for (const auto &s : all_series)
-            {
-                if (s.samples.empty()) continue;
-                // Most recent value is always at the tail of the ring
-                const float last = s.samples.empty() ? 0.0f
-                    : s.samples[(s.head_ > 0 ? (s.head_ - 1) % s.samples.size()
-                                              : s.samples.size() - 1)].value;
-                ImGui::Text("  %s[%u] = %.5f",
-                            track_target_name(s.target), s.id, last);
-            }
         }
+
+        // ── Export modal (drawn every frame; visible only when open) ───────
+        draw_export_modal();
 
         ImGui::End();
     }
 
     // =========================================================================
-    //  Master draw — call once per render frame between rlImGuiBegin/End
+    //  Master draw
     // =========================================================================
     template<typename T>
     inline void draw_all(DebugChannel<T>     &channel,
@@ -863,7 +965,7 @@ namespace visr::ui
         draw_contact_panel       (snap, sel);
         draw_contact_detail_panel(snap, sel);
         draw_joint_panel         (snap, transport, sel);
-        draw_graph_panel         (channel, transport);   // no snap needed
+        draw_graph_panel         (channel, transport);
         draw_help_panel          ();
     }
 

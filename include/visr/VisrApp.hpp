@@ -23,14 +23,21 @@
 //
 //  Wires the three systems together into a runnable app.
 //
-//  Minimal usage:
-//    visr::VisrApp app;
-//    // populate app.world ...
-//    app.run();
+//  Physics loop (v3 change):
+//    The result of channel.should_step() is stored in a local bool `stepped`
+//    and forwarded to channel.push(world, stepped).
 //
-//  Keyboard shortcuts (handled in run()):
-//    Space   — pause / resume
-//    ESC     — deselect all   (handled in SelectionSystem)
+//    This is required for two reasons:
+//      1. should_step() has a side effect — it consumes a pending step-once
+//         token (sets step_once_pending_=false).  Calling it twice would lose
+//         the token.
+//      2. push() uses the flag to decide whether to call sample_tracked().
+//         When stepped=false (paused) the render snapshot is still published
+//         but graph samples are not appended, so the x-axis stays still.
+//
+//  Keyboard shortcuts:
+//    Space — pause / resume
+//    ESC   — deselect all  (handled in SelectionSystem)
 // ============================================================================
 
 namespace visr
@@ -60,9 +67,19 @@ namespace visr
                 while (running.load(std::memory_order_relaxed))
                 {
                     channel.poll(world);
-                    if (channel.should_step())
+
+                    // Store the result — should_step() consumes a step-once
+                    // token so it must only be called once per tick.
+                    const bool stepped = channel.should_step();
+                    if (stepped)
                         world.step();
-                    channel.push(world);
+
+                    // push(world, stepped):
+                    //   stepped=true  → publish snapshot + advance sim_time
+                    //                   + record graph samples
+                    //   stepped=false → publish snapshot only (render stays
+                    //                   live for inspection, graphs flatline)
+                    channel.push(world, stepped);
                 }
             });
 
@@ -76,22 +93,16 @@ namespace visr
 
             while (!WindowShouldClose())
             {
-                // ── Space → pause / resume ────────────────────────────────
-                // Checked before ImGui so it works even when a text field
-                // has focus (we only act on a single press, not hold).
+                // Space → pause / resume
                 if (IsKeyPressed(KEY_SPACE))
                     channel.toggle_pause();
 
-                // ── Systems update ────────────────────────────────────────
-                camera_sys.update(camera);   // non-const: speed slider writes back
+                camera_sys.update(camera);
 
                 const FrameSnapshot *snap = channel.transport.latest_snapshot();
                 if (snap && !ImGui::GetIO().WantCaptureMouse)
                     selection_sys.update(*snap, camera, sel, channel.transport);
 
-                // ── Render ────────────────────────────────────────────────
-                // Pass camera_sys so RenderSystem can call draw_panel() in
-                // the ImGui pass without needing extra_guis.
                 render_sys.update(channel, channel.transport, snap,
                                   camera, sel, camera_sys, extra_guis);
             }

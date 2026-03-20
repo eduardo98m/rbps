@@ -6,6 +6,7 @@
 #include <functional>
 #include <ctime>
 #include <cstdio>
+#include <cstring>
 #include "visr/Snapshot.hpp"
 #include "visr/ui/RaylibDraw.hpp"
 #include "visr/ui/Panels.hpp"
@@ -16,8 +17,6 @@
 // ============================================================================
 //  visr/systems/RenderSystem.hpp
 //
-//  Owns the full render pass including ImGui + ImPlot.
-//
 //  Frame flow:
 //    BeginDrawing()
 //      ClearBackground
@@ -25,15 +24,24 @@
 //      EndMode3D
 //      rlImGuiBegin
 //        camera_sys.draw_panel()
-//        ui::draw_all(...)       ← sets visr::ui::g_screenshot_requested
+//        ui::draw_all(...)   ← may set ui::g_plot_export_request.pending
 //      rlImGuiEnd
-//    EndDrawing()                ← framebuffer is now complete
-//    [if screenshot requested]   ← LoadImageFromScreen → ExportImage
+//    EndDrawing()            ← framebuffer is complete
 //
-//  Screenshot timing:
-//    LoadImageFromScreen() reads the OpenGL read buffer.  Calling it
-//    immediately after EndDrawing() (before the next BeginDrawing) is
-//    the correct window — the full composited frame is in the buffer.
+//    [if export pending]
+//      LoadImageFromScreen() ← reads complete framebuffer
+//      ImageCrop()           ← crop to saved plot screen-rect
+//      ImageResize()         ← optional upscale
+//      ExportImage()         ← write PNG
+//      ui::g_export_status   ← set result string for next-frame toast
+//
+//  Why crop after EndDrawing()?
+//    LoadImageFromScreen() reads the OpenGL read buffer.  This buffer is
+//    only fully composited after EndDrawing() (which calls SwapBuffers on
+//    most platforms).  Calling it earlier would capture a partial frame
+//    missing the ImGui overlay.  Calling it at the start of the next
+//    BeginDrawing() also works, but requires carrying the request across
+//    two frames.  Same-frame post-EndDrawing is the cleanest window.
 // ============================================================================
 
 namespace visr
@@ -41,17 +49,12 @@ namespace visr
     struct RenderSystem
     {
         draw::DrawFlags flags{};
-        Color           bg_color = { 30, 30, 35, 255 };
-
-        // Last export status shown as a timed toast in the graph panel.
-        // Written here (by RenderSystem), read in Panels via g_export_status.
-        std::string last_export_msg;
-        double      last_export_time = -10.0;  // GetTime() value
+        Color bg_color = { 30, 30, 35, 255 };
 
         void init()
         {
             rlImGuiSetup(true);
-            ImPlot::CreateContext();   // must come AFTER rlImGuiSetup (ImGui context exists)
+            ImPlot::CreateContext();   // must follow rlImGuiSetup (needs ImGui context)
         }
 
         template<typename Transport>
@@ -63,10 +66,6 @@ namespace visr
                     CameraSystem            &camera_sys,
                     const std::vector<std::function<void()>> &extra_guis = {})
         {
-            // Reset the export-request flag every frame; the panel will set it
-            // if the user pressed "Save PNG" this frame.
-            ui::g_screenshot_requested = false;
-
             BeginDrawing();
             ClearBackground(bg_color);
 
@@ -75,60 +74,83 @@ namespace visr
             DrawGrid(20, 1.0f);
             if (snap)
                 draw::draw_scene(*snap, flags,
-                                 sel.body_id,
-                                 sel.contact_idx,
-                                 sel.joint_id);
+                                 sel.body_id, sel.contact_idx, sel.joint_id);
             EndMode3D();
 
             // ── ImGui + ImPlot pass ───────────────────────────────────────
             rlImGuiBegin();
-
             camera_sys.draw_panel();
-
             if (snap)
                 ui::draw_all(channel, transport, *snap, sel);
-
-            for (auto &gui : extra_guis)
-                gui();
-
+            for (auto &gui : extra_guis) gui();
             rlImGuiEnd();
 
             DrawFPS(10, 10);
-            EndDrawing();
+            EndDrawing();   // ← framebuffer complete after this line
 
-            // ── Post-frame screenshot ─────────────────────────────────────
-            // The framebuffer is complete after EndDrawing().
-            // LoadImageFromScreen() reads the current GL read buffer — this is
-            // the correct place to call it.
-            if (ui::g_screenshot_requested)
-            {
-                char fname[80];
-                const time_t now = time(nullptr);
-                strftime(fname, sizeof(fname),
-                         "visr_export_%Y%m%d_%H%M%S.png", localtime(&now));
-
-                Image img = LoadImageFromScreen();
-                const bool ok = ExportImage(img, fname);
-                UnloadImage(img);
-
-                if (ok)
-                {
-                    ui::g_export_status = std::string("Saved: ") + fname;
-                    last_export_msg  = ui::g_export_status;
-                }
-                else
-                {
-                    ui::g_export_status = "Export FAILED";
-                }
-                last_export_time = GetTime();
-                ui::g_export_status_time = last_export_time;
-            }
+            // ── Plot export (post-frame) ───────────────────────────────────
+            // Process after EndDrawing so the full composited frame is
+            // available in the GL read buffer.
+            _process_export();
         }
 
         void shutdown()
         {
             ImPlot::DestroyContext();
             rlImGuiShutdown();
+        }
+
+    private:
+
+        void _process_export()
+        {
+            auto &req = ui::g_plot_export_request;
+            if (!req.pending) return;
+            req.pending = false;
+
+            // Build filename (append .png if missing)
+            char fname[160];
+            const char *name = req.filename[0] ? req.filename : "visr_plot";
+            if (!std::strstr(name, ".png"))
+                std::snprintf(fname, sizeof(fname), "%s.png", name);
+            else
+                std::strncpy(fname, name, sizeof(fname) - 1);
+
+            // Capture full framebuffer
+            Image full = LoadImageFromScreen();
+
+            // Crop to the saved plot screen-rect.
+            // ImPlot returns screen coords in ImGui space (points); on HiDPI
+            // screens these may need to be scaled by GetIO().DisplayFramebufferScale.
+            // We use floor/ceil to stay within valid pixel bounds.
+            const ImGuiIO &io    = ImGui::GetIO();
+            const float    scale = io.DisplayFramebufferScale.x; // usually 1 or 2
+
+            Rectangle crop;
+            crop.x      = std::floor(req.pos.x  * scale);
+            crop.y      = std::floor(req.pos.y  * scale);
+            crop.width  = std::ceil (req.size.x * scale);
+            crop.height = std::ceil (req.size.y * scale);
+
+            // Clamp to image bounds
+            if (crop.x < 0) crop.x = 0;
+            if (crop.y < 0) crop.y = 0;
+            if (crop.x + crop.width  > full.width)  crop.width  = full.width  - crop.x;
+            if (crop.y + crop.height > full.height)  crop.height = full.height - crop.y;
+
+            ImageCrop(&full, crop);
+
+            // Optional upscale (nearest-neighbour is fine for a plot)
+            if (req.upscale > 1)
+                ImageResize(&full,
+                            full.width  * req.upscale,
+                            full.height * req.upscale);
+
+            const bool ok = ExportImage(full, fname);
+            UnloadImage(full);
+
+            ui::g_export_status      = ok ? (std::string("Saved: ") + fname) : "Export FAILED";
+            ui::g_export_status_time = GetTime();
         }
     };
 
