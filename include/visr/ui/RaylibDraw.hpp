@@ -16,18 +16,19 @@
 //  visr/ui/RaylibDraw.hpp
 //
 //  Stateless draw functions for every visr snapshot type.
-//  Each function takes const refs to snapshot data and a Camera3D.
-//  No physics headers are included here.
 //
 //  Colour scheme:
-//    Dynamic wireframe  — SKYBLUE
-//    Static  wireframe  — GRAY
-//    Selected body      — GREEN
-//    Contact point      — RED sphere
-//    Contact normal     — ORANGE arrow
-//    Joint anchor       — YELLOW sphere + line
-//    Joint axis         — PURPLE arrow
-//    Velocity vector    — LIME arrow
+//    Dynamic wireframe    — SKYBLUE
+//    Static  wireframe    — GRAY
+//    Selected body        — GREEN
+//    Contact point A      — BLUE  sphere  (surface of body A)
+//    Contact point B      — RED   sphere  (surface of body B)
+//    Contact normal       — gradient arrow  (depth-coded green→red)
+//    Contact separation   — line between p_a and p_b (MAGENTA)
+//    Joint anchor         — YELLOW sphere + connector line
+//    Joint axis           — PURPLE arrow
+//    Velocity vector      — LIME arrow
+//    Angular velocity     — ORANGE arc (approximated as arrow)
 // ============================================================================
 
 namespace visr::draw
@@ -43,8 +44,6 @@ namespace visr::draw
                                           Vector3 &axis_out,
                                           float   &angle_deg_out)
     {
-        // Manual clamp — std::clamp needs <algorithm> and same types;
-        // m3d::clamp exists but wants m3d::scalar. Just inline it.
         float w = (float)q.w;
         if      (w >  1.0f) w =  1.0f;
         else if (w < -1.0f) w = -1.0f;
@@ -60,7 +59,71 @@ namespace visr::draw
         angle_deg_out = angle_rad * (180.0f / 3.14159265f);
     }
 
-    // ── Shape wireframes ──────────────────────────────────────────────────────
+    // ── Depth-coded colour: green (shallow) → yellow → red (deep) ─────────
+    static inline Color depth_color_rl(float depth, float max_depth = 0.15f)
+    {
+        const float t = std::min(depth / max_depth, 1.0f);
+        if (t < 0.5f)
+        {
+            const uint8_t r = (uint8_t)(t * 2.0f * 255);
+            return { r, 255, 0, 255 };
+        }
+        const uint8_t g = (uint8_t)((1.0f - (t - 0.5f) * 2.0f) * 255);
+        return { 255, g, 0, 255 };
+    }
+
+    // ── Lambda-coded colour: blue (large compression) → white → pink (tension) ─
+    static inline Color lambda_color_rl(float lambda)
+    {
+        const float mag = std::fabs(lambda);
+        const float t   = std::min(mag / 5.0f, 1.0f);
+        if (lambda < 0.0f)
+        {
+            const uint8_t c = (uint8_t)((1.0f - t * 0.6f) * 255);
+            return { c, c, 255, 220 };
+        }
+        const uint8_t c = (uint8_t)((1.0f - t * 0.6f) * 255);
+        return { 255, c, c, 220 };
+    }
+
+    // ── Draw a 3-D arrow from `origin` in direction `dir` ──────────────────
+    //    head_frac: fraction of total length that is the arrowhead cone
+    static inline void draw_arrow(Vector3 origin, Vector3 dir,
+                                  float length, Color col,
+                                  float head_frac = 0.25f,
+                                  float shaft_radius = 0.01f)
+    {
+        const float head_len  = length * head_frac;
+        const float shaft_len = length - head_len;
+        const float head_r    = shaft_radius * 3.5f;
+
+        const Vector3 tip  = { origin.x + dir.x * length,
+                                origin.y + dir.y * length,
+                                origin.z + dir.z * length };
+        const Vector3 neck = { origin.x + dir.x * shaft_len,
+                                origin.y + dir.y * shaft_len,
+                                origin.z + dir.z * shaft_len };
+
+        // Shaft as a thin cylinder
+        DrawCylinder(origin, shaft_radius, shaft_radius, shaft_len, 6, col);
+        // Head as a cone
+        DrawCylinder(neck, head_r, 0.001f, head_len, 8, col);
+        (void)tip; // suppress unused-variable warning
+    }
+
+    // ── Draw a world-aligned vector from a point (cheap line version) ───────
+    static inline void draw_vec_arrow(const m3d::vec3 &origin,
+                                      const m3d::vec3 &vec,
+                                      Color col)
+    {
+        const m3d::vec3 tip = origin + vec;
+        DrawLine3D(to_rl(origin), to_rl(tip), col);
+        DrawSphere(to_rl(tip), 0.025f, col);
+    }
+
+    // =========================================================================
+    //  Shape wireframes
+    // =========================================================================
 
     static inline void draw_shape(const ColliderSnap &c, Color col)
     {
@@ -72,7 +135,7 @@ namespace visr::draw
 
             if constexpr (std::is_same_v<T, SpherSnap>)
             {
-                DrawSphereWires(pos, (float)shape.radius, 8, 8, col);
+                DrawSphereWires(pos, (float)shape.radius, 10, 10, col);
             }
             else if constexpr (std::is_same_v<T, BoxSnap>)
             {
@@ -90,17 +153,29 @@ namespace visr::draw
             }
             else if constexpr (std::is_same_v<T, CapsuleSnap>)
             {
-                const float r = (float)shape.radius;
+                const float r  = (float)shape.radius;
                 const float hh = (float)shape.half_height;
-                const Vector3 top = { pos.x, pos.y + hh, pos.z };
-                const Vector3 bot = { pos.x, pos.y - hh, pos.z };
-                DrawCylinderWires(bot, r, r, hh * 2.0f, 10, col);
-                DrawSphereWires(top, r, 6, 6, col);
-                DrawSphereWires(bot, r, 6, 6, col);
+                // Draw in local space so it respects world_rot
+                Vector3 axis; float deg;
+                quat_to_axis_angle(c.world_rot, axis, deg);
+                rlPushMatrix();
+                rlTranslatef(pos.x, pos.y, pos.z);
+                rlRotatef(deg, axis.x, axis.y, axis.z);
+                DrawCylinderWires({0, -hh, 0}, r, r, hh * 2.0f, 10, col);
+                DrawSphereWires({0,  hh, 0}, r, 6, 6, col);
+                DrawSphereWires({0, -hh, 0}, r, 6, 6, col);
+                rlPopMatrix();
             }
             else if constexpr (std::is_same_v<T, PlaneSnap>)
             {
+                // Draw an oriented grid for the plane
+                Vector3 axis; float deg;
+                quat_to_axis_angle(c.world_rot, axis, deg);
+                rlPushMatrix();
+                rlTranslatef(pos.x, pos.y, pos.z);
+                rlRotatef(deg, axis.x, axis.y, axis.z);
                 DrawGrid(20, 1.0f);
+                rlPopMatrix();
             }
             else if constexpr (std::is_same_v<T, ConeSnap>)
             {
@@ -114,7 +189,7 @@ namespace visr::draw
                 rlScalef((float)shape.semi_axes.x,
                          (float)shape.semi_axes.y,
                          (float)shape.semi_axes.z);
-                DrawSphereWires({0, 0, 0}, 1.0f, 8, 8, col);
+                DrawSphereWires({0, 0, 0}, 1.0f, 10, 10, col);
                 rlPopMatrix();
             }
             else if constexpr (std::is_same_v<T, HeightmapSnap>)
@@ -130,7 +205,9 @@ namespace visr::draw
         }, c.shape);
     }
 
-    // ── Draw all colliders ────────────────────────────────────────────────────
+    // =========================================================================
+    //  Colliders
+    // =========================================================================
 
     inline void draw_colliders(const FrameSnapshot &snap,
                                uint32_t selected_body_id = UINT32_MAX)
@@ -143,75 +220,253 @@ namespace visr::draw
         }
     }
 
-    // ── Draw contacts + normals ───────────────────────────────────────────────
+    // =========================================================================
+    //  Contacts — the main debugging surface
+    //
+    //  Rendering layers (from least to most prominent):
+    //    1. Penetration cylinder  — thick translucent bar along the normal,
+    //                               length = penetration_depth, colour = depth-coded.
+    //    2. Separation line       — thin MAGENTA line from p_a to p_b.
+    //    3. Contact point A       — BLUE  sphere at p_a  (body A's surface point)
+    //    4. Contact point B       — RED   sphere at p_b  (body B's surface point)
+    //    5. Normal arrow          — depth-coded colour from midpoint outward.
+    //    6. Selected contact      — extra highlight ring around midpoint.
+    // =========================================================================
 
-    inline void draw_contacts(const FrameSnapshot &snap,
-                              float normal_scale   = 0.3f,
-                              bool  show_inactive  = false)
+    struct ContactDrawConfig
     {
-        for (const auto &ct : snap.contacts)
+        float  normal_scale        = 0.25f;  // normal arrow length
+        float  contact_sphere_r    = 0.035f; // radius of p_a / p_b spheres
+        bool   show_penetration_bar= true;   // thick depth bar
+        bool   show_separation_line= true;   // p_a → p_b connector
+        bool   show_lambda_tint    = false;  // tint normal arrow by lambda
+        bool   show_inactive       = false;
+    };
+
+    inline void draw_contacts(const FrameSnapshot      &snap,
+                              const ContactDrawConfig   &cfg        = {},
+                              uint32_t                   selected_i = UINT32_MAX)
+    {
+        for (uint32_t i = 0; i < (uint32_t)snap.contacts.size(); ++i)
         {
-            if (!ct.active && !show_inactive) continue;
+            const ContactSnap &ct = snap.contacts[i];
+            if (!ct.active && !cfg.show_inactive) continue;
 
-            const Color col  = ct.active ? RED : Fade(RED, 0.3f);
-            const m3d::vec3 mid = (ct.point_on_a + ct.point_on_b) * 0.5;
-            DrawSphere(to_rl(mid), 0.04f, col);
+            const float alpha    = ct.active ? 1.0f : 0.35f;
+            const m3d::vec3 mid  = (ct.point_on_a + ct.point_on_b) * 0.5;
+            const float depth    = (float)ct.penetration_depth;
 
-            const m3d::vec3 tip = mid + ct.normal * (double)normal_scale;
-            DrawLine3D(to_rl(mid), to_rl(tip), ORANGE);
-            DrawSphere(to_rl(tip), 0.02f, ORANGE);
+            // ── 1. Penetration depth bar ────────────────────────────────────
+            if (cfg.show_penetration_bar && depth > 1e-5f)
+            {
+                Color dc = depth_color_rl(depth);
+                dc.a     = (uint8_t)(alpha * 160);
+                const m3d::vec3 bar_end = mid - ct.normal * (double)depth;
+                DrawLine3D(to_rl(mid), to_rl(bar_end), dc);
+            }
+
+            // ── 2. Separation line p_a → p_b ───────────────────────────────
+            if (cfg.show_separation_line)
+            {
+                Color lc = MAGENTA;
+                lc.a     = (uint8_t)(alpha * 180);
+                DrawLine3D(to_rl(ct.point_on_a), to_rl(ct.point_on_b), lc);
+            }
+
+            // ── 3. Contact point A (blue) ───────────────────────────────────
+            {
+                Color ca = { 80, 140, 255, (uint8_t)(alpha * 255) };
+                DrawSphere(to_rl(ct.point_on_a), cfg.contact_sphere_r, ca);
+            }
+
+            // ── 4. Contact point B (red) ────────────────────────────────────
+            {
+                Color cb = { 255, 80, 80, (uint8_t)(alpha * 255) };
+                DrawSphere(to_rl(ct.point_on_b), cfg.contact_sphere_r, cb);
+            }
+
+            // ── 5. Normal arrow from midpoint ───────────────────────────────
+            {
+                Color nc = cfg.show_lambda_tint
+                    ? lambda_color_rl((float)ct.normal_lambda)
+                    : depth_color_rl(depth);
+                nc.a = (uint8_t)(alpha * 255);
+
+                const m3d::vec3 normal_tip =
+                    mid + ct.normal * (double)cfg.normal_scale;
+                DrawLine3D(to_rl(mid), to_rl(normal_tip), nc);
+                DrawSphere(to_rl(normal_tip), cfg.contact_sphere_r * 0.7f, nc);
+            }
+
+            // ── 6. Selection highlight ──────────────────────────────────────
+            if (i == selected_i)
+            {
+                DrawSphereWires(to_rl(mid), cfg.contact_sphere_r * 3.5f,
+                                6, 6, YELLOW);
+                // Draw normal force vector if non-zero
+                const float fn_len = (float)(
+                    std::sqrt(ct.normal_force.x * ct.normal_force.x +
+                              ct.normal_force.y * ct.normal_force.y +
+                              ct.normal_force.z * ct.normal_force.z));
+                if (fn_len > 1e-4f)
+                {
+                    const float scale = std::min(fn_len * 0.01f, 0.5f);
+                    draw_vec_arrow(mid, ct.normal_force * (double)scale, GOLD);
+                }
+                // Draw tangent force vector if non-zero
+                const float ft_len = (float)(
+                    std::sqrt(ct.tangent_force.x * ct.tangent_force.x +
+                              ct.tangent_force.y * ct.tangent_force.y +
+                              ct.tangent_force.z * ct.tangent_force.z));
+                if (ft_len > 1e-4f)
+                {
+                    const float scale = std::min(ft_len * 0.01f, 0.5f);
+                    draw_vec_arrow(mid, ct.tangent_force * (double)scale, ORANGE);
+                }
+            }
         }
     }
 
-    // ── Draw joint anchors ────────────────────────────────────────────────────
+    // =========================================================================
+    //  Joints
+    // =========================================================================
 
-    inline void draw_joints(const FrameSnapshot &snap)
+    inline void draw_joints(const FrameSnapshot &snap,
+                            uint32_t selected_joint_id = UINT32_MAX)
     {
         for (const auto &j : snap.joints)
         {
+            const bool sel = (j.id == selected_joint_id);
             const Vector3 a = to_rl(j.anchor_a);
             const Vector3 b = to_rl(j.anchor_b);
-            DrawSphere(a, 0.06f, YELLOW);
-            DrawSphere(b, 0.06f, YELLOW);
+
+            // Anchors
+            DrawSphere(a, sel ? 0.10f : 0.06f, sel ? LIME   : YELLOW);
+            DrawSphere(b, sel ? 0.10f : 0.06f, sel ? LIME   : YELLOW);
             DrawLine3D(a, b, YELLOW);
 
-            const m3d::vec3 axis_tip = j.anchor_a + j.main_axis * 0.3;
+            // Main axis arrow
+            const m3d::vec3 axis_tip = j.anchor_a + j.main_axis * 0.35;
             DrawLine3D(a, to_rl(axis_tip), PURPLE);
+            DrawSphere(to_rl(axis_tip), 0.025f, PURPLE);
+
+            // Limit indicator when active
+            if (j.limited)
+            {
+                const float pos = (float)j.current_position;
+                const float lo  = (float)j.lower_limit;
+                const float hi  = (float)j.upper_limit;
+                const bool  out = (pos < lo || pos > hi);
+                // Draw a small indicator sphere on the axis proportional to position
+                const float t        = hi > lo ? (pos - lo) / (hi - lo) : 0.5f;
+                const m3d::vec3 ind  = j.anchor_a + j.main_axis * (double)(0.05 + t * 0.3);
+                DrawSphere(to_rl(ind), 0.04f, out ? RED : LIME);
+            }
         }
     }
 
-    // ── Velocity vectors ──────────────────────────────────────────────────────
+    // =========================================================================
+    //  Velocity vectors
+    // =========================================================================
 
     inline void draw_velocity_vectors(const FrameSnapshot &snap,
-                                      float scale = 0.1f)
+                                      float lin_scale = 0.08f,
+                                      float ang_scale = 0.05f)
     {
         for (const auto &b : snap.bodies)
         {
             if (b.is_static) continue;
-            const m3d::vec3 tip = b.position + b.linear_velocity * (double)scale;
-            DrawLine3D(to_rl(b.position), to_rl(tip), LIME);
+
+            // Linear velocity — LIME
+            const float lv = (float)std::sqrt(
+                b.linear_velocity.x * b.linear_velocity.x +
+                b.linear_velocity.y * b.linear_velocity.y +
+                b.linear_velocity.z * b.linear_velocity.z);
+            if (lv > 0.01f)
+                draw_vec_arrow(b.position, b.linear_velocity * (double)lin_scale, LIME);
+
+            // Angular velocity — ORANGE
+            const float av = (float)std::sqrt(
+                b.angular_velocity.x * b.angular_velocity.x +
+                b.angular_velocity.y * b.angular_velocity.y +
+                b.angular_velocity.z * b.angular_velocity.z);
+            if (av > 0.01f)
+                draw_vec_arrow(b.position, b.angular_velocity * (double)ang_scale, ORANGE);
         }
     }
 
-    // ── Full scene ────────────────────────────────────────────────────────────
+    // =========================================================================
+    //  Selected body highlight — draw axes (R=X, G=Y, B=Z) + outline
+    // =========================================================================
 
+    inline void draw_body_axes(const FrameSnapshot &snap,
+                               uint32_t selected_body_id)
+    {
+        if (selected_body_id == UINT32_MAX) return;
+
+        for (const auto &b : snap.bodies)
+        {
+            if (b.id != selected_body_id) continue;
+
+            const float L = 0.5f;
+            // X-axis (red)
+            const m3d::vec3 xdir = m3d::rotate(b.orientation, m3d::vec3(L, 0, 0));
+            // Y-axis (green)
+            const m3d::vec3 ydir = m3d::rotate(b.orientation, m3d::vec3(0, L, 0));
+            // Z-axis (blue)
+            const m3d::vec3 zdir = m3d::rotate(b.orientation, m3d::vec3(0, 0, L));
+
+            draw_vec_arrow(b.position, xdir, RED);
+            draw_vec_arrow(b.position, ydir, GREEN);
+            draw_vec_arrow(b.position, zdir, BLUE);
+            break;
+        }
+    }
+
+    // =========================================================================
+    //  DrawFlags — configure what draw_scene renders
+    // =========================================================================
     struct DrawFlags
     {
-        bool colliders         = true;
-        bool contacts          = true;
-        bool joints            = true;
-        bool velocities        = false;
-        bool inactive_contacts = false;
+        bool colliders          = true;
+        bool contacts           = true;
+        bool joints             = true;
+        bool velocities         = false;
+        bool body_axes          = true;   // local-frame axes on selected body
+        bool inactive_contacts  = false;
+        bool lambda_tint        = false;  // tint normal arrows by lambda
+
+        ContactDrawConfig contact_cfg{};  // fine-grained contact options
     };
 
+    // =========================================================================
+    //  draw_scene — full scene in one call
+    // =========================================================================
     inline void draw_scene(const FrameSnapshot &snap,
                            const DrawFlags     &flags    = {},
-                           uint32_t             sel_body = UINT32_MAX)
+                           uint32_t             sel_body = UINT32_MAX,
+                           uint32_t             sel_contact = UINT32_MAX,
+                           uint32_t             sel_joint   = UINT32_MAX)
     {
-        if (flags.colliders) draw_colliders(snap, sel_body);
-        if (flags.contacts)  draw_contacts(snap, 0.3f, flags.inactive_contacts);
-        if (flags.joints)    draw_joints(snap);
-        if (flags.velocities)draw_velocity_vectors(snap);
+        if (flags.colliders)
+            draw_colliders(snap, sel_body);
+
+        if (flags.contacts)
+        {
+            ContactDrawConfig cfg = flags.contact_cfg;
+            cfg.show_inactive  = flags.inactive_contacts;
+            cfg.show_lambda_tint = flags.lambda_tint;
+            draw_contacts(snap, cfg, sel_contact);
+        }
+
+        if (flags.joints)
+            draw_joints(snap, sel_joint);
+
+        if (flags.velocities)
+            draw_velocity_vectors(snap);
+
+        if (flags.body_axes)
+            draw_body_axes(snap, sel_body);
     }
 
 } // namespace visr::draw
