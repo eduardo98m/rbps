@@ -6,26 +6,29 @@
 #include "visr/Snapshot.hpp"
 #include "visr/ui/RaylibDraw.hpp"
 #include "visr/ui/Panels.hpp"
+#include "visr/systems/CameraSystem.hpp"
 #include "visr/InProcessTransport.hpp"
 #include "visr/DebugChannel.hpp"
 
 // ============================================================================
 //  visr/systems/RenderSystem.hpp
 //
-//  Owns the render pass: 3-D scene + ImGui panels in the right order.
+//  Owns the render pass: 3-D scene + ImGui panels.
 //
 //  Frame flow:
 //    BeginDrawing()
 //      ClearBackground
 //      BeginMode3D  →  draw_scene (colliders, contacts, joints, axes)
 //      EndMode3D
-//      rlImGuiBegin →  draw_all (sim control, contact table, body inspector …)
+//      rlImGuiBegin
+//        camera_sys.draw_panel()        ← speed / sensitivity sliders
+//        ui::draw_all(...)              ← sim control, bodies, contacts…
+//        extra user GUIs
 //      rlImGuiEnd
 //    EndDrawing()
 //
-//  sel is now fully threaded: contact_idx and joint_id come from Panels,
-//  body_id comes from SelectionSystem click-picking.  draw_scene uses all
-//  three so the 3-D view always highlights whatever is selected in the UI.
+//  update() takes CameraSystem& so it can call draw_panel() inside the
+//  ImGui pass without requiring the caller to push it through extra_guis.
 // ============================================================================
 
 namespace visr
@@ -35,17 +38,15 @@ namespace visr
         draw::DrawFlags flags{};
         Color           bg_color = { 30, 30, 35, 255 };
 
-        void init()
-        {
-            rlImGuiSetup(true);
-        }
+        void init() { rlImGuiSetup(true); }
 
         template<typename Transport>
         void update(DebugChannel<Transport> &channel,
                     InProcessTransport      &transport,
-                    const FrameSnapshot     *snap,          // may be nullptr
+                    const FrameSnapshot     *snap,      // may be nullptr on first frame
                     const Camera3D          &camera,
                     ui::SelectionState      &sel,
+                    CameraSystem            &camera_sys,
                     const std::vector<std::function<void()>> &extra_guis = {})
         {
             BeginDrawing();
@@ -55,16 +56,16 @@ namespace visr
             BeginMode3D(camera);
             DrawGrid(20, 1.0f);
             if (snap)
-            {
                 draw::draw_scene(*snap, flags,
                                  sel.body_id,
                                  sel.contact_idx,
                                  sel.joint_id);
-            }
             EndMode3D();
 
             // ── ImGui pass ────────────────────────────────────────────────
             rlImGuiBegin();
+
+            camera_sys.draw_panel();       // speed & sensitivity
 
             if (snap)
                 ui::draw_all(channel, transport, *snap, sel);
@@ -78,10 +79,7 @@ namespace visr
             EndDrawing();
         }
 
-        void shutdown()
-        {
-            rlImGuiShutdown();
-        }
+        void shutdown() { rlImGuiShutdown(); }
     };
 
 } // namespace visr

@@ -14,21 +14,17 @@
 //  Self-contained ImGui panels.  Each draw_*_panel() function:
 //    - Takes a const FrameSnapshot& (read-only physics state)
 //    - Takes an InProcessTransport& to push commands back
-//    - Has no state of its own beyond ImGui's retained-mode widgets
+//    - Has no persistent state beyond ImGui's retained-mode widgets
 //
-//  Changes from v1:
-//    - SelectionState: added contact_idx (was missing → contacts unselectable)
-//    - draw_contact_panel: rows are now clickable, colour-coded by depth + active
-//      state, body IDs shown alongside collider IDs.
-//    - draw_contact_detail_panel: new — shows every field of the selected contact
-//      with normal-direction bar chart and unit-length validation.
-//    - draw_body_panel: uncommented + fixed impulse widget; contacts-involving-body
-//      list; derived speed readouts.
-//    - draw_joint_panel: fixed static-float-initialised-from-pointer bug; added
-//      live limit bar coloured green/red.
-//    - draw_sim_control_panel: now owns pause/resume directly on the channel
-//      (no stale local bool comparison).
-//    - draw_all: updated signature to match new panel signatures.
+//  Changelog v3:
+//    - draw_help_panel()         new — keyboard / mouse controls reference card
+//    - draw_sim_control_panel()  "Deselect All [ESC]" button added
+//    - SelectionState            contact_idx field added (was missing in v1)
+//    - draw_contact_panel()      rows are clickable; depth + λ are colour-coded
+//    - draw_contact_detail_panel() new — deep-dive on selected contact
+//    - draw_body_panel()         impulse widget fixed; contacts-involving list added
+//    - draw_joint_panel()        static-float bug fixed; live limit bar added
+//    - draw_sim_control_panel()  pause/resume owns channel directly (no stale bool)
 // ============================================================================
 
 namespace visr::ui
@@ -38,16 +34,15 @@ namespace visr::ui
     // -------------------------------------------------------------------------
     struct SelectionState
     {
-        uint32_t body_id     = UINT32_MAX;   // UINT32_MAX = nothing selected
+        uint32_t body_id     = UINT32_MAX;
         uint32_t collider_id = UINT32_MAX;
         uint32_t joint_id    = UINT32_MAX;
-        uint32_t contact_idx = UINT32_MAX;   // index into snap.contacts (NEW)
+        uint32_t contact_idx = UINT32_MAX;   // index into snap.contacts
     };
 
     // -------------------------------------------------------------------------
     //  Colour helpers
     // -------------------------------------------------------------------------
-    // Depth: green (near 0) → yellow → red (at max_depth and beyond)
     static inline ImVec4 depth_color(float depth, float max_depth = 0.15f)
     {
         const float t = std::min(depth / max_depth, 1.0f);
@@ -55,7 +50,6 @@ namespace visr::ui
         return             ImVec4(1.0f, 1.0f - (t - 0.5f) * 2.0f, 0.0f, 1.0f);
     }
 
-    // Lambda magnitude: white (zero) → blue (compression) / pink (tension)
     static inline ImVec4 lambda_color(float lambda)
     {
         const float t = std::min(std::fabs(lambda) / 5.0f, 1.0f);
@@ -64,22 +58,61 @@ namespace visr::ui
             : ImVec4(1.0f, 1.0f - t * 0.5f, 1.0f - t * 0.5f, 1.0f);
     }
 
-    // -------------------------------------------------------------------------
-    //  Helper: inline vec3 row
-    // -------------------------------------------------------------------------
     static void show_vec3(const char *label, const m3d::vec3 &v)
     {
         ImGui::Text("%-22s  %8.4f  %8.4f  %8.4f", label, v.x, v.y, v.z);
     }
 
     // =========================================================================
+    //  Help panel  (NEW in v3)
+    //  Quick reference for all keyboard and mouse controls.
+    // =========================================================================
+    inline void draw_help_panel()
+    {
+        ImGui::SetNextWindowSize({340, 310}, ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowPos ({10, 840},  ImGuiCond_FirstUseEver);
+
+        if (!ImGui::Begin("Help / Controls")) { ImGui::End(); return; }
+
+        ImGui::SeparatorText("Camera");
+        ImGui::TextDisabled("  W / S             forward / back");
+        ImGui::TextDisabled("  A / D             strafe left / right");
+        ImGui::TextDisabled("  Q / LShift        up");
+        ImGui::TextDisabled("  E / LCtrl         down");
+        ImGui::TextDisabled("  RMB drag          look (yaw + pitch)");
+        ImGui::TextDisabled("  Scroll wheel      zoom (FOV)");
+        ImGui::TextDisabled("  Camera panel      adjust speed & sensitivity");
+
+        ImGui::SeparatorText("Selection");
+        ImGui::TextDisabled("  LMB click         select body under cursor");
+        ImGui::TextDisabled("  LMB click again   deselect that body");
+        ImGui::TextDisabled("  LMB empty space   deselect everything");
+        ImGui::TextDisabled("  ESC               deselect everything");
+        ImGui::TextDisabled("  Contact table row click/re-click to select");
+        ImGui::TextDisabled("  Body / Joint list  same toggle behaviour");
+
+        ImGui::SeparatorText("Simulation");
+        ImGui::TextDisabled("  Space             pause / resume");
+        ImGui::TextDisabled("  Step Once button  advance 1 frame while paused");
+
+        ImGui::SeparatorText("Diagnostics");
+        ImGui::TextDisabled("  Contact Detail    opens when a contact row is selected");
+        ImGui::TextDisabled("  Depth colour      green=shallow  red=deep");
+        ImGui::TextDisabled("  Lambda colour     blue=compression pink=tension");
+        ImGui::TextDisabled("  |normal| check    warns if contact normal is not unit");
+        ImGui::TextDisabled("  Graphs panel      track any body quantity over time");
+
+        ImGui::End();
+    }
+
+    // =========================================================================
     //  Simulation control panel
-    //  v2: pause/resume directly on channel — no stale local bool.
     // =========================================================================
     template<typename T>
     inline void draw_sim_control_panel(const FrameSnapshot &snap,
                                        InProcessTransport  &transport,
-                                       DebugChannel<T>     &channel)
+                                       DebugChannel<T>     &channel,
+                                       SelectionState      &sel)
     {
         ImGui::Begin("Simulation");
 
@@ -88,10 +121,7 @@ namespace visr::ui
         ImGui::Separator();
 
         const bool paused = channel.is_paused();
-
-        // Toggle directly on the channel — avoids the v1 bug where a local
-        // bool was compared to itself after flipping.
-        if (ImGui::Button(paused ? "Resume" : "Pause "))
+        if (ImGui::Button(paused ? "Resume [Space]" : "Pause  [Space]"))
             paused ? channel.resume() : channel.pause();
 
         ImGui::SameLine();
@@ -102,6 +132,18 @@ namespace visr::ui
         {
             ImGui::SameLine(0, 12);
             ImGui::TextColored({1.0f, 0.6f, 0.0f, 1.0f}, "PAUSED");
+        }
+
+        ImGui::Separator();
+
+        // Deselect All — visible and discoverable; ESC is the keyboard shortcut.
+        if (ImGui::Button("Deselect All [ESC]"))
+        {
+            sel.body_id     = UINT32_MAX;
+            sel.collider_id = UINT32_MAX;
+            sel.joint_id    = UINT32_MAX;
+            sel.contact_idx = UINT32_MAX;
+            transport.push_command(CmdClearSelection{});
         }
 
         ImGui::Separator();
@@ -125,7 +167,6 @@ namespace visr::ui
         ImGui::Text("Joints     : %zu",   snap.joints.size());
         ImGui::Text("Constraints: %zu",   snap.constraints.size());
 
-        // Quick worst-case contact summary
         float max_depth = 0.0f;
         for (const auto &c : snap.contacts)
             max_depth = std::max(max_depth, (float)c.penetration_depth);
@@ -138,14 +179,12 @@ namespace visr::ui
 
     // =========================================================================
     //  Body list + inspector panel
-    //  v2: impulse widget uncommented + fixed; contacts list; speed readouts.
     // =========================================================================
     inline void draw_body_panel(const FrameSnapshot &snap,
                                 InProcessTransport  &transport,
                                 SelectionState      &sel)
     {
         ImGui::Begin("Bodies");
-
         ImGui::Text("%zu bodies", snap.bodies.size());
         ImGui::Separator();
 
@@ -167,12 +206,11 @@ namespace visr::ui
             }
         }
         ImGui::EndChild();
-
         ImGui::Separator();
 
         if (sel.body_id == UINT32_MAX)
         {
-            ImGui::TextDisabled("(click a body to inspect)");
+            ImGui::TextDisabled("(click a body or LMB in 3D to inspect)");
             ImGui::End();
             return;
         }
@@ -195,11 +233,10 @@ namespace visr::ui
         show_vec3("force",        b.force);
         show_vec3("torque",       b.torque);
 
-        // Derived speeds — much easier to read at a glance than raw vectors
         const float lspeed = (float)std::sqrt(
-            b.linear_velocity.x  * b.linear_velocity.x  +
-            b.linear_velocity.y  * b.linear_velocity.y  +
-            b.linear_velocity.z  * b.linear_velocity.z);
+            b.linear_velocity.x * b.linear_velocity.x +
+            b.linear_velocity.y * b.linear_velocity.y +
+            b.linear_velocity.z * b.linear_velocity.z);
         const float aspeed = (float)std::sqrt(
             b.angular_velocity.x * b.angular_velocity.x +
             b.angular_velocity.y * b.angular_velocity.y +
@@ -209,7 +246,6 @@ namespace visr::ui
         ImGui::Text("%-22s  %8.4f", "mass",     b.mass);
         ImGui::Text("%-22s  %8.4f", "inv_mass", b.inverse_mass);
 
-        // ── Contacts involving this body ──────────────────────────────────
         ImGui::Separator();
         ImGui::TextDisabled("Contacts involving this body:");
         int ncont = 0;
@@ -230,8 +266,6 @@ namespace visr::ui
         if (ncont == 0) ImGui::TextDisabled("  (none)");
 
         ImGui::Separator();
-
-        // ── Actions ───────────────────────────────────────────────────────
         if (!b.is_static)
         {
             if (ImGui::Button("Zero Velocity"))
@@ -240,8 +274,6 @@ namespace visr::ui
             if (ImGui::Button("Teleport to origin"))
                 transport.push_command(CmdTeleportBody{b.id, {}, {}});
 
-            // Impulse widget — was fully commented out in v1 due to a bad
-            // float* cast. Fixed: InputFloat3 takes a plain float[3].
             ImGui::Separator();
             ImGui::TextDisabled("Apply impulse:");
             static float imp[3]  = {0.0f, 5.0f, 0.0f};
@@ -255,10 +287,7 @@ namespace visr::ui
                 {
                     const float s = imp_mag / len;
                     transport.push_command(CmdApplyImpulse{
-                        b.id,
-                        m3d::vec3{imp[0]*s, imp[1]*s, imp[2]*s},
-                        b.position   // at COM
-                    });
+                        b.id, m3d::vec3{imp[0]*s, imp[1]*s, imp[2]*s}, b.position});
                 }
             }
         }
@@ -267,7 +296,7 @@ namespace visr::ui
     }
 
     // =========================================================================
-    //  Collider inspector panel  (logic unchanged from v1, layout tidied)
+    //  Collider inspector panel
     // =========================================================================
 
     static const char *shape_name(const ShapeSnap &s)
@@ -286,8 +315,7 @@ namespace visr::ui
         }, s);
     }
 
-    inline void draw_collider_panel(const FrameSnapshot &snap,
-                                    SelectionState      &sel)
+    inline void draw_collider_panel(const FrameSnapshot &snap, SelectionState &sel)
     {
         ImGui::Begin("Colliders");
 
@@ -304,15 +332,10 @@ namespace visr::ui
             }
         }
         ImGui::EndChild();
-
         ImGui::Separator();
 
         if (sel.collider_id == UINT32_MAX)
-        {
-            ImGui::TextDisabled("(click a collider to inspect)");
-            ImGui::End();
-            return;
-        }
+        { ImGui::TextDisabled("(click a collider to inspect)"); ImGui::End(); return; }
 
         const ColliderSnap *found = nullptr;
         for (const auto &c : snap.colliders)
@@ -320,14 +343,13 @@ namespace visr::ui
         if (!found) { ImGui::End(); return; }
 
         ImGui::Text("Collider #%u  —  %s", found->id, shape_name(found->shape));
-        ImGui::Text("Body #%u  |  %s",
-                    found->body_id, found->is_static ? "STATIC" : "DYNAMIC");
+        ImGui::Text("Body #%u  |  %s", found->body_id,
+                    found->is_static ? "STATIC" : "DYNAMIC");
         ImGui::Separator();
         show_vec3("world_pos",      found->world_pos);
         ImGui::Text("%-22s  %.4f", "restitution",    found->restitution);
         ImGui::Text("%-22s  %.4f", "static_friction", found->static_friction);
         ImGui::Text("%-22s  %.4f", "dyn_friction",   found->dynamic_friction);
-
         ImGui::Separator();
         std::visit([](auto &&sh)
         {
@@ -348,8 +370,7 @@ namespace visr::ui
                 ImGui::Text("semi_axes = %.3f  %.3f  %.3f",
                             sh.semi_axes.x, sh.semi_axes.y, sh.semi_axes.z);
             else if constexpr (std::is_same_v<T, HeightmapSnap>)
-                ImGui::Text("grid %u × %u  cell=%.4f",
-                            sh.cols, sh.rows, sh.cell_size);
+                ImGui::Text("grid %u × %u  cell=%.4f", sh.cols, sh.rows, sh.cell_size);
             else if constexpr (std::is_same_v<T, MeshSnap>)
                 ImGui::Text("verts=%u  faces=%u", sh.vertex_count, sh.face_count);
         }, found->shape);
@@ -358,11 +379,9 @@ namespace visr::ui
     }
 
     // =========================================================================
-    //  Contact list panel
-    //  v2: clickable rows, colour-coded depth + lambda, body IDs, inactive filter
+    //  Contact list panel — clickable rows, colour-coded, filterable
     // =========================================================================
-    inline void draw_contact_panel(const FrameSnapshot &snap,
-                                   SelectionState      &sel)
+    inline void draw_contact_panel(const FrameSnapshot &snap, SelectionState &sel)
     {
         ImGui::Begin("Contacts");
 
@@ -372,15 +391,11 @@ namespace visr::ui
         ImGui::SameLine(0, 16);
         static bool show_inactive = false;
         ImGui::Checkbox("Show inactive##ct", &show_inactive);
-
         ImGui::Separator();
 
-        // Columns: # | BdyA | BdyB | Depth | λ_n | λ_t | V_rel | OK
         if (ImGui::BeginTable("contacts", 8,
-            ImGuiTableFlags_Borders      |
-            ImGuiTableFlags_ScrollY      |
-            ImGuiTableFlags_RowBg        |
-            ImGuiTableFlags_SizingFixedFit,
+            ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY |
+            ImGuiTableFlags_RowBg   | ImGuiTableFlags_SizingFixedFit,
             ImVec2(0, 260)))
         {
             ImGui::TableSetupScrollFreeze(0, 1);
@@ -401,7 +416,6 @@ namespace visr::ui
 
                 ImGui::TableNextRow();
 
-                // Highlight rows for contacts involving the selected body
                 const bool body_match = (sel.body_id != UINT32_MAX &&
                                          (ct.body_a == sel.body_id ||
                                           ct.body_b == sel.body_id));
@@ -409,58 +423,45 @@ namespace visr::ui
                     ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0,
                                           IM_COL32(80, 50, 0, 130));
 
-                // Selectable in column 0 with SpanAllColumns so the whole row is clickable
                 ImGui::TableSetColumnIndex(0);
-                char row_id[16];
-                std::snprintf(row_id, sizeof(row_id), "%u", i);
+                char row_id[16]; std::snprintf(row_id, sizeof(row_id), "%u", i);
                 const bool row_sel = (sel.contact_idx == i);
                 if (ImGui::Selectable(row_id, row_sel,
                     ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, 0)))
-                {
                     sel.contact_idx = row_sel ? UINT32_MAX : i;
-                }
 
                 ImGui::TableSetColumnIndex(1); ImGui::Text("%u", ct.body_a);
                 ImGui::TableSetColumnIndex(2); ImGui::Text("%u", ct.body_b);
 
-                // Depth — cell background colour-coded
                 ImGui::TableSetColumnIndex(3);
                 ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg,
-                    ImGui::ColorConvertFloat4ToU32(
-                        depth_color((float)ct.penetration_depth)));
+                    ImGui::ColorConvertFloat4ToU32(depth_color((float)ct.penetration_depth)));
                 ImGui::Text("%.5f", ct.penetration_depth);
 
-                // λ_n — cell background colour-coded
                 ImGui::TableSetColumnIndex(4);
                 ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg,
-                    ImGui::ColorConvertFloat4ToU32(
-                        lambda_color((float)ct.normal_lambda)));
+                    ImGui::ColorConvertFloat4ToU32(lambda_color((float)ct.normal_lambda)));
                 ImGui::Text("%.4f", ct.normal_lambda);
 
-                ImGui::TableSetColumnIndex(5);
-                ImGui::Text("%.4f", ct.tangent_lambda);
+                ImGui::TableSetColumnIndex(5); ImGui::Text("%.4f", ct.tangent_lambda);
 
                 ImGui::TableSetColumnIndex(6);
                 {
                     const float vr = (float)ct.relative_velocity;
-                    ImGui::TextColored(
-                        vr < 0 ? ImVec4(1,0.4f,0.4f,1) : ImVec4(0.7f,1,0.7f,1),
-                        "%.3f", vr);
+                    ImGui::TextColored(vr < 0 ? ImVec4(1,0.4f,0.4f,1) : ImVec4(0.7f,1,0.7f,1),
+                                       "%.3f", vr);
                 }
-
                 ImGui::TableSetColumnIndex(7);
                 ImGui::TextColored(ct.active ? ImVec4(0,1,0.4f,1) : ImVec4(0.5f,0.5f,0.5f,1),
                                    ct.active ? "Y" : "N");
             }
             ImGui::EndTable();
         }
-
         ImGui::End();
     }
 
     // =========================================================================
-    //  Contact detail panel  (NEW in v2)
-    //  Only opens when sel.contact_idx is valid.
+    //  Contact detail panel — opens only when a contact row is selected
     // =========================================================================
     inline void draw_contact_detail_panel(const FrameSnapshot  &snap,
                                           const SelectionState &sel)
@@ -475,86 +476,67 @@ namespace visr::ui
 
         ImGui::TextColored(c.active ? ImVec4(0,1,0.4f,1) : ImVec4(1,0.4f,0.4f,1),
                            c.active ? "ACTIVE" : "INACTIVE");
-        ImGui::SameLine(0, 12);
-        ImGui::Text("Contact #%u", sel.contact_idx);
+        ImGui::SameLine(0, 12); ImGui::Text("Contact #%u", sel.contact_idx);
         ImGui::Separator();
 
-        // Two-column table for cleaner layout
         if (ImGui::BeginTable("cd_tbl", 2, ImGuiTableFlags_BordersInnerV))
         {
             ImGui::TableSetupColumn("Field", ImGuiTableColumnFlags_WidthFixed, 140);
             ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
 
-            // Helper lambda to add one text row
             auto row = [](const char *label, const char *fmt, auto ...args)
             {
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0); ImGui::TextUnformatted(label);
                 ImGui::TableSetColumnIndex(1);
-                char buf[256];
-                std::snprintf(buf, sizeof(buf), fmt, args...);
+                char buf[256]; std::snprintf(buf, sizeof(buf), fmt, args...);
                 ImGui::TextUnformatted(buf);
             };
 
-            row("Body A (slot)",  "%u", c.body_a);
-            row("Body B (slot)",  "%u", c.body_b);
-            row("Collider A",     "%u", c.collider_a);
-            row("Collider B",     "%u", c.collider_b);
+            row("Body A",        "%u", c.body_a);
+            row("Body B",        "%u", c.body_b);
+            row("Collider A",    "%u", c.collider_a);
+            row("Collider B",    "%u", c.collider_b);
 
-            // Depth with colour
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0); ImGui::TextUnformatted("Penetration");
             ImGui::TableSetColumnIndex(1);
             ImGui::TextColored(depth_color((float)c.penetration_depth),
                                "%.7f m", c.penetration_depth);
 
-            row("Normal",
-                "(%.5f,  %.5f,  %.5f)", c.normal.x, c.normal.y, c.normal.z);
-            row("Point on A",
-                "(%.4f,  %.4f,  %.4f)", c.point_on_a.x, c.point_on_a.y, c.point_on_a.z);
-            row("Point on B",
-                "(%.4f,  %.4f,  %.4f)", c.point_on_b.x, c.point_on_b.y, c.point_on_b.z);
+            row("Normal",     "(%.5f,  %.5f,  %.5f)", c.normal.x, c.normal.y, c.normal.z);
+            row("Point on A", "(%.4f,  %.4f,  %.4f)", c.point_on_a.x, c.point_on_a.y, c.point_on_a.z);
+            row("Point on B", "(%.4f,  %.4f,  %.4f)", c.point_on_b.x, c.point_on_b.y, c.point_on_b.z);
 
-            // λ_n with colour
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0); ImGui::TextUnformatted("λ normal");
             ImGui::TableSetColumnIndex(1);
-            ImGui::TextColored(lambda_color((float)c.normal_lambda),
-                               "%.7f", c.normal_lambda);
+            ImGui::TextColored(lambda_color((float)c.normal_lambda), "%.7f", c.normal_lambda);
 
-            row("λ tangential",  "%.7f",       c.tangent_lambda);
-            row("Relative vel",  "%.5f m/s",   c.relative_velocity);
-            row("Normal force",
-                "(%.4f,  %.4f,  %.4f)", c.normal_force.x, c.normal_force.y, c.normal_force.z);
-            row("Tangent force",
-                "(%.4f,  %.4f,  %.4f)", c.tangent_force.x, c.tangent_force.y, c.tangent_force.z);
+            row("λ tangential", "%.7f",       c.tangent_lambda);
+            row("Relative vel", "%.5f m/s",   c.relative_velocity);
+            row("Normal force", "(%.4f,  %.4f,  %.4f)",
+                c.normal_force.x, c.normal_force.y, c.normal_force.z);
+            row("Tangent force","(%.4f,  %.4f,  %.4f)",
+                c.tangent_force.x, c.tangent_force.y, c.tangent_force.z);
 
             ImGui::EndTable();
         }
 
-        // ── Normal direction mini bar chart ───────────────────────────────
-        // A progress bar centered on 0.5 makes it easy to see direction at a glance.
+        // Normal direction bar chart
         ImGui::Separator();
-        ImGui::TextDisabled("Normal components  (range [-1, 1]):");
-
-        const float nx = (float)c.normal.x;
-        const float ny = (float)c.normal.y;
-        const float nz = (float)c.normal.z;
+        ImGui::TextDisabled("Normal components  [-1 … 1]:");
+        const float nx = (float)c.normal.x, ny = (float)c.normal.y, nz = (float)c.normal.z;
         const float bar_w = ImGui::GetContentRegionAvail().x - 46.0f;
-
         auto bar = [&](const char *lbl, float val)
         {
-            const float frac = (val + 1.0f) * 0.5f;   // [-1,1] → [0,1]
-            char overlay[24];
-            std::snprintf(overlay, sizeof(overlay), "%.3f", val);
-            ImGui::ProgressBar(frac, ImVec2(bar_w, 12), overlay);
+            char ov[24]; std::snprintf(ov, sizeof(ov), "%.3f", val);
+            ImGui::ProgressBar((val + 1.0f) * 0.5f, ImVec2(bar_w, 12), ov);
             ImGui::SameLine(0, 6); ImGui::TextUnformatted(lbl);
         };
-        bar("X", nx);
-        bar("Y", ny);
-        bar("Z", nz);
+        bar("X", nx); bar("Y", ny); bar("Z", nz);
 
-        // Sanity-check: normal should be unit length
+        // Unit-length sanity check
         const float mag = std::sqrt(nx*nx + ny*ny + nz*nz);
         ImGui::Separator();
         if (std::fabs(mag - 1.0f) > 0.01f)
@@ -568,7 +550,6 @@ namespace visr::ui
 
     // =========================================================================
     //  Joint panel
-    //  v2: fixed static-float-from-pointer bug; live limit bar; deselect toggle.
     // =========================================================================
     inline void draw_joint_panel(const FrameSnapshot &snap,
                                  InProcessTransport  &transport,
@@ -592,15 +573,10 @@ namespace visr::ui
             }
         }
         ImGui::EndChild();
-
         ImGui::Separator();
 
         if (sel.joint_id == UINT32_MAX)
-        {
-            ImGui::TextDisabled("(click a joint to inspect)");
-            ImGui::End();
-            return;
-        }
+        { ImGui::TextDisabled("(click a joint to inspect)"); ImGui::End(); return; }
 
         const JointSnap *found = nullptr;
         for (const auto &j : snap.joints)
@@ -608,12 +584,11 @@ namespace visr::ui
         if (!found) { ImGui::End(); return; }
 
         const JointSnap &j = *found;
-
         ImGui::Text("Joint #%u  |  b%u ↔ b%u", j.id, j.body_a, j.body_b);
         ImGui::Text("damping = %.4f", j.damping);
         ImGui::Separator();
 
-        // ── Live limit bar ────────────────────────────────────────────────
+        // Live limit bar
         if (j.limited)
         {
             const float pos   = (float)j.current_position;
@@ -623,45 +598,33 @@ namespace visr::ui
             const bool  out   = (pos < lo || pos > hi);
 
             ImGui::Text("pos = %.4f   [%.3f, %.3f]", pos, lo, hi);
-
-            // ProgressBar fraction clamped to [0,1]
             const float frac = range > 1e-6f
                 ? std::max(0.0f, std::min((pos - lo) / range, 1.0f))
                 : 0.5f;
-
-            char overlay[32];
-            std::snprintf(overlay, sizeof(overlay), "%.3f", pos);
-
+            char overlay[32]; std::snprintf(overlay, sizeof(overlay), "%.3f", pos);
             ImGui::PushStyleColor(ImGuiCol_PlotHistogram,
                 out ? ImVec4(1, 0.3f, 0.3f, 1) : ImVec4(0.3f, 0.9f, 0.3f, 1));
             ImGui::ProgressBar(frac, ImVec2(-1, 14), overlay);
             ImGui::PopStyleColor();
-
-            if (out)
-                ImGui::TextColored({1, 0.3f, 0.3f, 1}, "  OUTSIDE LIMITS");
+            if (out) ImGui::TextColored({1, 0.3f, 0.3f, 1}, "  OUTSIDE LIMITS");
         }
         else
-        {
             ImGui::Text("pos = %.4f   (unlimited)", j.current_position);
-        }
 
         ImGui::Separator();
 
-        // ── Target / damping controls ─────────────────────────────────────
-        // Do NOT use static here — statics are initialised only once and would
-        // show the first joint's values even after switching to a different joint.
-        // Use plain local floats (ImGui SliderFloat works on a frame-local copy).
+        // Non-static floats: re-read from snapshot every frame to avoid
+        // showing stale values after switching to a different joint.
         const float lo_f = j.limited ? (float)j.lower_limit : -10.0f;
         const float hi_f = j.limited ? (float)j.upper_limit :  10.0f;
-
         float target  = (float)j.current_position;
         float damping = (float)j.damping;
 
-        if (ImGui::SliderFloat("Target##jt",  &target,  lo_f,   hi_f))  { /* editing */ }
+        ImGui::SliderFloat("Target##jt",  &target,  lo_f,   hi_f);
         if (ImGui::Button("Set Target##jt"))
             transport.push_command(CmdSetJointTarget{j.id, (m3d::scalar)target});
 
-        if (ImGui::SliderFloat("Damping##jd", &damping, 0.0f, 100.0f))  { /* editing */ }
+        ImGui::SliderFloat("Damping##jd", &damping, 0.0f, 100.0f);
         if (ImGui::Button("Set Damping##jd"))
             transport.push_command(CmdSetJointDamping{j.id, (m3d::scalar)damping});
 
@@ -669,7 +632,7 @@ namespace visr::ui
     }
 
     // =========================================================================
-    //  Live graph panel (tracked quantities)  — logic unchanged from v1
+    //  Live graph panel
     // =========================================================================
     template<typename T>
     inline void draw_graph_panel(DebugChannel<T>     &channel,
@@ -682,16 +645,13 @@ namespace visr::ui
         ImGui::InputScalar("Track body ID", ImGuiDataType_U32, &track_id);
 
         if (ImGui::Button("Lin Speed"))
-            transport.push_command(CmdTrackQuantity{
-                TrackTarget::BodyLinearSpeed, track_id, true});
+            transport.push_command(CmdTrackQuantity{TrackTarget::BodyLinearSpeed, track_id, true});
         ImGui::SameLine();
         if (ImGui::Button("Ang Speed"))
-            transport.push_command(CmdTrackQuantity{
-                TrackTarget::BodyAngularSpeed, track_id, true});
+            transport.push_command(CmdTrackQuantity{TrackTarget::BodyAngularSpeed, track_id, true});
         ImGui::SameLine();
         if (ImGui::Button("Pos Y"))
-            transport.push_command(CmdTrackQuantity{
-                TrackTarget::BodyPositionY, track_id, true});
+            transport.push_command(CmdTrackQuantity{TrackTarget::BodyPositionY, track_id, true});
 
         ImGui::Separator();
 
@@ -710,12 +670,10 @@ namespace visr::ui
             }
             if (vmax - vmin < 1e-6f) { vmin -= 0.1f; vmax += 0.1f; }
 
-            char overlay[64];
-            std::snprintf(overlay, sizeof(overlay), "%.3f", vals.back());
+            char overlay[64]; std::snprintf(overlay, sizeof(overlay), "%.3f", vals.back());
             char title[80];
             std::snprintf(title, sizeof(title), "id=%u  [%.2f, %.2f]",
                           series.id, vmin, vmax);
-
             ImGui::PlotLines(title, vals.data(), (int)vals.size(),
                              0, overlay, vmin, vmax, ImVec2(0, 70));
         }
@@ -732,13 +690,14 @@ namespace visr::ui
                          const FrameSnapshot &snap,
                          SelectionState      &sel)
     {
-        draw_sim_control_panel   (snap, transport, channel);   // v2: owns pause directly
+        draw_sim_control_panel   (snap, transport, channel, sel);
         draw_body_panel          (snap, transport, sel);
         draw_collider_panel      (snap, sel);
         draw_contact_panel       (snap, sel);
-        draw_contact_detail_panel(snap, sel);                  // only shows if contact selected
+        draw_contact_detail_panel(snap, sel);
         draw_joint_panel         (snap, transport, sel);
         draw_graph_panel         (channel, transport, snap);
+        draw_help_panel          ();
     }
 
 } // namespace visr::ui

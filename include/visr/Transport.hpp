@@ -14,10 +14,6 @@
 //  concept.  The macro ASSERT_DEBUG_TRANSPORT(T) can be placed anywhere you
 //  want a clear compile error if a transport type is wrong.
 //
-//  Why not use the C++20 concept?
-//    Your CMake is C++17.  The concept adds nothing at runtime and only gives
-//    a slightly nicer error message.  The static_assert is equivalent for our
-//    purposes.
 // ============================================================================
  
 namespace visr
