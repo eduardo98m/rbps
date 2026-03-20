@@ -2,7 +2,10 @@
 #include <raylib.h>
 #include <imgui.h>
 #include <rlImGui.h>
+#include <implot.h>
 #include <functional>
+#include <ctime>
+#include <cstdio>
 #include "visr/Snapshot.hpp"
 #include "visr/ui/RaylibDraw.hpp"
 #include "visr/ui/Panels.hpp"
@@ -13,22 +16,24 @@
 // ============================================================================
 //  visr/systems/RenderSystem.hpp
 //
-//  Owns the render pass: 3-D scene + ImGui panels.
+//  Owns the full render pass including ImGui + ImPlot.
 //
 //  Frame flow:
 //    BeginDrawing()
 //      ClearBackground
-//      BeginMode3D  →  draw_scene (colliders, contacts, joints, axes)
+//      BeginMode3D  →  draw_scene
 //      EndMode3D
 //      rlImGuiBegin
-//        camera_sys.draw_panel()        ← speed / sensitivity sliders
-//        ui::draw_all(...)              ← sim control, bodies, contacts…
-//        extra user GUIs
+//        camera_sys.draw_panel()
+//        ui::draw_all(...)       ← sets visr::ui::g_screenshot_requested
 //      rlImGuiEnd
-//    EndDrawing()
+//    EndDrawing()                ← framebuffer is now complete
+//    [if screenshot requested]   ← LoadImageFromScreen → ExportImage
 //
-//  update() takes CameraSystem& so it can call draw_panel() inside the
-//  ImGui pass without requiring the caller to push it through extra_guis.
+//  Screenshot timing:
+//    LoadImageFromScreen() reads the OpenGL read buffer.  Calling it
+//    immediately after EndDrawing() (before the next BeginDrawing) is
+//    the correct window — the full composited frame is in the buffer.
 // ============================================================================
 
 namespace visr
@@ -38,17 +43,30 @@ namespace visr
         draw::DrawFlags flags{};
         Color           bg_color = { 30, 30, 35, 255 };
 
-        void init() { rlImGuiSetup(true); }
+        // Last export status shown as a timed toast in the graph panel.
+        // Written here (by RenderSystem), read in Panels via g_export_status.
+        std::string last_export_msg;
+        double      last_export_time = -10.0;  // GetTime() value
+
+        void init()
+        {
+            rlImGuiSetup(true);
+            ImPlot::CreateContext();   // must come AFTER rlImGuiSetup (ImGui context exists)
+        }
 
         template<typename Transport>
         void update(DebugChannel<Transport> &channel,
                     InProcessTransport      &transport,
-                    const FrameSnapshot     *snap,      // may be nullptr on first frame
+                    const FrameSnapshot     *snap,
                     const Camera3D          &camera,
                     ui::SelectionState      &sel,
                     CameraSystem            &camera_sys,
                     const std::vector<std::function<void()>> &extra_guis = {})
         {
+            // Reset the export-request flag every frame; the panel will set it
+            // if the user pressed "Save PNG" this frame.
+            ui::g_screenshot_requested = false;
+
             BeginDrawing();
             ClearBackground(bg_color);
 
@@ -62,10 +80,10 @@ namespace visr
                                  sel.joint_id);
             EndMode3D();
 
-            // ── ImGui pass ────────────────────────────────────────────────
+            // ── ImGui + ImPlot pass ───────────────────────────────────────
             rlImGuiBegin();
 
-            camera_sys.draw_panel();       // speed & sensitivity
+            camera_sys.draw_panel();
 
             if (snap)
                 ui::draw_all(channel, transport, *snap, sel);
@@ -77,9 +95,41 @@ namespace visr
 
             DrawFPS(10, 10);
             EndDrawing();
+
+            // ── Post-frame screenshot ─────────────────────────────────────
+            // The framebuffer is complete after EndDrawing().
+            // LoadImageFromScreen() reads the current GL read buffer — this is
+            // the correct place to call it.
+            if (ui::g_screenshot_requested)
+            {
+                char fname[80];
+                const time_t now = time(nullptr);
+                strftime(fname, sizeof(fname),
+                         "visr_export_%Y%m%d_%H%M%S.png", localtime(&now));
+
+                Image img = LoadImageFromScreen();
+                const bool ok = ExportImage(img, fname);
+                UnloadImage(img);
+
+                if (ok)
+                {
+                    ui::g_export_status = std::string("Saved: ") + fname;
+                    last_export_msg  = ui::g_export_status;
+                }
+                else
+                {
+                    ui::g_export_status = "Export FAILED";
+                }
+                last_export_time = GetTime();
+                ui::g_export_status_time = last_export_time;
+            }
         }
 
-        void shutdown() { rlImGuiShutdown(); }
+        void shutdown()
+        {
+            ImPlot::DestroyContext();
+            rlImGuiShutdown();
+        }
     };
 
 } // namespace visr

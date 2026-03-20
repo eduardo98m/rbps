@@ -92,8 +92,26 @@ if(RBPS_BUILD_VISR)
         ${imgui_SOURCE_DIR}/imgui_widgets.cpp
     )
     target_include_directories(imgui_rbps PUBLIC ${imgui_SOURCE_DIR})
+
+    # ── 3. ImPlot ─────────────────────────────────────────────────────────────
+    # v0.17 — only two source files needed (implot.cpp + implot_items.cpp).
+    # implot_demo.cpp is optional and not compiled here.
+    fetchcontent_declare(implot
+        GIT_REPOSITORY https://github.com/epezent/implot.git
+        GIT_TAG        v0.17
+        GIT_SHALLOW    TRUE
+    )
+    fetchcontent_makeavailable(implot)
  
-    # ── 3. rlImGui ─────────────────────────────────────────────────────────
+    add_library(implot_rbps STATIC
+        ${implot_SOURCE_DIR}/implot.cpp
+        ${implot_SOURCE_DIR}/implot_items.cpp
+    )
+    target_include_directories(implot_rbps PUBLIC ${implot_SOURCE_DIR})
+    # implot only needs imgui headers + symbols — it does NOT depend on raylib.
+    target_link_libraries(implot_rbps PUBLIC imgui_rbps)
+ 
+    # ── 4. rlImGui ─────────────────────────────────────────────────────────
     #  No release tags exist — pin to a known-good commit SHA.
     #  To update: grab a new SHA from:
     #    https://github.com/raylib-extras/rlImGui/commits/main
@@ -113,7 +131,7 @@ if(RBPS_BUILD_VISR)
     # ── 4. visr full target (headers + raylib + imgui) ─────────────────────
     add_library(visr_lib INTERFACE)
     target_include_directories(visr_lib INTERFACE ${CMAKE_SOURCE_DIR}/include)
-    target_link_libraries(visr_lib INTERFACE rbps_lib raylib imgui_rbps rlimgui_rbps)
+    target_link_libraries(visr_lib INTERFACE rbps_lib raylib imgui_rbps implot_rbps rlimgui_rbps)
  
     # ── 5. visr headless target (headers only, no raylib/imgui) ───────────
     #  Used exclusively by the unit tests so they never link a display lib.
