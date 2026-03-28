@@ -192,28 +192,28 @@ static void build_ground(rbps::World &w)
     w.create_collider(ball_cp);
 
 
-    // rbc::Box box{{0.5, 0.5, 0.5}};
+    rbc::Box box{{0.5, 0.5, 0.5}};
 
-    // rbps::BodyParams box_body_p{};
-    // box_body_p.type     = rbps::BodyType::DYNAMIC;
-    // box_body_p.position = m3d::vec3{1.0, 1.0, 0.0};
-    // box_body_p.mass     = 1.0;
+    rbps::BodyParams box_body_p{};
+    box_body_p.type     = rbps::BodyType::DYNAMIC;
+    box_body_p.position = m3d::vec3{1.0, 1.0, 0.0};
+    box_body_p.mass     = 1.0;
 
-    // // I_shape is computed at unit density; scale to actual mass / volume.
-    // const m3d::scalar vol_box = rbc::compute_volume(box);
-    // box_body_p.inertia_tensor = rbc::compute_inertia_tensor(box) * (box_body_p.mass / vol_box);
+    // I_shape is computed at unit density; scale to actual mass / volume.
+    const m3d::scalar vol_box = rbc::compute_volume(box);
+    box_body_p.inertia_tensor = rbc::compute_inertia_tensor(box) * (box_body_p.mass / vol_box);
     
-    // const uint32_t box_id = w.create_body(box_body_p);
+    const uint32_t box_id = w.create_body(box_body_p);
 
-    // rbps::ColliderParams box_cp{};
-    // box_cp.body_id          = box_id;
-    // box_cp.local_pos        = m3d::vec3{0, 0, 0};
-    // box_cp.local_rot        = m3d::quat{1, 0, 0, 0};
-    // box_cp.shape            = rbc::Shape(box);
-    // box_cp.restitution      = 0.3;
-    // box_cp.static_friction  = 0.6;
-    // box_cp.dynamic_friction = 0.4;
-    // w.create_collider(box_cp);
+    rbps::ColliderParams box_cp{};
+    box_cp.body_id          = box_id;
+    box_cp.local_pos        = m3d::vec3{0, 0, 0};
+    box_cp.local_rot        = m3d::quat{1, 0, 0, 0};
+    box_cp.shape            = rbc::Shape(box);
+    box_cp.restitution      = 0.3;
+    box_cp.static_friction  = 0.6;
+    box_cp.dynamic_friction = 0.4;
+    w.create_collider(box_cp);
 
 
 }
@@ -231,9 +231,9 @@ int main()
     app.world.substeps = 20;
 
     build_ground         (app.world);
-    //build_fixed_joint_demo   (app.world);
-    //build_revolute_joint_demo(app.world);
-    //build_prismatic_joint_demo(app.world);
+    build_fixed_joint_demo   (app.world);
+    build_revolute_joint_demo(app.world);
+    build_prismatic_joint_demo(app.world);
 
 
     // ── Extra demo panel ──────────────────────────────────────────────────
