@@ -79,6 +79,7 @@ namespace rbps
         std::vector<m3d::scalar> relative_velocity;
         std::vector<m3d::vec3>   normal_force;
         std::vector<m3d::vec3>   tangent_force;
+        std::vector<bool> use_dynamic_friction;
  
         void reserve(size_t n)
         {
@@ -101,6 +102,7 @@ namespace rbps
             relative_velocity .reserve(n);
             normal_force      .reserve(n);
             tangent_force     .reserve(n);
+            use_dynamic_friction.reserve(n);
         }
  
         // Call ONCE per frame — resets everything including lambdas.
@@ -126,6 +128,7 @@ namespace rbps
             relative_velocity .clear();
             normal_force      .clear();
             tangent_force     .clear();
+            use_dynamic_friction.clear();
         }
     };
  

@@ -2,7 +2,7 @@
 #include "math3d/vec3.hpp"
 
 namespace m3d
-{   
+{
     // Forward declarations
     struct quat;
     inline quat normalize(const quat &q);
@@ -42,13 +42,14 @@ namespace m3d
         }
 
         // Quaternion Multiplication (Hamilton Product)
-        quat operator*(const quat &r) const {
+        quat operator*(const quat &r) const
+        {
             quat res;
             res.w = w * r.w - x * r.x - y * r.y - z * r.z;
             res.x = w * r.x + x * r.w + y * r.z - z * r.y;
             res.y = w * r.y + y * r.w + z * r.x - x * r.z;
             res.z = w * r.z + z * r.w + x * r.y - y * r.x;
-            return normalize(res);
+            return res; //normalize(res);
         }
 
         // Scaling
@@ -89,14 +90,16 @@ namespace m3d
     inline quat normalize(const quat &q)
     {
         scalar mag_sq = q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z;
-        
-        // Avoid the sqrt call 
-        if (m3d::abs(1.0 - mag_sq) < 2.107342e-08) { // Typical float precision threshold
+
+        // Avoid the sqrt call
+        if (m3d::abs(1.0 - mag_sq) < 2.107342e-08)
+        { // Typical float precision threshold
             return q * (2.0 / (1.0 + mag_sq));
         }
-        
-        if (mag_sq < EPSILON) return {1, 0, 0, 0}; // Avoid zero division
-        
+
+        if (mag_sq < EPSILON)
+            return {1, 0, 0, 0}; // Avoid zero division
+
         return q * (1.0 / m3d::sqrt(mag_sq));
     }
 
@@ -117,10 +120,36 @@ namespace m3d
 
         return v + ((uv * s) + uuv) * 2.0;
     }
-    
+
     inline vec3 rotate(const quat &q, const vec3 &v)
     {
         return rotate(v, q);
+    }
+
+    inline vec3 to_rpy(const quat &q)
+    {
+        quat n = normalize(q);
+
+        // roll (x-axis rotation)
+        scalar sinr_cosp = 2.0 * (n.w * n.x + n.y * n.z);
+        scalar cosr_cosp = 1.0 - 2.0 * (n.x * n.x + n.y * n.y);
+        scalar roll = m3d::atan2(sinr_cosp, cosr_cosp);
+
+        // pitch (y-axis rotation)
+        scalar sinp = 2.0 * (n.w * n.y - n.z * n.x);
+
+        scalar pitch;
+        if (m3d::abs(sinp) >= 1.0)
+            pitch = std::copysign(M_PI / 2.0, sinp); // clamp at 90°
+        else
+            pitch = std::asin(sinp);
+
+        // yaw (z-axis rotation)
+        scalar siny_cosp = 2.0 * (n.w * n.z + n.x * n.y);
+        scalar cosy_cosp = 1.0 - 2.0 * (n.y * n.y + n.z * n.z);
+        scalar yaw = m3d::atan2(siny_cosp, cosy_cosp);
+
+        return {roll, pitch, yaw};
     }
 
 } // namespace m3d

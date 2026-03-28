@@ -8,7 +8,7 @@
 #include <rlImGui.h>
 
 #ifdef PI
-#  undef PI
+#undef PI
 #endif
 
 #include "rbps/API/World.hpp"
@@ -44,16 +44,16 @@ namespace visr
 {
     struct VisrApp
     {
-        rbps::World                      world;
+        rbps::World world;
         DebugChannel<InProcessTransport> channel;
 
-        CameraSystem    camera_sys;
+        CameraSystem camera_sys;
         SelectionSystem selection_sys;
-        RenderSystem    render_sys;
+        RenderSystem render_sys;
 
-        const char *title    = "rbps visualizer";
-        int         screen_w = 1440;
-        int         screen_h = 900;
+        const char *title = "rbps visualizer";
+        int screen_w = 1440;
+        int screen_h = 900;
 
         std::vector<std::function<void()>> extra_guis;
 
@@ -62,26 +62,66 @@ namespace visr
             std::atomic<bool> running{true};
 
             // ── Physics thread ────────────────────────────────────────────
+            // std::thread phys([this, &running]()
+            // {
+            //     while (running.load(std::memory_order_relaxed))
+            //     {
+            //         channel.poll(world);
+
+            //         // Store the result — should_step() consumes a step-once
+            //         // token so it must only be called once per tick.
+            //         const bool stepped = channel.should_step();
+            //         if (stepped)
+            //             world.step();
+
+            //         // push(world, stepped):
+            //         //   stepped=true  → publish snapshot + advance sim_time
+            //         //                   + record graph samples
+            //         //   stepped=false → publish snapshot only (render stays
+            //         //                   live for inspection, graphs flatline)
+            //         channel.push(world, stepped);
+            //     }
+            // });
+
             std::thread phys([this, &running]()
-            {
+                             {
+                using namespace std::chrono;
+                
+                // Track the time of the previous loop iteration
+                auto prev_time = high_resolution_clock::now();
+                double accumulator = 0.0;
+                
+                // We get the fixed timestep you set in main.cpp
+                const double dt = world.timestep; 
+
                 while (running.load(std::memory_order_relaxed))
                 {
-                    channel.poll(world);
+                    auto current_time = high_resolution_clock::now();
+                    duration<double> elapsed = current_time - prev_time;
+                    prev_time = current_time;
+                    
+                    accumulator += elapsed.count();
+                    
+                    // Only step the physics when we have accumulated enough real time
+                    while (accumulator >= dt)
+                    {
+                        channel.poll(world);
 
-                    // Store the result — should_step() consumes a step-once
-                    // token so it must only be called once per tick.
-                    const bool stepped = channel.should_step();
-                    if (stepped)
-                        world.step();
+                        const bool stepped = channel.should_step();
+                        if (stepped)
+                        {
+                            world.step();
+                        }
 
-                    // push(world, stepped):
-                    //   stepped=true  → publish snapshot + advance sim_time
-                    //                   + record graph samples
-                    //   stepped=false → publish snapshot only (render stays
-                    //                   live for inspection, graphs flatline)
-                    channel.push(world, stepped);
-                }
-            });
+                        channel.push(world, stepped);
+                        
+                        // Consume the time we just simulated
+                        accumulator -= dt;
+                    }
+                    
+                    // Optional: yield the thread briefly to prevent 100% CPU usage
+                    std::this_thread::yield(); 
+            } });
 
             // ── Render thread (main thread on macOS / Windows) ────────────
             InitWindow(screen_w, screen_h, title);

@@ -244,6 +244,7 @@ namespace visr::ui
         ImGui::Separator();
 
         show_vec3("position",     b.position);
+        show_vec3("orientation",    m3d::to_rpy(b.orientation));
         show_vec3("lin_velocity", b.linear_velocity);
         show_vec3("ang_velocity", b.angular_velocity);
         show_vec3("force",        b.force);

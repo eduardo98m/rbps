@@ -135,7 +135,14 @@ namespace visr::draw
 
             if constexpr (std::is_same_v<T, SpherSnap>)
             {
-                DrawSphereWires(pos, (float)shape.radius, 10, 10, col);
+                Vector3 axis; float deg;
+                quat_to_axis_angle(c.world_rot, axis, deg);
+                rlPushMatrix();
+                rlTranslatef(pos.x, pos.y, pos.z);
+                rlRotatef(deg, axis.x, axis.y, axis.z);
+                DrawSphereWires({0.0, 0.0, 0.0}, (float)shape.radius, 10, 10, col);
+                rlPopMatrix();
+            
             }
             else if constexpr (std::is_same_v<T, BoxSnap>)
             {

@@ -151,7 +151,10 @@ static void build_ground(rbps::World &w)
 {
     rbps::BodyParams gp{};
     gp.type     = rbps::BodyType::STATIC;
-    gp.position = m3d::vec3{0.0, -0.3, 0.0};
+    gp.position = m3d::vec3{0.0, -1.0, 0.0};
+    const m3d::scalar tilt_deg = 20.0;
+    const m3d::scalar tilt_rad = tilt_deg * M_PI / 180.0;
+    gp.orientation = m3d::quat::from_axis_angle({0, 0, 1}, tilt_rad); // rotate box to lie flat
     gp.mass     = 0.0;
     const uint32_t ground = w.create_body(gp);
 
@@ -159,18 +162,18 @@ static void build_ground(rbps::World &w)
     cp.body_id          = ground;
     cp.local_pos        = m3d::vec3{0, 0, 0};
     cp.local_rot        = m3d::quat{1, 0, 0, 0};
-    cp.shape            = rbc::Shape(rbc::Box{{12.0, 0.3, 6.0}});
-    cp.restitution      = 0.4;
+    cp.shape            = rbc::Shape(rbc::Box{{100.0, 0.3, 100.0}});
+    cp.restitution      = 0.1;
     cp.static_friction  = 0.6;
     cp.dynamic_friction = 0.4;
     w.create_collider(cp);
 
-    rbc::Sphere sphere{0.3};
+    rbc::Sphere sphere{0.5};
 
     rbps::BodyParams bp{};
     bp.type     = rbps::BodyType::DYNAMIC;
     bp.position = m3d::vec3{0.0, 1.0, 0.0};
-    bp.mass     = 1.0;
+    bp.mass     = 50.0;
 
     // I_shape is computed at unit density; scale to actual mass / volume.
     const m3d::scalar vol = rbc::compute_volume(sphere);
@@ -183,10 +186,35 @@ static void build_ground(rbps::World &w)
     ball_cp.local_pos        = m3d::vec3{0, 0, 0};
     ball_cp.local_rot        = m3d::quat{1, 0, 0, 0};
     ball_cp.shape            = rbc::Shape(sphere);
-    ball_cp.restitution      = 0.3;
+    ball_cp.restitution      = 0.1;
     ball_cp.static_friction  = 0.6;
     ball_cp.dynamic_friction = 0.4;
     w.create_collider(ball_cp);
+
+
+    // rbc::Box box{{0.5, 0.5, 0.5}};
+
+    // rbps::BodyParams box_body_p{};
+    // box_body_p.type     = rbps::BodyType::DYNAMIC;
+    // box_body_p.position = m3d::vec3{1.0, 1.0, 0.0};
+    // box_body_p.mass     = 1.0;
+
+    // // I_shape is computed at unit density; scale to actual mass / volume.
+    // const m3d::scalar vol_box = rbc::compute_volume(box);
+    // box_body_p.inertia_tensor = rbc::compute_inertia_tensor(box) * (box_body_p.mass / vol_box);
+    
+    // const uint32_t box_id = w.create_body(box_body_p);
+
+    // rbps::ColliderParams box_cp{};
+    // box_cp.body_id          = box_id;
+    // box_cp.local_pos        = m3d::vec3{0, 0, 0};
+    // box_cp.local_rot        = m3d::quat{1, 0, 0, 0};
+    // box_cp.shape            = rbc::Shape(box);
+    // box_cp.restitution      = 0.3;
+    // box_cp.static_friction  = 0.6;
+    // box_cp.dynamic_friction = 0.4;
+    // w.create_collider(box_cp);
+
 
 }
 
@@ -203,9 +231,9 @@ int main()
     app.world.substeps = 20;
 
     build_ground         (app.world);
-    build_fixed_joint_demo   (app.world);
-    build_revolute_joint_demo(app.world);
-    build_prismatic_joint_demo(app.world);
+    //build_fixed_joint_demo   (app.world);
+    //build_revolute_joint_demo(app.world);
+    //build_prismatic_joint_demo(app.world);
 
 
     // ── Extra demo panel ──────────────────────────────────────────────────
