@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-03-14 10:23:28</td>
+            <td class="headerValue">2026-03-30 03:13:12</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -74,14 +74,14 @@
 <span id="L12"><span class="lineNum">      12</span>              :     // Returns true when the object does NOT need a fat-AABB rebuild.</span>
 <span id="L13"><span class="lineNum">      13</span> <span class="tlaGNC tlaBgGNC">        1198 :     static inline bool aabb_contained(const AABB &amp;tight, const AABB &amp;fat)</span></span>
 <span id="L14"><span class="lineNum">      14</span>              :     {</span>
-<span id="L15"><span class="lineNum">      15</span> <span class="tlaGNC">        1187 :         return tight.min.x &gt;= fat.min.x &amp;&amp; tight.max.x &lt;= fat.max.x &amp;&amp;</span></span>
-<span id="L16"><span class="lineNum">      16</span> <span class="tlaGNC">        1167 :                tight.min.y &gt;= fat.min.y &amp;&amp; tight.max.y &lt;= fat.max.y &amp;&amp;</span></span>
-<span id="L17"><span class="lineNum">      17</span> <span class="tlaGNC">        2385 :                tight.min.z &gt;= fat.min.z &amp;&amp; tight.max.z &lt;= fat.max.z;</span></span>
+<span id="L15"><span class="lineNum">      15</span> <span class="tlaGNC">        1186 :         return tight.min.x &gt;= fat.min.x &amp;&amp; tight.max.x &lt;= fat.max.x &amp;&amp;</span></span>
+<span id="L16"><span class="lineNum">      16</span> <span class="tlaGNC">        1165 :                tight.min.y &gt;= fat.min.y &amp;&amp; tight.max.y &lt;= fat.max.y &amp;&amp;</span></span>
+<span id="L17"><span class="lineNum">      17</span> <span class="tlaGNC">        2384 :                tight.min.z &gt;= fat.min.z &amp;&amp; tight.max.z &lt;= fat.max.z;</span></span>
 <span id="L18"><span class="lineNum">      18</span>              :     }</span>
 <span id="L19"><span class="lineNum">      19</span>              : </span>
-<span id="L20"><span class="lineNum">      20</span> <span class="tlaGNC">         326 :     static inline AABB make_fat(const AABB &amp;tight, m3d::scalar margin)</span></span>
+<span id="L20"><span class="lineNum">      20</span> <span class="tlaGNC">         199 :     static inline AABB make_fat(const AABB &amp;tight, m3d::scalar margin)</span></span>
 <span id="L21"><span class="lineNum">      21</span>              :     {</span>
-<span id="L22"><span class="lineNum">      22</span> <span class="tlaGNC">         326 :         return aabb_expand(tight, margin);</span></span>
+<span id="L22"><span class="lineNum">      22</span> <span class="tlaGNC">         199 :         return aabb_expand(tight, margin);</span></span>
 <span id="L23"><span class="lineNum">      23</span>              :     }</span>
 <span id="L24"><span class="lineNum">      24</span>              : </span>
 <span id="L25"><span class="lineNum">      25</span>              :     // =========================================================================</span>
@@ -118,20 +118,20 @@
 <span id="L56"><span class="lineNum">      56</span>              : </span>
 <span id="L57"><span class="lineNum">      57</span>              :     // Update the stored values for both endpoints of `slot` in place (O(n)).</span>
 <span id="L58"><span class="lineNum">      58</span>              :     // After updating we re-sort, so we don't need to keep the array sorted here.</span>
-<span id="L59"><span class="lineNum">      59</span> <span class="tlaGNC">         246 :     static void ep_update_values(std::vector&lt;SAPEndpoint&gt; &amp;endpoints,</span></span>
+<span id="L59"><span class="lineNum">      59</span> <span class="tlaGNC">         119 :     static void ep_update_values(std::vector&lt;SAPEndpoint&gt; &amp;endpoints,</span></span>
 <span id="L60"><span class="lineNum">      60</span>              :                                  uint32_t                  slot,</span>
 <span id="L61"><span class="lineNum">      61</span>              :                                  const AABB               &amp;fat)</span>
 <span id="L62"><span class="lineNum">      62</span>              :     {</span>
-<span id="L63"><span class="lineNum">      63</span> <span class="tlaGNC">        1226 :         for (SAPEndpoint &amp;e : endpoints)</span></span>
+<span id="L63"><span class="lineNum">      63</span> <span class="tlaGNC">         591 :         for (SAPEndpoint &amp;e : endpoints)</span></span>
 <span id="L64"><span class="lineNum">      64</span>              :         {</span>
-<span id="L65"><span class="lineNum">      65</span> <span class="tlaGNC">         980 :             if (e.slot != slot)</span></span>
-<span id="L66"><span class="lineNum">      66</span> <span class="tlaGNC">         488 :                 continue;</span></span>
-<span id="L67"><span class="lineNum">      67</span> <span class="tlaGNC">         492 :             if (e.is_max == 0)</span></span>
-<span id="L68"><span class="lineNum">      68</span> <span class="tlaGNC">         246 :                 e.value = static_cast&lt;float&gt;(fat.min.x);</span></span>
+<span id="L65"><span class="lineNum">      65</span> <span class="tlaGNC">         472 :             if (e.slot != slot)</span></span>
+<span id="L66"><span class="lineNum">      66</span> <span class="tlaGNC">         234 :                 continue;</span></span>
+<span id="L67"><span class="lineNum">      67</span> <span class="tlaGNC">         238 :             if (e.is_max == 0)</span></span>
+<span id="L68"><span class="lineNum">      68</span> <span class="tlaGNC">         119 :                 e.value = static_cast&lt;float&gt;(fat.min.x);</span></span>
 <span id="L69"><span class="lineNum">      69</span>              :             else</span>
-<span id="L70"><span class="lineNum">      70</span> <span class="tlaGNC">         246 :                 e.value = static_cast&lt;float&gt;(fat.max.x);</span></span>
+<span id="L70"><span class="lineNum">      70</span> <span class="tlaGNC">         119 :                 e.value = static_cast&lt;float&gt;(fat.max.x);</span></span>
 <span id="L71"><span class="lineNum">      71</span>              :         }</span>
-<span id="L72"><span class="lineNum">      72</span> <span class="tlaGNC">         246 :     }</span></span>
+<span id="L72"><span class="lineNum">      72</span> <span class="tlaGNC">         119 :     }</span></span>
 <span id="L73"><span class="lineNum">      73</span>              : </span>
 <span id="L74"><span class="lineNum">      74</span>              :     // =========================================================================</span>
 <span id="L75"><span class="lineNum">      75</span>              :     //  Sort</span>
@@ -139,21 +139,21 @@
 <span id="L77"><span class="lineNum">      77</span>              : </span>
 <span id="L78"><span class="lineNum">      78</span>              :     // Insertion sort: O(n²) worst case but O(n) when the array is nearly sorted,</span>
 <span id="L79"><span class="lineNum">      79</span>              :     // which is exactly what happens frame-to-frame for slowly-moving objects.</span>
-<span id="L80"><span class="lineNum">      80</span> <span class="tlaGNC">         239 :     void bp_insertion_sort(std::vector&lt;SAPEndpoint&gt; &amp;ep)</span></span>
+<span id="L80"><span class="lineNum">      80</span> <span class="tlaGNC">         112 :     void bp_insertion_sort(std::vector&lt;SAPEndpoint&gt; &amp;ep)</span></span>
 <span id="L81"><span class="lineNum">      81</span>              :     {</span>
-<span id="L82"><span class="lineNum">      82</span> <span class="tlaGNC">         239 :         const int n = static_cast&lt;int&gt;(ep.size());</span></span>
-<span id="L83"><span class="lineNum">      83</span> <span class="tlaGNC">         938 :         for (int i = 1; i &lt; n; ++i)</span></span>
+<span id="L82"><span class="lineNum">      82</span> <span class="tlaGNC">         112 :         const int n = static_cast&lt;int&gt;(ep.size());</span></span>
+<span id="L83"><span class="lineNum">      83</span> <span class="tlaGNC">         430 :         for (int i = 1; i &lt; n; ++i)</span></span>
 <span id="L84"><span class="lineNum">      84</span>              :         {</span>
-<span id="L85"><span class="lineNum">      85</span> <span class="tlaGNC">         699 :             SAPEndpoint key = ep[i];</span></span>
-<span id="L86"><span class="lineNum">      86</span> <span class="tlaGNC">         699 :             int j = i - 1;</span></span>
-<span id="L87"><span class="lineNum">      87</span> <span class="tlaGNC">         738 :             while (j &gt;= 0 &amp;&amp; ep[j].value &gt; key.value)</span></span>
+<span id="L85"><span class="lineNum">      85</span> <span class="tlaGNC">         318 :             SAPEndpoint key = ep[i];</span></span>
+<span id="L86"><span class="lineNum">      86</span> <span class="tlaGNC">         318 :             int j = i - 1;</span></span>
+<span id="L87"><span class="lineNum">      87</span> <span class="tlaGNC">         357 :             while (j &gt;= 0 &amp;&amp; ep[j].value &gt; key.value)</span></span>
 <span id="L88"><span class="lineNum">      88</span>              :             {</span>
 <span id="L89"><span class="lineNum">      89</span> <span class="tlaGNC">          39 :                 ep[j + 1] = ep[j];</span></span>
 <span id="L90"><span class="lineNum">      90</span> <span class="tlaGNC">          39 :                 --j;</span></span>
 <span id="L91"><span class="lineNum">      91</span>              :             }</span>
-<span id="L92"><span class="lineNum">      92</span> <span class="tlaGNC">         699 :             ep[j + 1] = key;</span></span>
+<span id="L92"><span class="lineNum">      92</span> <span class="tlaGNC">         318 :             ep[j + 1] = key;</span></span>
 <span id="L93"><span class="lineNum">      93</span>              :         }</span>
-<span id="L94"><span class="lineNum">      94</span> <span class="tlaGNC">         239 :     }</span></span>
+<span id="L94"><span class="lineNum">      94</span> <span class="tlaGNC">         112 :     }</span></span>
 <span id="L95"><span class="lineNum">      95</span>              : </span>
 <span id="L96"><span class="lineNum">      96</span>              :     // =========================================================================</span>
 <span id="L97"><span class="lineNum">      97</span>              :     //  Sweep</span>
@@ -181,25 +181,25 @@
 <span id="L119"><span class="lineNum">     119</span>              :                 {</span>
 <span id="L120"><span class="lineNum">     120</span> <span class="tlaGNC">         527 :                     const BPObject &amp;other = bp.objects[active_slot];</span></span>
 <span id="L121"><span class="lineNum">     121</span> <span class="tlaGNC">         527 :                     if (!other.alive)</span></span>
-<span id="L122"><span class="lineNum">     122</span> <span class="tlaGNC">          70 :                         continue;</span></span>
+<span id="L122"><span class="lineNum">     122</span> <span class="tlaGNC">         100 :                         continue;</span></span>
 <span id="L123"><span class="lineNum">     123</span>              : </span>
 <span id="L124"><span class="lineNum">     124</span>              :                     // Reject false positives: full 3-D fat AABB overlap test.</span>
 <span id="L125"><span class="lineNum">     125</span> <span class="tlaGNC">         527 :                     if (!aabb_overlap(obj.fat_aabb, other.fat_aabb))</span></span>
-<span id="L126"><span class="lineNum">     126</span> <span class="tlaGNC">          70 :                         continue;</span></span>
+<span id="L126"><span class="lineNum">     126</span> <span class="tlaGNC">         100 :                         continue;</span></span>
 <span id="L127"><span class="lineNum">     127</span>              : </span>
 <span id="L128"><span class="lineNum">     128</span>              :                     // Emit the pair (lower user_id first for determinism).</span>
 <span id="L129"><span class="lineNum">     129</span>              :                     BroadPhasePair pair;</span>
-<span id="L130"><span class="lineNum">     130</span> <span class="tlaGNC">         457 :                     if (obj.user_id &lt; other.user_id)</span></span>
+<span id="L130"><span class="lineNum">     130</span> <span class="tlaGNC">         427 :                     if (obj.user_id &lt; other.user_id)</span></span>
 <span id="L131"><span class="lineNum">     131</span>              :                     {</span>
 <span id="L132"><span class="lineNum">     132</span> <span class="tlaGNC">           2 :                         pair.id_a = obj.user_id;</span></span>
 <span id="L133"><span class="lineNum">     133</span> <span class="tlaGNC">           2 :                         pair.id_b = other.user_id;</span></span>
 <span id="L134"><span class="lineNum">     134</span>              :                     }</span>
 <span id="L135"><span class="lineNum">     135</span>              :                     else</span>
 <span id="L136"><span class="lineNum">     136</span>              :                     {</span>
-<span id="L137"><span class="lineNum">     137</span> <span class="tlaGNC">         455 :                         pair.id_a = other.user_id;</span></span>
-<span id="L138"><span class="lineNum">     138</span> <span class="tlaGNC">         455 :                         pair.id_b = obj.user_id;</span></span>
+<span id="L137"><span class="lineNum">     137</span> <span class="tlaGNC">         425 :                         pair.id_a = other.user_id;</span></span>
+<span id="L138"><span class="lineNum">     138</span> <span class="tlaGNC">         425 :                         pair.id_b = obj.user_id;</span></span>
 <span id="L139"><span class="lineNum">     139</span>              :                     }</span>
-<span id="L140"><span class="lineNum">     140</span> <span class="tlaGNC">         457 :                     bp.pairs.push_back(pair);</span></span>
+<span id="L140"><span class="lineNum">     140</span> <span class="tlaGNC">         427 :                     bp.pairs.push_back(pair);</span></span>
 <span id="L141"><span class="lineNum">     141</span>              :                 }</span>
 <span id="L142"><span class="lineNum">     142</span> <span class="tlaGNC">        1228 :                 bp.active_set.push_back(ep.slot);</span></span>
 <span id="L143"><span class="lineNum">     143</span>              :             }</span>
@@ -283,14 +283,14 @@
 <span id="L221"><span class="lineNum">     221</span>              :         // Temporal coherence: only rebuild fat AABB and trigger a re-sort when</span>
 <span id="L222"><span class="lineNum">     222</span>              :         // the object has escaped its current fattened envelope.</span>
 <span id="L223"><span class="lineNum">     223</span> <span class="tlaGNC">        1198 :         if (aabb_contained(new_tight_aabb, obj.fat_aabb))</span></span>
-<span id="L224"><span class="lineNum">     224</span> <span class="tlaGNC">         952 :             return; // Still inside — no work needed this frame.</span></span>
+<span id="L224"><span class="lineNum">     224</span> <span class="tlaGNC">        1079 :             return; // Still inside — no work needed this frame.</span></span>
 <span id="L225"><span class="lineNum">     225</span>              : </span>
 <span id="L226"><span class="lineNum">     226</span>              :         // The tight AABB escaped: rebuild the fat AABB with extra slack.</span>
-<span id="L227"><span class="lineNum">     227</span> <span class="tlaGNC">         246 :         obj.fat_aabb = make_fat(new_tight_aabb,</span></span>
-<span id="L228"><span class="lineNum">     228</span> <span class="tlaGNC">         246 :                                 bp.config.fat_margin + bp.config.reinsert_threshold);</span></span>
+<span id="L227"><span class="lineNum">     227</span> <span class="tlaGNC">         119 :         obj.fat_aabb = make_fat(new_tight_aabb,</span></span>
+<span id="L228"><span class="lineNum">     228</span> <span class="tlaGNC">         119 :                                 bp.config.fat_margin + bp.config.reinsert_threshold);</span></span>
 <span id="L229"><span class="lineNum">     229</span>              : </span>
-<span id="L230"><span class="lineNum">     230</span> <span class="tlaGNC">         246 :         ep_update_values(bp.endpoints, h, obj.fat_aabb);</span></span>
-<span id="L231"><span class="lineNum">     231</span> <span class="tlaGNC">         246 :         bp.dirty = true;</span></span>
+<span id="L230"><span class="lineNum">     230</span> <span class="tlaGNC">         119 :         ep_update_values(bp.endpoints, h, obj.fat_aabb);</span></span>
+<span id="L231"><span class="lineNum">     231</span> <span class="tlaGNC">         119 :         bp.dirty = true;</span></span>
 <span id="L232"><span class="lineNum">     232</span>              :     }</span>
 <span id="L233"><span class="lineNum">     233</span>              : </span>
 <span id="L234"><span class="lineNum">     234</span> <span class="tlaGNC">         627 :     void broad_phase_update(BroadPhaseState &amp;bp)</span></span>
@@ -299,8 +299,8 @@
 <span id="L237"><span class="lineNum">     237</span>              :         {</span>
 <span id="L238"><span class="lineNum">     238</span>              :             // Use insertion sort — exploits near-sortedness from previous frame.</span>
 <span id="L239"><span class="lineNum">     239</span>              :             // Falls back to std::sort for the very first frame or after many insertions.</span>
-<span id="L240"><span class="lineNum">     240</span> <span class="tlaGNC">         239 :             bp_insertion_sort(bp.endpoints);</span></span>
-<span id="L241"><span class="lineNum">     241</span> <span class="tlaGNC">         239 :             bp.dirty = false;</span></span>
+<span id="L240"><span class="lineNum">     240</span> <span class="tlaGNC">         112 :             bp_insertion_sort(bp.endpoints);</span></span>
+<span id="L241"><span class="lineNum">     241</span> <span class="tlaGNC">         112 :             bp.dirty = false;</span></span>
 <span id="L242"><span class="lineNum">     242</span>              :         }</span>
 <span id="L243"><span class="lineNum">     243</span>              : </span>
 <span id="L244"><span class="lineNum">     244</span> <span class="tlaGNC">         627 :         bp_sweep(bp);</span></span>

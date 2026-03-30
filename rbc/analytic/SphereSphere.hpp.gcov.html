@@ -32,12 +32,12 @@
             <td></td>
             <td class="headerItem">Lines:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
-            <td class="headerCovTableEntry">11</td>
-            <td class="headerCovTableEntry">11</td>
+            <td class="headerCovTableEntry">12</td>
+            <td class="headerCovTableEntry">12</td>
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-03-14 10:23:28</td>
+            <td class="headerValue">2026-03-30 03:13:12</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -74,26 +74,26 @@
 <span id="L12"><span class="lineNum">      12</span>              :     template &lt;&gt;</span>
 <span id="L13"><span class="lineNum">      13</span>              :     struct CollisionAlgorithm&lt;Sphere, Sphere&gt;</span>
 <span id="L14"><span class="lineNum">      14</span>              :     {</span>
-<span id="L15"><span class="lineNum">      15</span> <span class="tlaGNC tlaBgGNC">          35 :         static bool test(const Sphere &amp;a, const m3d::tf &amp;tf_a,</span></span>
+<span id="L15"><span class="lineNum">      15</span> <span class="tlaGNC tlaBgGNC">         434 :         static bool test(const Sphere &amp;a, const m3d::tf &amp;tf_a,</span></span>
 <span id="L16"><span class="lineNum">      16</span>              :                          const Sphere &amp;b, const m3d::tf &amp;tf_b,</span>
-<span id="L17"><span class="lineNum">      17</span>              :                          Contact &amp;out)</span>
+<span id="L17"><span class="lineNum">      17</span>              :                          ContactManifold &amp;manifold)</span>
 <span id="L18"><span class="lineNum">      18</span>              :         {</span>
-<span id="L19"><span class="lineNum">      19</span> <span class="tlaGNC">          35 :             const m3d::vec3 delta = tf_b.pos - tf_a.pos;</span></span>
-<span id="L20"><span class="lineNum">      20</span> <span class="tlaGNC">          35 :             const m3d::scalar dist = m3d::length(delta);</span></span>
-<span id="L21"><span class="lineNum">      21</span> <span class="tlaGNC">          35 :             const m3d::scalar rsum = a.radius + b.radius;</span></span>
+<span id="L19"><span class="lineNum">      19</span> <span class="tlaGNC">         434 :             const m3d::vec3 delta = tf_b.pos - tf_a.pos;</span></span>
+<span id="L20"><span class="lineNum">      20</span> <span class="tlaGNC">         434 :             const m3d::scalar dist = m3d::length(delta);</span></span>
+<span id="L21"><span class="lineNum">      21</span> <span class="tlaGNC">         434 :             const m3d::scalar rsum = a.radius + b.radius;</span></span>
 <span id="L22"><span class="lineNum">      22</span>              : </span>
-<span id="L23"><span class="lineNum">      23</span> <span class="tlaGNC">          35 :             if (dist &gt;= rsum)</span></span>
-<span id="L24"><span class="lineNum">      24</span> <span class="tlaGNC">          23 :                 return false; // separated</span></span>
+<span id="L23"><span class="lineNum">      23</span> <span class="tlaGNC">         434 :             if (dist &gt;= rsum)</span></span>
+<span id="L24"><span class="lineNum">      24</span> <span class="tlaGNC">         422 :                 return false; // separated</span></span>
 <span id="L25"><span class="lineNum">      25</span>              : </span>
-<span id="L26"><span class="lineNum">      26</span>              :             // Normal points from A to B (the direction A needs to move to separate)</span>
-<span id="L27"><span class="lineNum">      27</span> <span class="tlaGNC">          12 :             out.normal = (dist &gt; m3d::EPSILON)</span></span>
-<span id="L28"><span class="lineNum">      28</span> <span class="tlaGNC">          12 :                              ? delta / dist</span></span>
-<span id="L29"><span class="lineNum">      29</span>              :                              : m3d::vec3(1.0, 0.0, 0.0); // coincident centres — pick arbitrary axis</span>
-<span id="L30"><span class="lineNum">      30</span>              : </span>
-<span id="L31"><span class="lineNum">      31</span> <span class="tlaGNC">          12 :             out.penetration_depth = rsum - dist;</span></span>
-<span id="L32"><span class="lineNum">      32</span>              : </span>
-<span id="L33"><span class="lineNum">      33</span>              :             // Contact point: surface of A along the collision normal</span>
-<span id="L34"><span class="lineNum">      34</span> <span class="tlaGNC">          12 :             out.pos = tf_a.pos + out.normal * a.radius;</span></span>
+<span id="L26"><span class="lineNum">      26</span>              : </span>
+<span id="L27"><span class="lineNum">      27</span>              :             // Normal points from A to B (the direction A needs to move to separate)</span>
+<span id="L28"><span class="lineNum">      28</span> <span class="tlaGNC">          12 :             manifold.normal = (dist &gt; m3d::EPSILON)</span></span>
+<span id="L29"><span class="lineNum">      29</span> <span class="tlaGNC">          12 :                              ? delta / dist</span></span>
+<span id="L30"><span class="lineNum">      30</span>              :                              : m3d::vec3(1.0, 0.0, 0.0); // coincident centres — pick arbitrary axis</span>
+<span id="L31"><span class="lineNum">      31</span>              : </span>
+<span id="L32"><span class="lineNum">      32</span> <span class="tlaGNC">          12 :             manifold.num_points = 1;</span></span>
+<span id="L33"><span class="lineNum">      33</span> <span class="tlaGNC">          12 :             manifold.points[0].penetration_depth = rsum - dist;</span></span>
+<span id="L34"><span class="lineNum">      34</span> <span class="tlaGNC">          12 :             manifold.points[0].position = tf_a.pos + manifold.normal * a.radius;</span></span>
 <span id="L35"><span class="lineNum">      35</span>              : </span>
 <span id="L36"><span class="lineNum">      36</span> <span class="tlaGNC">          12 :             return true;</span></span>
 <span id="L37"><span class="lineNum">      37</span>              :         }</span>

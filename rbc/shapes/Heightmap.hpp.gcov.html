@@ -31,18 +31,18 @@
             <td class="headerValue">coverage_clean.info</td>
             <td></td>
             <td class="headerItem">Lines:</td>
-            <td class="headerCovTableEntryLo">64.7&nbsp;%</td>
-            <td class="headerCovTableEntry">34</td>
-            <td class="headerCovTableEntry">22</td>
+            <td class="headerCovTableEntryLo">0.0&nbsp;%</td>
+            <td class="headerCovTableEntry">12</td>
+            <td class="headerCovTableEntry">0</td>
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-03-14 10:23:28</td>
+            <td class="headerValue">2026-03-30 03:13:12</td>
             <td></td>
             <td class="headerItem">Functions:</td>
-            <td class="headerCovTableEntryLo">66.7&nbsp;%</td>
-            <td class="headerCovTableEntry">6</td>
-            <td class="headerCovTableEntry">4</td>
+            <td class="headerCovTableEntryLo">0.0&nbsp;%</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">0</td>
           </tr>
                   <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
                 </table>
@@ -99,7 +99,7 @@
 <span id="L37"><span class="lineNum">      37</span>              :         const HeightmapData *data; // non-owning pointer</span>
 <span id="L38"><span class="lineNum">      38</span>              : </span>
 <span id="L39"><span class="lineNum">      39</span>              :         Heightmap() : data(nullptr) {}</span>
-<span id="L40"><span class="lineNum">      40</span> <span class="tlaGNC tlaBgGNC">           9 :         explicit Heightmap(const HeightmapData *data) : data(data) {}</span></span>
+<span id="L40"><span class="lineNum">      40</span>              :         explicit Heightmap(const HeightmapData *data) : data(data) {}</span>
 <span id="L41"><span class="lineNum">      41</span>              : </span>
 <span id="L42"><span class="lineNum">      42</span>              :         inline bool operator==(const Heightmap &amp;o) const { return data == o.data; }</span>
 <span id="L43"><span class="lineNum">      43</span>              :         inline bool operator!=(const Heightmap &amp;o) const { return data != o.data; }</span>
@@ -108,41 +108,41 @@
 <span id="L46"><span class="lineNum">      46</span>              :     // ── Construction helper ───────────────────────────────────────────────────</span>
 <span id="L47"><span class="lineNum">      47</span>              :     // Creates a HeightmapData on the heap and precomputes min/max height.</span>
 <span id="L48"><span class="lineNum">      48</span>              :     // Caller owns the returned pointer and must call heightmap_data_destroy().</span>
-<span id="L49"><span class="lineNum">      49</span> <span class="tlaGNC">           9 :     inline HeightmapData *heightmap_data_create(const float *heights,</span></span>
+<span id="L49"><span class="lineNum">      49</span>              :     inline HeightmapData *heightmap_data_create(const float *heights,</span>
 <span id="L50"><span class="lineNum">      50</span>              :                                                 uint32_t rows,</span>
 <span id="L51"><span class="lineNum">      51</span>              :                                                 uint32_t cols,</span>
 <span id="L52"><span class="lineNum">      52</span>              :                                                 const m3d::vec3 &amp;scale,</span>
 <span id="L53"><span class="lineNum">      53</span>              :                                                 const m3d::vec3 &amp;origin)</span>
 <span id="L54"><span class="lineNum">      54</span>              :     {</span>
-<span id="L55"><span class="lineNum">      55</span> <span class="tlaGNC">           9 :         auto *hd = new HeightmapData;</span></span>
-<span id="L56"><span class="lineNum">      56</span> <span class="tlaGNC">           9 :         hd-&gt;heights = heights;</span></span>
-<span id="L57"><span class="lineNum">      57</span> <span class="tlaGNC">           9 :         hd-&gt;rows = rows;</span></span>
-<span id="L58"><span class="lineNum">      58</span> <span class="tlaGNC">           9 :         hd-&gt;cols = cols;</span></span>
-<span id="L59"><span class="lineNum">      59</span> <span class="tlaGNC">           9 :         hd-&gt;scale = scale;</span></span>
-<span id="L60"><span class="lineNum">      60</span> <span class="tlaGNC">           9 :         hd-&gt;origin = origin;</span></span>
+<span id="L55"><span class="lineNum">      55</span>              :         auto *hd = new HeightmapData;</span>
+<span id="L56"><span class="lineNum">      56</span>              :         hd-&gt;heights = heights;</span>
+<span id="L57"><span class="lineNum">      57</span>              :         hd-&gt;rows = rows;</span>
+<span id="L58"><span class="lineNum">      58</span>              :         hd-&gt;cols = cols;</span>
+<span id="L59"><span class="lineNum">      59</span>              :         hd-&gt;scale = scale;</span>
+<span id="L60"><span class="lineNum">      60</span>              :         hd-&gt;origin = origin;</span>
 <span id="L61"><span class="lineNum">      61</span>              : </span>
-<span id="L62"><span class="lineNum">      62</span> <span class="tlaGNC">           9 :         float mn = std::numeric_limits&lt;float&gt;::max();</span></span>
-<span id="L63"><span class="lineNum">      63</span> <span class="tlaGNC">           9 :         float mx = std::numeric_limits&lt;float&gt;::lowest();</span></span>
-<span id="L64"><span class="lineNum">      64</span> <span class="tlaGNC">           9 :         const uint32_t n = rows * cols;</span></span>
-<span id="L65"><span class="lineNum">      65</span> <span class="tlaGNC">          90 :         for (uint32_t i = 0; i &lt; n; ++i)</span></span>
+<span id="L62"><span class="lineNum">      62</span>              :         float mn = std::numeric_limits&lt;float&gt;::max();</span>
+<span id="L63"><span class="lineNum">      63</span>              :         float mx = std::numeric_limits&lt;float&gt;::lowest();</span>
+<span id="L64"><span class="lineNum">      64</span>              :         const uint32_t n = rows * cols;</span>
+<span id="L65"><span class="lineNum">      65</span>              :         for (uint32_t i = 0; i &lt; n; ++i)</span>
 <span id="L66"><span class="lineNum">      66</span>              :         {</span>
-<span id="L67"><span class="lineNum">      67</span> <span class="tlaGNC">          81 :             mn = std::min(mn, heights[i]);</span></span>
-<span id="L68"><span class="lineNum">      68</span> <span class="tlaGNC">          81 :             mx = std::max(mx, heights[i]);</span></span>
+<span id="L67"><span class="lineNum">      67</span>              :             mn = std::min(mn, heights[i]);</span>
+<span id="L68"><span class="lineNum">      68</span>              :             mx = std::max(mx, heights[i]);</span>
 <span id="L69"><span class="lineNum">      69</span>              :         }</span>
-<span id="L70"><span class="lineNum">      70</span> <span class="tlaGNC">           9 :         hd-&gt;min_height = static_cast&lt;m3d::scalar&gt;(mn) * scale.y + origin.y;</span></span>
-<span id="L71"><span class="lineNum">      71</span> <span class="tlaGNC">           9 :         hd-&gt;max_height = static_cast&lt;m3d::scalar&gt;(mx) * scale.y + origin.y;</span></span>
-<span id="L72"><span class="lineNum">      72</span> <span class="tlaGNC">           9 :         return hd;</span></span>
+<span id="L70"><span class="lineNum">      70</span>              :         hd-&gt;min_height = static_cast&lt;m3d::scalar&gt;(mn) * scale.y + origin.y;</span>
+<span id="L71"><span class="lineNum">      71</span>              :         hd-&gt;max_height = static_cast&lt;m3d::scalar&gt;(mx) * scale.y + origin.y;</span>
+<span id="L72"><span class="lineNum">      72</span>              :         return hd;</span>
 <span id="L73"><span class="lineNum">      73</span>              :     }</span>
 <span id="L74"><span class="lineNum">      74</span>              : </span>
-<span id="L75"><span class="lineNum">      75</span> <span class="tlaGNC">           9 :     inline void heightmap_data_destroy(HeightmapData *hd) { delete hd; }</span></span>
+<span id="L75"><span class="lineNum">      75</span>              :     inline void heightmap_data_destroy(HeightmapData *hd) { delete hd; }</span>
 <span id="L76"><span class="lineNum">      76</span>              : </span>
 <span id="L77"><span class="lineNum">      77</span>              :     // ── World position of a grid vertex ──────────────────────────────────────</span>
-<span id="L78"><span class="lineNum">      78</span> <span class="tlaGNC">         112 :     inline m3d::vec3 heightmap_vertex(const HeightmapData &amp;hd, uint32_t row, uint32_t col)</span></span>
+<span id="L78"><span class="lineNum">      78</span>              :     inline m3d::vec3 heightmap_vertex(const HeightmapData &amp;hd, uint32_t row, uint32_t col)</span>
 <span id="L79"><span class="lineNum">      79</span>              :     {</span>
 <span id="L80"><span class="lineNum">      80</span>              :         return m3d::vec3(</span>
-<span id="L81"><span class="lineNum">      81</span> <span class="tlaGNC">         112 :             hd.origin.x + static_cast&lt;m3d::scalar&gt;(col) * hd.scale.x,</span></span>
-<span id="L82"><span class="lineNum">      82</span> <span class="tlaGNC">         112 :             static_cast&lt;m3d::scalar&gt;(hd.heights[row * hd.cols + col]) * hd.scale.y + hd.origin.y,</span></span>
-<span id="L83"><span class="lineNum">      83</span> <span class="tlaGNC">         112 :             hd.origin.z + static_cast&lt;m3d::scalar&gt;(row) * hd.scale.z);</span></span>
+<span id="L81"><span class="lineNum">      81</span>              :             hd.origin.x + static_cast&lt;m3d::scalar&gt;(col) * hd.scale.x,</span>
+<span id="L82"><span class="lineNum">      82</span>              :             static_cast&lt;m3d::scalar&gt;(hd.heights[row * hd.cols + col]) * hd.scale.y + hd.origin.y,</span>
+<span id="L83"><span class="lineNum">      83</span>              :             hd.origin.z + static_cast&lt;m3d::scalar&gt;(row) * hd.scale.z);</span>
 <span id="L84"><span class="lineNum">      84</span>              :     }</span>
 <span id="L85"><span class="lineNum">      85</span>              : </span>
 <span id="L86"><span class="lineNum">      86</span>              :     // ── Support (not meaningful for GJK — use analytic collisions) ───────────</span>

@@ -32,12 +32,12 @@
             <td></td>
             <td class="headerItem">Lines:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
-            <td class="headerCovTableEntry">43</td>
-            <td class="headerCovTableEntry">43</td>
+            <td class="headerCovTableEntry">45</td>
+            <td class="headerCovTableEntry">45</td>
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-03-14 10:23:28</td>
+            <td class="headerValue">2026-03-30 03:13:12</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -141,136 +141,139 @@
 <span id="L79"><span class="lineNum">      79</span>              :         std::vector&lt;m3d::scalar&gt; relative_velocity;</span>
 <span id="L80"><span class="lineNum">      80</span>              :         std::vector&lt;m3d::vec3&gt;   normal_force;</span>
 <span id="L81"><span class="lineNum">      81</span>              :         std::vector&lt;m3d::vec3&gt;   tangent_force;</span>
-<span id="L82"><span class="lineNum">      82</span>              :  </span>
-<span id="L83"><span class="lineNum">      83</span> <span class="tlaGNC tlaBgGNC">         606 :         void reserve(size_t n)</span></span>
-<span id="L84"><span class="lineNum">      84</span>              :         {</span>
-<span id="L85"><span class="lineNum">      85</span> <span class="tlaGNC">         606 :             body_a            .reserve(n);</span></span>
-<span id="L86"><span class="lineNum">      86</span> <span class="tlaGNC">         606 :             body_b            .reserve(n);</span></span>
-<span id="L87"><span class="lineNum">      87</span> <span class="tlaGNC">         606 :             collider_a        .reserve(n);</span></span>
-<span id="L88"><span class="lineNum">      88</span> <span class="tlaGNC">         606 :             collider_b        .reserve(n);</span></span>
-<span id="L89"><span class="lineNum">      89</span> <span class="tlaGNC">         606 :             r_a_local         .reserve(n);</span></span>
-<span id="L90"><span class="lineNum">      90</span> <span class="tlaGNC">         606 :             r_b_local         .reserve(n);</span></span>
-<span id="L91"><span class="lineNum">      91</span> <span class="tlaGNC">         606 :             normal            .reserve(n);</span></span>
-<span id="L92"><span class="lineNum">      92</span> <span class="tlaGNC">         606 :             restitution       .reserve(n);</span></span>
-<span id="L93"><span class="lineNum">      93</span> <span class="tlaGNC">         606 :             static_friction   .reserve(n);</span></span>
-<span id="L94"><span class="lineNum">      94</span> <span class="tlaGNC">         606 :             dynamic_friction  .reserve(n);</span></span>
-<span id="L95"><span class="lineNum">      95</span> <span class="tlaGNC">         606 :             normal_lambda     .reserve(n);</span></span>
-<span id="L96"><span class="lineNum">      96</span> <span class="tlaGNC">         606 :             tangent_lambda    .reserve(n);</span></span>
-<span id="L97"><span class="lineNum">      97</span> <span class="tlaGNC">         606 :             point_on_a        .reserve(n);</span></span>
-<span id="L98"><span class="lineNum">      98</span> <span class="tlaGNC">         606 :             point_on_b        .reserve(n);</span></span>
-<span id="L99"><span class="lineNum">      99</span> <span class="tlaGNC">         606 :             penetration_depth .reserve(n);</span></span>
-<span id="L100"><span class="lineNum">     100</span> <span class="tlaGNC">         606 :             collision         .reserve(n);</span></span>
-<span id="L101"><span class="lineNum">     101</span> <span class="tlaGNC">         606 :             relative_velocity .reserve(n);</span></span>
-<span id="L102"><span class="lineNum">     102</span> <span class="tlaGNC">         606 :             normal_force      .reserve(n);</span></span>
-<span id="L103"><span class="lineNum">     103</span> <span class="tlaGNC">         606 :             tangent_force     .reserve(n);</span></span>
-<span id="L104"><span class="lineNum">     104</span> <span class="tlaGNC">         606 :         }</span></span>
-<span id="L105"><span class="lineNum">     105</span>              :  </span>
-<span id="L106"><span class="lineNum">     106</span>              :         // Call ONCE per frame — resets everything including lambdas.</span>
-<span id="L107"><span class="lineNum">     107</span> <span class="tlaGNC">         606 :         void clear()</span></span>
-<span id="L108"><span class="lineNum">     108</span>              :         {</span>
-<span id="L109"><span class="lineNum">     109</span> <span class="tlaGNC">         606 :             n_contacts = 0;</span></span>
-<span id="L110"><span class="lineNum">     110</span> <span class="tlaGNC">         606 :             body_a            .clear();</span></span>
-<span id="L111"><span class="lineNum">     111</span> <span class="tlaGNC">         606 :             body_b            .clear();</span></span>
-<span id="L112"><span class="lineNum">     112</span> <span class="tlaGNC">         606 :             collider_a        .clear();</span></span>
-<span id="L113"><span class="lineNum">     113</span> <span class="tlaGNC">         606 :             collider_b        .clear();</span></span>
-<span id="L114"><span class="lineNum">     114</span> <span class="tlaGNC">         606 :             r_a_local         .clear();</span></span>
-<span id="L115"><span class="lineNum">     115</span> <span class="tlaGNC">         606 :             r_b_local         .clear();</span></span>
-<span id="L116"><span class="lineNum">     116</span> <span class="tlaGNC">         606 :             normal            .clear();</span></span>
-<span id="L117"><span class="lineNum">     117</span> <span class="tlaGNC">         606 :             restitution       .clear();</span></span>
-<span id="L118"><span class="lineNum">     118</span> <span class="tlaGNC">         606 :             static_friction   .clear();</span></span>
-<span id="L119"><span class="lineNum">     119</span> <span class="tlaGNC">         606 :             dynamic_friction  .clear();</span></span>
-<span id="L120"><span class="lineNum">     120</span> <span class="tlaGNC">         606 :             normal_lambda     .clear();</span></span>
-<span id="L121"><span class="lineNum">     121</span> <span class="tlaGNC">         606 :             tangent_lambda    .clear();</span></span>
-<span id="L122"><span class="lineNum">     122</span> <span class="tlaGNC">         606 :             point_on_a        .clear();</span></span>
-<span id="L123"><span class="lineNum">     123</span> <span class="tlaGNC">         606 :             point_on_b        .clear();</span></span>
-<span id="L124"><span class="lineNum">     124</span> <span class="tlaGNC">         606 :             penetration_depth .clear();</span></span>
-<span id="L125"><span class="lineNum">     125</span> <span class="tlaGNC">         606 :             collision         .clear();</span></span>
-<span id="L126"><span class="lineNum">     126</span> <span class="tlaGNC">         606 :             relative_velocity .clear();</span></span>
-<span id="L127"><span class="lineNum">     127</span> <span class="tlaGNC">         606 :             normal_force      .clear();</span></span>
-<span id="L128"><span class="lineNum">     128</span> <span class="tlaGNC">         606 :             tangent_force     .clear();</span></span>
-<span id="L129"><span class="lineNum">     129</span> <span class="tlaGNC">         606 :         }</span></span>
-<span id="L130"><span class="lineNum">     130</span>              :     };</span>
-<span id="L131"><span class="lineNum">     131</span>              :  </span>
-<span id="L132"><span class="lineNum">     132</span>              : </span>
-<span id="L133"><span class="lineNum">     133</span>              :     // -----------------------------------------------------------------------</span>
-<span id="L134"><span class="lineNum">     134</span>              :     //  CollisionPipelineConfig</span>
-<span id="L135"><span class="lineNum">     135</span>              :     // -----------------------------------------------------------------------</span>
-<span id="L136"><span class="lineNum">     136</span>              :     struct CollisionPipelineConfig</span>
-<span id="L137"><span class="lineNum">     137</span>              :     {</span>
-<span id="L138"><span class="lineNum">     138</span>              :         // If true, AABB expansion uses velocity * dt (anti-tunnelling).</span>
-<span id="L139"><span class="lineNum">     139</span>              :         // If false, only the static fat_margin is used.</span>
-<span id="L140"><span class="lineNum">     140</span>              :         bool use_velocity_expansion = true;</span>
-<span id="L141"><span class="lineNum">     141</span>              :     };</span>
-<span id="L142"><span class="lineNum">     142</span>              : </span>
-<span id="L143"><span class="lineNum">     143</span>              :     // -----------------------------------------------------------------------</span>
-<span id="L144"><span class="lineNum">     144</span>              :     //  Step 1 — Update broad phase AABBs</span>
-<span id="L145"><span class="lineNum">     145</span>              :     //</span>
-<span id="L146"><span class="lineNum">     146</span>              :     //  Static bodies: their AABB is inserted once at startup and never moved.</span>
-<span id="L147"><span class="lineNum">     147</span>              :     //  Dynamic bodies: update every tick, optionally with velocity expansion.</span>
-<span id="L148"><span class="lineNum">     148</span>              :     // -----------------------------------------------------------------------</span>
-<span id="L149"><span class="lineNum">     149</span>              :     void update_broad_phase_aabbs(ColliderCollection &amp;cc,</span>
-<span id="L150"><span class="lineNum">     150</span>              :                                   rbc::BroadPhaseState &amp;bp,</span>
-<span id="L151"><span class="lineNum">     151</span>              :                                   const BodyCollection &amp;bc,</span>
-<span id="L152"><span class="lineNum">     152</span>              :                                   m3d::scalar dt,</span>
-<span id="L153"><span class="lineNum">     153</span>              :                                   bool use_velocity_expansion);</span>
-<span id="L154"><span class="lineNum">     154</span>              : </span>
-<span id="L155"><span class="lineNum">     155</span>              :     // -----------------------------------------------------------------------</span>
-<span id="L156"><span class="lineNum">     156</span>              :     //  Step 2+3+4 — Full pipeline (broad + narrow → ContactList)</span>
-<span id="L157"><span class="lineNum">     157</span>              :     //</span>
-<span id="L158"><span class="lineNum">     158</span>              :     //  Clears and refills `contacts_out` each call.</span>
-<span id="L159"><span class="lineNum">     159</span>              :     //  Optionally returns the broad phase pair count for profiling.</span>
-<span id="L160"><span class="lineNum">     160</span>              :     // -----------------------------------------------------------------------</span>
-<span id="L161"><span class="lineNum">     161</span>              :     void run_collision_pipeline(ColliderCollection &amp;cc,</span>
-<span id="L162"><span class="lineNum">     162</span>              :                                 rbc::BroadPhaseState &amp;bp,</span>
-<span id="L163"><span class="lineNum">     163</span>              :                                 const BodyCollection &amp;bc,</span>
-<span id="L164"><span class="lineNum">     164</span>              :                                 m3d::scalar dt,</span>
-<span id="L165"><span class="lineNum">     165</span>              :                                 ContactList &amp;contacts_out,</span>
-<span id="L166"><span class="lineNum">     166</span>              :                                 const CollisionPipelineConfig &amp;cfg = {});</span>
-<span id="L167"><span class="lineNum">     167</span>              :     </span>
-<span id="L168"><span class="lineNum">     168</span>              :     // -------------------------------------------------------------------------</span>
-<span id="L169"><span class="lineNum">     169</span>              :     //  Step 2 — Detect contacts from broad phase pairs (call once per frame)</span>
-<span id="L170"><span class="lineNum">     170</span>              :     //</span>
-<span id="L171"><span class="lineNum">     171</span>              :     //  Runs GJK/EPA for each candidate pair, emits ContactList entries with</span>
-<span id="L172"><span class="lineNum">     172</span>              :     //  local-space lever arms and zero lambdas.  Does NOT fill world-space</span>
-<span id="L173"><span class="lineNum">     173</span>              :     //  substep data (that is done by refresh_contacts each substep).</span>
-<span id="L174"><span class="lineNum">     174</span>              :     // -------------------------------------------------------------------------</span>
-<span id="L175"><span class="lineNum">     175</span>              :     void run_narrow_phase(const rbc::BroadPhaseState    &amp;bp,</span>
-<span id="L176"><span class="lineNum">     176</span>              :                                  const rbps::ColliderCollection  &amp;cc,</span>
-<span id="L177"><span class="lineNum">     177</span>              :                                  const BodyCollection           &amp;bc,</span>
-<span id="L178"><span class="lineNum">     178</span>              :                                  ContactList                    &amp;out);</span>
-<span id="L179"><span class="lineNum">     179</span>              : </span>
-<span id="L180"><span class="lineNum">     180</span>              :     // -------------------------------------------------------------------------</span>
-<span id="L181"><span class="lineNum">     181</span>              :     //  Step 3 — Refresh per-substep contact geometry (call every substep)</span>
-<span id="L182"><span class="lineNum">     182</span>              :     //</span>
-<span id="L183"><span class="lineNum">     183</span>              :     //  Reconstructs world-space contact points from stored local-space lever</span>
-<span id="L184"><span class="lineNum">     184</span>              :     //  arms and the bodies' current transforms.  Updates normal, point_on_a/b,</span>
-<span id="L185"><span class="lineNum">     185</span>              :     //  penetration_depth.  Does NOT touch lambdas.</span>
-<span id="L186"><span class="lineNum">     186</span>              :     //</span>
-<span id="L187"><span class="lineNum">     187</span>              :     //  Implements eq. (26) from Müller et al.:</span>
-<span id="L188"><span class="lineNum">     188</span>              :     //    p1 = x1 + rotate(q1, r1_local)</span>
-<span id="L189"><span class="lineNum">     189</span>              :     //    p2 = x2 + rotate(q2, r2_local)</span>
-<span id="L190"><span class="lineNum">     190</span>              :     //    d  = dot(p1 - p2, n)</span>
-<span id="L191"><span class="lineNum">     191</span>              :     // -------------------------------------------------------------------------</span>
-<span id="L192"><span class="lineNum">     192</span>              :     void refresh_contacts(ContactList          &amp;cl,</span>
-<span id="L193"><span class="lineNum">     193</span>              :                           const BodyCollection &amp;bc);</span>
-<span id="L194"><span class="lineNum">     194</span>              : </span>
-<span id="L195"><span class="lineNum">     195</span>              :     // -----------------------------------------------------------------------</span>
-<span id="L196"><span class="lineNum">     196</span>              :     //  Graph coloring — independent contact groups for parallel solving.</span>
-<span id="L197"><span class="lineNum">     197</span>              :     //</span>
-<span id="L198"><span class="lineNum">     198</span>              :     //  Returns a list of groups, where each group contains contact indices</span>
-<span id="L199"><span class="lineNum">     199</span>              :     //  that share NO body in common and can therefore be solved in parallel.</span>
+<span id="L82"><span class="lineNum">      82</span>              :         std::vector&lt;bool&gt; use_dynamic_friction;</span>
+<span id="L83"><span class="lineNum">      83</span>              :  </span>
+<span id="L84"><span class="lineNum">      84</span> <span class="tlaGNC tlaBgGNC">       13449 :         void reserve(size_t n)</span></span>
+<span id="L85"><span class="lineNum">      85</span>              :         {</span>
+<span id="L86"><span class="lineNum">      86</span> <span class="tlaGNC">       13449 :             body_a            .reserve(n);</span></span>
+<span id="L87"><span class="lineNum">      87</span> <span class="tlaGNC">       13449 :             body_b            .reserve(n);</span></span>
+<span id="L88"><span class="lineNum">      88</span> <span class="tlaGNC">       13449 :             collider_a        .reserve(n);</span></span>
+<span id="L89"><span class="lineNum">      89</span> <span class="tlaGNC">       13449 :             collider_b        .reserve(n);</span></span>
+<span id="L90"><span class="lineNum">      90</span> <span class="tlaGNC">       13449 :             r_a_local         .reserve(n);</span></span>
+<span id="L91"><span class="lineNum">      91</span> <span class="tlaGNC">       13449 :             r_b_local         .reserve(n);</span></span>
+<span id="L92"><span class="lineNum">      92</span> <span class="tlaGNC">       13449 :             normal            .reserve(n);</span></span>
+<span id="L93"><span class="lineNum">      93</span> <span class="tlaGNC">       13449 :             restitution       .reserve(n);</span></span>
+<span id="L94"><span class="lineNum">      94</span> <span class="tlaGNC">       13449 :             static_friction   .reserve(n);</span></span>
+<span id="L95"><span class="lineNum">      95</span> <span class="tlaGNC">       13449 :             dynamic_friction  .reserve(n);</span></span>
+<span id="L96"><span class="lineNum">      96</span> <span class="tlaGNC">       13449 :             normal_lambda     .reserve(n);</span></span>
+<span id="L97"><span class="lineNum">      97</span> <span class="tlaGNC">       13449 :             tangent_lambda    .reserve(n);</span></span>
+<span id="L98"><span class="lineNum">      98</span> <span class="tlaGNC">       13449 :             point_on_a        .reserve(n);</span></span>
+<span id="L99"><span class="lineNum">      99</span> <span class="tlaGNC">       13449 :             point_on_b        .reserve(n);</span></span>
+<span id="L100"><span class="lineNum">     100</span> <span class="tlaGNC">       13449 :             penetration_depth .reserve(n);</span></span>
+<span id="L101"><span class="lineNum">     101</span> <span class="tlaGNC">       13449 :             collision         .reserve(n);</span></span>
+<span id="L102"><span class="lineNum">     102</span> <span class="tlaGNC">       13449 :             relative_velocity .reserve(n);</span></span>
+<span id="L103"><span class="lineNum">     103</span> <span class="tlaGNC">       13449 :             normal_force      .reserve(n);</span></span>
+<span id="L104"><span class="lineNum">     104</span> <span class="tlaGNC">       13449 :             tangent_force     .reserve(n);</span></span>
+<span id="L105"><span class="lineNum">     105</span> <span class="tlaGNC">       13449 :             use_dynamic_friction.reserve(n);</span></span>
+<span id="L106"><span class="lineNum">     106</span> <span class="tlaGNC">       13449 :         }</span></span>
+<span id="L107"><span class="lineNum">     107</span>              :  </span>
+<span id="L108"><span class="lineNum">     108</span>              :         // Call ONCE per frame — resets everything including lambdas.</span>
+<span id="L109"><span class="lineNum">     109</span> <span class="tlaGNC">       13449 :         void clear()</span></span>
+<span id="L110"><span class="lineNum">     110</span>              :         {</span>
+<span id="L111"><span class="lineNum">     111</span> <span class="tlaGNC">       13449 :             n_contacts = 0;</span></span>
+<span id="L112"><span class="lineNum">     112</span> <span class="tlaGNC">       13449 :             body_a            .clear();</span></span>
+<span id="L113"><span class="lineNum">     113</span> <span class="tlaGNC">       13449 :             body_b            .clear();</span></span>
+<span id="L114"><span class="lineNum">     114</span> <span class="tlaGNC">       13449 :             collider_a        .clear();</span></span>
+<span id="L115"><span class="lineNum">     115</span> <span class="tlaGNC">       13449 :             collider_b        .clear();</span></span>
+<span id="L116"><span class="lineNum">     116</span> <span class="tlaGNC">       13449 :             r_a_local         .clear();</span></span>
+<span id="L117"><span class="lineNum">     117</span> <span class="tlaGNC">       13449 :             r_b_local         .clear();</span></span>
+<span id="L118"><span class="lineNum">     118</span> <span class="tlaGNC">       13449 :             normal            .clear();</span></span>
+<span id="L119"><span class="lineNum">     119</span> <span class="tlaGNC">       13449 :             restitution       .clear();</span></span>
+<span id="L120"><span class="lineNum">     120</span> <span class="tlaGNC">       13449 :             static_friction   .clear();</span></span>
+<span id="L121"><span class="lineNum">     121</span> <span class="tlaGNC">       13449 :             dynamic_friction  .clear();</span></span>
+<span id="L122"><span class="lineNum">     122</span> <span class="tlaGNC">       13449 :             normal_lambda     .clear();</span></span>
+<span id="L123"><span class="lineNum">     123</span> <span class="tlaGNC">       13449 :             tangent_lambda    .clear();</span></span>
+<span id="L124"><span class="lineNum">     124</span> <span class="tlaGNC">       13449 :             point_on_a        .clear();</span></span>
+<span id="L125"><span class="lineNum">     125</span> <span class="tlaGNC">       13449 :             point_on_b        .clear();</span></span>
+<span id="L126"><span class="lineNum">     126</span> <span class="tlaGNC">       13449 :             penetration_depth .clear();</span></span>
+<span id="L127"><span class="lineNum">     127</span> <span class="tlaGNC">       13449 :             collision         .clear();</span></span>
+<span id="L128"><span class="lineNum">     128</span> <span class="tlaGNC">       13449 :             relative_velocity .clear();</span></span>
+<span id="L129"><span class="lineNum">     129</span> <span class="tlaGNC">       13449 :             normal_force      .clear();</span></span>
+<span id="L130"><span class="lineNum">     130</span> <span class="tlaGNC">       13449 :             tangent_force     .clear();</span></span>
+<span id="L131"><span class="lineNum">     131</span> <span class="tlaGNC">       13449 :             use_dynamic_friction.clear();</span></span>
+<span id="L132"><span class="lineNum">     132</span> <span class="tlaGNC">       13449 :         }</span></span>
+<span id="L133"><span class="lineNum">     133</span>              :     };</span>
+<span id="L134"><span class="lineNum">     134</span>              :  </span>
+<span id="L135"><span class="lineNum">     135</span>              : </span>
+<span id="L136"><span class="lineNum">     136</span>              :     // -----------------------------------------------------------------------</span>
+<span id="L137"><span class="lineNum">     137</span>              :     //  CollisionPipelineConfig</span>
+<span id="L138"><span class="lineNum">     138</span>              :     // -----------------------------------------------------------------------</span>
+<span id="L139"><span class="lineNum">     139</span>              :     struct CollisionPipelineConfig</span>
+<span id="L140"><span class="lineNum">     140</span>              :     {</span>
+<span id="L141"><span class="lineNum">     141</span>              :         // If true, AABB expansion uses velocity * dt (anti-tunnelling).</span>
+<span id="L142"><span class="lineNum">     142</span>              :         // If false, only the static fat_margin is used.</span>
+<span id="L143"><span class="lineNum">     143</span>              :         bool use_velocity_expansion = true;</span>
+<span id="L144"><span class="lineNum">     144</span>              :     };</span>
+<span id="L145"><span class="lineNum">     145</span>              : </span>
+<span id="L146"><span class="lineNum">     146</span>              :     // -----------------------------------------------------------------------</span>
+<span id="L147"><span class="lineNum">     147</span>              :     //  Step 1 — Update broad phase AABBs</span>
+<span id="L148"><span class="lineNum">     148</span>              :     //</span>
+<span id="L149"><span class="lineNum">     149</span>              :     //  Static bodies: their AABB is inserted once at startup and never moved.</span>
+<span id="L150"><span class="lineNum">     150</span>              :     //  Dynamic bodies: update every tick, optionally with velocity expansion.</span>
+<span id="L151"><span class="lineNum">     151</span>              :     // -----------------------------------------------------------------------</span>
+<span id="L152"><span class="lineNum">     152</span>              :     void update_broad_phase_aabbs(ColliderCollection &amp;cc,</span>
+<span id="L153"><span class="lineNum">     153</span>              :                                   rbc::BroadPhaseState &amp;bp,</span>
+<span id="L154"><span class="lineNum">     154</span>              :                                   const BodyCollection &amp;bc,</span>
+<span id="L155"><span class="lineNum">     155</span>              :                                   m3d::scalar dt,</span>
+<span id="L156"><span class="lineNum">     156</span>              :                                   bool use_velocity_expansion);</span>
+<span id="L157"><span class="lineNum">     157</span>              : </span>
+<span id="L158"><span class="lineNum">     158</span>              :     // -----------------------------------------------------------------------</span>
+<span id="L159"><span class="lineNum">     159</span>              :     //  Step 2+3+4 — Full pipeline (broad + narrow → ContactList)</span>
+<span id="L160"><span class="lineNum">     160</span>              :     //</span>
+<span id="L161"><span class="lineNum">     161</span>              :     //  Clears and refills `contacts_out` each call.</span>
+<span id="L162"><span class="lineNum">     162</span>              :     //  Optionally returns the broad phase pair count for profiling.</span>
+<span id="L163"><span class="lineNum">     163</span>              :     // -----------------------------------------------------------------------</span>
+<span id="L164"><span class="lineNum">     164</span>              :     void run_collision_pipeline(ColliderCollection &amp;cc,</span>
+<span id="L165"><span class="lineNum">     165</span>              :                                 rbc::BroadPhaseState &amp;bp,</span>
+<span id="L166"><span class="lineNum">     166</span>              :                                 const BodyCollection &amp;bc,</span>
+<span id="L167"><span class="lineNum">     167</span>              :                                 m3d::scalar dt,</span>
+<span id="L168"><span class="lineNum">     168</span>              :                                 ContactList &amp;contacts_out,</span>
+<span id="L169"><span class="lineNum">     169</span>              :                                 const CollisionPipelineConfig &amp;cfg = {});</span>
+<span id="L170"><span class="lineNum">     170</span>              :     </span>
+<span id="L171"><span class="lineNum">     171</span>              :     // -------------------------------------------------------------------------</span>
+<span id="L172"><span class="lineNum">     172</span>              :     //  Step 2 — Detect contacts from broad phase pairs (call once per frame)</span>
+<span id="L173"><span class="lineNum">     173</span>              :     //</span>
+<span id="L174"><span class="lineNum">     174</span>              :     //  Runs GJK/EPA for each candidate pair, emits ContactList entries with</span>
+<span id="L175"><span class="lineNum">     175</span>              :     //  local-space lever arms and zero lambdas.  Does NOT fill world-space</span>
+<span id="L176"><span class="lineNum">     176</span>              :     //  substep data (that is done by refresh_contacts each substep).</span>
+<span id="L177"><span class="lineNum">     177</span>              :     // -------------------------------------------------------------------------</span>
+<span id="L178"><span class="lineNum">     178</span>              :     void run_narrow_phase(const rbc::BroadPhaseState    &amp;bp,</span>
+<span id="L179"><span class="lineNum">     179</span>              :                                  const rbps::ColliderCollection  &amp;cc,</span>
+<span id="L180"><span class="lineNum">     180</span>              :                                  const BodyCollection           &amp;bc,</span>
+<span id="L181"><span class="lineNum">     181</span>              :                                  ContactList                    &amp;out);</span>
+<span id="L182"><span class="lineNum">     182</span>              : </span>
+<span id="L183"><span class="lineNum">     183</span>              :     // -------------------------------------------------------------------------</span>
+<span id="L184"><span class="lineNum">     184</span>              :     //  Step 3 — Refresh per-substep contact geometry (call every substep)</span>
+<span id="L185"><span class="lineNum">     185</span>              :     //</span>
+<span id="L186"><span class="lineNum">     186</span>              :     //  Reconstructs world-space contact points from stored local-space lever</span>
+<span id="L187"><span class="lineNum">     187</span>              :     //  arms and the bodies' current transforms.  Updates normal, point_on_a/b,</span>
+<span id="L188"><span class="lineNum">     188</span>              :     //  penetration_depth.  Does NOT touch lambdas.</span>
+<span id="L189"><span class="lineNum">     189</span>              :     //</span>
+<span id="L190"><span class="lineNum">     190</span>              :     //  Implements eq. (26) from Müller et al.:</span>
+<span id="L191"><span class="lineNum">     191</span>              :     //    p1 = x1 + rotate(q1, r1_local)</span>
+<span id="L192"><span class="lineNum">     192</span>              :     //    p2 = x2 + rotate(q2, r2_local)</span>
+<span id="L193"><span class="lineNum">     193</span>              :     //    d  = dot(p1 - p2, n)</span>
+<span id="L194"><span class="lineNum">     194</span>              :     // -------------------------------------------------------------------------</span>
+<span id="L195"><span class="lineNum">     195</span>              :     void refresh_contacts(ContactList          &amp;cl,</span>
+<span id="L196"><span class="lineNum">     196</span>              :                           const BodyCollection &amp;bc);</span>
+<span id="L197"><span class="lineNum">     197</span>              : </span>
+<span id="L198"><span class="lineNum">     198</span>              :     // -----------------------------------------------------------------------</span>
+<span id="L199"><span class="lineNum">     199</span>              :     //  Graph coloring — independent contact groups for parallel solving.</span>
 <span id="L200"><span class="lineNum">     200</span>              :     //</span>
-<span id="L201"><span class="lineNum">     201</span>              :     //  Algorithm: greedy graph coloring (O(n + e), same as your old code).</span>
-<span id="L202"><span class="lineNum">     202</span>              :     //  Contacts are nodes; an edge exists when two contacts share a body.</span>
-<span id="L203"><span class="lineNum">     203</span>              :     //  Color = solve-wave index. Each color forms one independent group.</span>
-<span id="L204"><span class="lineNum">     204</span>              :     //</span>
-<span id="L205"><span class="lineNum">     205</span>              :     //  Call this after run_collision_pipeline().</span>
-<span id="L206"><span class="lineNum">     206</span>              :     // -----------------------------------------------------------------------</span>
-<span id="L207"><span class="lineNum">     207</span>              :     std::vector&lt;std::vector&lt;u_int32_t&gt;&gt;</span>
-<span id="L208"><span class="lineNum">     208</span>              :     get_collision_groups(const ContactList &amp;contacts,</span>
-<span id="L209"><span class="lineNum">     209</span>              :                          const BodyCollection &amp;bc);</span>
-<span id="L210"><span class="lineNum">     210</span>              : </span>
-<span id="L211"><span class="lineNum">     211</span>              : } // namespace rbps</span>
+<span id="L201"><span class="lineNum">     201</span>              :     //  Returns a list of groups, where each group contains contact indices</span>
+<span id="L202"><span class="lineNum">     202</span>              :     //  that share NO body in common and can therefore be solved in parallel.</span>
+<span id="L203"><span class="lineNum">     203</span>              :     //</span>
+<span id="L204"><span class="lineNum">     204</span>              :     //  Algorithm: greedy graph coloring (O(n + e), same as your old code).</span>
+<span id="L205"><span class="lineNum">     205</span>              :     //  Contacts are nodes; an edge exists when two contacts share a body.</span>
+<span id="L206"><span class="lineNum">     206</span>              :     //  Color = solve-wave index. Each color forms one independent group.</span>
+<span id="L207"><span class="lineNum">     207</span>              :     //</span>
+<span id="L208"><span class="lineNum">     208</span>              :     //  Call this after run_collision_pipeline().</span>
+<span id="L209"><span class="lineNum">     209</span>              :     // -----------------------------------------------------------------------</span>
+<span id="L210"><span class="lineNum">     210</span>              :     std::vector&lt;std::vector&lt;u_int32_t&gt;&gt;</span>
+<span id="L211"><span class="lineNum">     211</span>              :     get_collision_groups(const ContactList &amp;contacts,</span>
+<span id="L212"><span class="lineNum">     212</span>              :                          const BodyCollection &amp;bc);</span>
+<span id="L213"><span class="lineNum">     213</span>              : </span>
+<span id="L214"><span class="lineNum">     214</span>              : } // namespace rbps</span>
         </pre>
               </td>
             </tr>

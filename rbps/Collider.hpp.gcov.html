@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-03-14 10:23:28</td>
+            <td class="headerValue">2026-03-30 03:13:12</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -131,14 +131,14 @@
 <span id="L69"><span class="lineNum">      69</span>              : </span>
 <span id="L70"><span class="lineNum">      70</span>              : </span>
 <span id="L71"><span class="lineNum">      71</span>              :     /// Compute the world transform for collider at slot `idx`.</span>
-<span id="L72"><span class="lineNum">      72</span> <span class="tlaGNC">        2083 :     inline m3d::tf collider_world_tf(const ColliderCollection &amp;cc,</span></span>
+<span id="L72"><span class="lineNum">      72</span> <span class="tlaGNC">       19941 :     inline m3d::tf collider_world_tf(const ColliderCollection &amp;cc,</span></span>
 <span id="L73"><span class="lineNum">      73</span>              :                                      size_t idx,</span>
 <span id="L74"><span class="lineNum">      74</span>              :                                      const m3d::vec3 &amp;body_pos,</span>
 <span id="L75"><span class="lineNum">      75</span>              :                                      const m3d::quat &amp;body_rot)</span>
 <span id="L76"><span class="lineNum">      76</span>              :     {</span>
 <span id="L77"><span class="lineNum">      77</span>              :         return {</span>
-<span id="L78"><span class="lineNum">      78</span> <span class="tlaGNC">        2083 :             body_pos + m3d::rotate(body_rot, cc.local_pos[idx]),</span></span>
-<span id="L79"><span class="lineNum">      79</span> <span class="tlaGNC">        2083 :             body_rot * cc.local_rot[idx]};</span></span>
+<span id="L78"><span class="lineNum">      78</span> <span class="tlaGNC">       19941 :             body_pos + m3d::rotate(body_rot, cc.local_pos[idx]),</span></span>
+<span id="L79"><span class="lineNum">      79</span> <span class="tlaGNC">       19941 :             body_rot * cc.local_rot[idx]};</span></span>
 <span id="L80"><span class="lineNum">      80</span>              :     }</span>
 <span id="L81"><span class="lineNum">      81</span>              : </span>
 <span id="L82"><span class="lineNum">      82</span>              : } // namespace rbps</span>

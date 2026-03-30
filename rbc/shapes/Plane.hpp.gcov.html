@@ -31,18 +31,18 @@
             <td class="headerValue">coverage_clean.info</td>
             <td></td>
             <td class="headerItem">Lines:</td>
-            <td class="headerCovTableEntryLo">11.1&nbsp;%</td>
-            <td class="headerCovTableEntry">9</td>
-            <td class="headerCovTableEntry">1</td>
+            <td class="headerCovTableEntryLo">0.0&nbsp;%</td>
+            <td class="headerCovTableEntry">8</td>
+            <td class="headerCovTableEntry">0</td>
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-03-14 10:23:28</td>
+            <td class="headerValue">2026-03-30 03:13:12</td>
             <td></td>
             <td class="headerItem">Functions:</td>
-            <td class="headerCovTableEntryLo">33.3&nbsp;%</td>
-            <td class="headerCovTableEntry">3</td>
-            <td class="headerCovTableEntry">1</td>
+            <td class="headerCovTableEntryLo">0.0&nbsp;%</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">0</td>
           </tr>
                   <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
                 </table>
@@ -84,7 +84,7 @@
 <span id="L22"><span class="lineNum">      22</span>              :         m3d::scalar d = 0.0;                // offset: normal·x = d on surface</span>
 <span id="L23"><span class="lineNum">      23</span>              : </span>
 <span id="L24"><span class="lineNum">      24</span>              :         Plane() = default;</span>
-<span id="L25"><span class="lineNum">      25</span> <span class="tlaGNC tlaBgGNC">          16 :         Plane(const m3d::vec3 &amp;normal, m3d::scalar d) : normal(normal), d(d) {}</span></span>
+<span id="L25"><span class="lineNum">      25</span>              :         Plane(const m3d::vec3 &amp;normal, m3d::scalar d) : normal(normal), d(d) {}</span>
 <span id="L26"><span class="lineNum">      26</span>              : </span>
 <span id="L27"><span class="lineNum">      27</span>              :         inline bool operator==(const Plane &amp;o) const { return normal == o.normal &amp;&amp; d == o.d; }</span>
 <span id="L28"><span class="lineNum">      28</span>              :         inline bool operator!=(const Plane &amp;o) const { return !(*this == o); }</span>

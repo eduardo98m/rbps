@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-03-14 10:23:28</td>
+            <td class="headerValue">2026-03-30 03:13:12</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -201,15 +201,15 @@
 <span id="L139"><span class="lineNum">     139</span>              :             // 2. SAP sort + sweep → broad_phase_state.pairs</span>
 <span id="L140"><span class="lineNum">     140</span> <span class="tlaGNC">         597 :             rbc::broad_phase_update(broad_phase_state);</span></span>
 <span id="L141"><span class="lineNum">     141</span>              : </span>
-<span id="L142"><span class="lineNum">     142</span>              :             // 3. Discard last frame's contacts (resets lambdas too).</span>
-<span id="L143"><span class="lineNum">     143</span> <span class="tlaGNC">         597 :             contacts.clear();</span></span>
-<span id="L144"><span class="lineNum">     144</span> <span class="tlaGNC">         597 :             contacts.reserve(broad_phase_state.pairs.size() * 2); // rough pre-alloc</span></span>
-<span id="L145"><span class="lineNum">     145</span>              :             // 4. Narrow phase dispatch → contacts</span>
-<span id="L146"><span class="lineNum">     146</span> <span class="tlaGNC">         597 :             rbps::run_narrow_phase(broad_phase_state, colliders, bodies, contacts);</span></span>
-<span id="L147"><span class="lineNum">     147</span>              : </span>
-<span id="L148"><span class="lineNum">     148</span>              :             // ── SUBSTEP LOOP ──────────────────────────────────────────────</span>
-<span id="L149"><span class="lineNum">     149</span> <span class="tlaGNC">       14037 :             for (int i = 0; i &lt; substeps; ++i)</span></span>
-<span id="L150"><span class="lineNum">     150</span>              :             {   </span>
+<span id="L142"><span class="lineNum">     142</span>              :             // ── SUBSTEP LOOP ──────────────────────────────────────────────</span>
+<span id="L143"><span class="lineNum">     143</span> <span class="tlaGNC">       14037 :             for (int i = 0; i &lt; substeps; ++i)</span></span>
+<span id="L144"><span class="lineNum">     144</span>              :             {</span>
+<span id="L145"><span class="lineNum">     145</span>              :                 // 3. Discard last frame's contacts (resets lambdas too).</span>
+<span id="L146"><span class="lineNum">     146</span> <span class="tlaGNC">       13440 :                 contacts.clear();</span></span>
+<span id="L147"><span class="lineNum">     147</span> <span class="tlaGNC">       13440 :                 contacts.reserve(broad_phase_state.pairs.size() * 2); // rough pre-alloc</span></span>
+<span id="L148"><span class="lineNum">     148</span>              :                 // 4. Narrow phase dispatch → contacts</span>
+<span id="L149"><span class="lineNum">     149</span> <span class="tlaGNC">       13440 :                 rbps::run_narrow_phase(broad_phase_state, colliders, bodies, contacts);</span></span>
+<span id="L150"><span class="lineNum">     150</span>              : </span>
 <span id="L151"><span class="lineNum">     151</span> <span class="tlaGNC">       13440 :                 update_position_and_orientation(bodies, h);</span></span>
 <span id="L152"><span class="lineNum">     152</span> <span class="tlaGNC">       13440 :                 solve_positions(inv_h, h);</span></span>
 <span id="L153"><span class="lineNum">     153</span> <span class="tlaGNC">       13440 :                 update_velocities(bodies, inv_h);</span></span>

@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-03-14 10:23:28</td>
+            <td class="headerValue">2026-03-30 03:13:12</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -72,41 +72,41 @@
 <span id="L10"><span class="lineNum">      10</span>              :     {</span>
 <span id="L11"><span class="lineNum">      11</span>              :         vec3 cols[3]; // Column-major</span>
 <span id="L12"><span class="lineNum">      12</span>              : </span>
-<span id="L13"><span class="lineNum">      13</span> <span class="tlaGNC tlaBgGNC">       79839 :         mat3()</span></span>
-<span id="L14"><span class="lineNum">      14</span> <span class="tlaGNC">      319356 :         {</span></span>
-<span id="L15"><span class="lineNum">      15</span> <span class="tlaGNC">       79839 :             cols[0] = {1, 0, 0};</span></span>
-<span id="L16"><span class="lineNum">      16</span> <span class="tlaGNC">       79839 :             cols[1] = {0, 1, 0};</span></span>
-<span id="L17"><span class="lineNum">      17</span> <span class="tlaGNC">       79839 :             cols[2] = {0, 0, 1};</span></span>
-<span id="L18"><span class="lineNum">      18</span> <span class="tlaGNC">       79839 :         }</span></span>
+<span id="L13"><span class="lineNum">      13</span> <span class="tlaGNC tlaBgGNC">      112439 :         mat3()</span></span>
+<span id="L14"><span class="lineNum">      14</span> <span class="tlaGNC">      449756 :         {</span></span>
+<span id="L15"><span class="lineNum">      15</span> <span class="tlaGNC">      112439 :             cols[0] = {1, 0, 0};</span></span>
+<span id="L16"><span class="lineNum">      16</span> <span class="tlaGNC">      112439 :             cols[1] = {0, 1, 0};</span></span>
+<span id="L17"><span class="lineNum">      17</span> <span class="tlaGNC">      112439 :             cols[2] = {0, 0, 1};</span></span>
+<span id="L18"><span class="lineNum">      18</span> <span class="tlaGNC">      112439 :         }</span></span>
 <span id="L19"><span class="lineNum">      19</span>              : </span>
-<span id="L20"><span class="lineNum">      20</span> <span class="tlaGNC">       31749 :         mat3(scalar m00, scalar m01, scalar m02,</span></span>
+<span id="L20"><span class="lineNum">      20</span> <span class="tlaGNC">       44789 :         mat3(scalar m00, scalar m01, scalar m02,</span></span>
 <span id="L21"><span class="lineNum">      21</span>              :              scalar m10, scalar m11, scalar m12,</span>
 <span id="L22"><span class="lineNum">      22</span>              :              scalar m20, scalar m21, scalar m22)</span>
-<span id="L23"><span class="lineNum">      23</span> <span class="tlaGNC">      126996 :         {</span></span>
-<span id="L24"><span class="lineNum">      24</span> <span class="tlaGNC">       31749 :             cols[0] = {m00, m10, m20};</span></span>
-<span id="L25"><span class="lineNum">      25</span> <span class="tlaGNC">       31749 :             cols[1] = {m01, m11, m21};</span></span>
-<span id="L26"><span class="lineNum">      26</span> <span class="tlaGNC">       31749 :             cols[2] = {m02, m12, m22};</span></span>
-<span id="L27"><span class="lineNum">      27</span> <span class="tlaGNC">       31749 :         }</span></span>
+<span id="L23"><span class="lineNum">      23</span> <span class="tlaGNC">      179156 :         {</span></span>
+<span id="L24"><span class="lineNum">      24</span> <span class="tlaGNC">       44789 :             cols[0] = {m00, m10, m20};</span></span>
+<span id="L25"><span class="lineNum">      25</span> <span class="tlaGNC">       44789 :             cols[1] = {m01, m11, m21};</span></span>
+<span id="L26"><span class="lineNum">      26</span> <span class="tlaGNC">       44789 :             cols[2] = {m02, m12, m22};</span></span>
+<span id="L27"><span class="lineNum">      27</span> <span class="tlaGNC">       44789 :         }</span></span>
 <span id="L28"><span class="lineNum">      28</span>              : </span>
-<span id="L29"><span class="lineNum">      29</span> <span class="tlaGNC">      239556 :         vec3 &amp;operator[](int i) { return cols[i]; }</span></span>
-<span id="L30"><span class="lineNum">      30</span> <span class="tlaGNC">      385321 :         const vec3 &amp;operator[](int i) const { return cols[i]; }</span></span>
+<span id="L29"><span class="lineNum">      29</span> <span class="tlaGNC">      337356 :         vec3 &amp;operator[](int i) { return cols[i]; }</span></span>
+<span id="L30"><span class="lineNum">      30</span> <span class="tlaGNC">      541801 :         const vec3 &amp;operator[](int i) const { return cols[i]; }</span></span>
 <span id="L31"><span class="lineNum">      31</span>              : </span>
-<span id="L32"><span class="lineNum">      32</span> <span class="tlaGNC">      190384 :         vec3 operator*(const vec3 &amp;v) const</span></span>
+<span id="L32"><span class="lineNum">      32</span> <span class="tlaGNC">      268624 :         vec3 operator*(const vec3 &amp;v) const</span></span>
 <span id="L33"><span class="lineNum">      33</span>              :         {</span>
 <span id="L34"><span class="lineNum">      34</span>              :             return {</span>
-<span id="L35"><span class="lineNum">      35</span> <span class="tlaGNC">      190384 :                 cols[0].x * v.x + cols[1].x * v.y + cols[2].x * v.z,</span></span>
-<span id="L36"><span class="lineNum">      36</span> <span class="tlaGNC">      190384 :                 cols[0].y * v.x + cols[1].y * v.y + cols[2].y * v.z,</span></span>
-<span id="L37"><span class="lineNum">      37</span> <span class="tlaGNC">      190384 :                 cols[0].z * v.x + cols[1].z * v.y + cols[2].z * v.z};</span></span>
+<span id="L35"><span class="lineNum">      35</span> <span class="tlaGNC">      268624 :                 cols[0].x * v.x + cols[1].x * v.y + cols[2].x * v.z,</span></span>
+<span id="L36"><span class="lineNum">      36</span> <span class="tlaGNC">      268624 :                 cols[0].y * v.x + cols[1].y * v.y + cols[2].y * v.z,</span></span>
+<span id="L37"><span class="lineNum">      37</span> <span class="tlaGNC">      268624 :                 cols[0].z * v.x + cols[1].z * v.y + cols[2].z * v.z};</span></span>
 <span id="L38"><span class="lineNum">      38</span>              :         }</span>
 <span id="L39"><span class="lineNum">      39</span>              : </span>
-<span id="L40"><span class="lineNum">      40</span> <span class="tlaGNC">       31732 :         mat3 operator*(const mat3 &amp;rhs) const</span></span>
+<span id="L40"><span class="lineNum">      40</span> <span class="tlaGNC">       44772 :         mat3 operator*(const mat3 &amp;rhs) const</span></span>
 <span id="L41"><span class="lineNum">      41</span>              :         {</span>
-<span id="L42"><span class="lineNum">      42</span> <span class="tlaGNC">       31732 :             mat3 res;</span></span>
-<span id="L43"><span class="lineNum">      43</span> <span class="tlaGNC">      126928 :             for (int c = 0; c &lt; 3; c++)</span></span>
+<span id="L42"><span class="lineNum">      42</span> <span class="tlaGNC">       44772 :             mat3 res;</span></span>
+<span id="L43"><span class="lineNum">      43</span> <span class="tlaGNC">      179088 :             for (int c = 0; c &lt; 3; c++)</span></span>
 <span id="L44"><span class="lineNum">      44</span>              :             {</span>
-<span id="L45"><span class="lineNum">      45</span> <span class="tlaGNC">       95196 :                 res[c] = (*this) * rhs[c];</span></span>
+<span id="L45"><span class="lineNum">      45</span> <span class="tlaGNC">      134316 :                 res[c] = (*this) * rhs[c];</span></span>
 <span id="L46"><span class="lineNum">      46</span>              :             }</span>
-<span id="L47"><span class="lineNum">      47</span> <span class="tlaGNC">       31732 :             return res;</span></span>
+<span id="L47"><span class="lineNum">      47</span> <span class="tlaGNC">       44772 :             return res;</span></span>
 <span id="L48"><span class="lineNum">      48</span>              :         }</span>
 <span id="L49"><span class="lineNum">      49</span>              : </span>
 <span id="L50"><span class="lineNum">      50</span> <span class="tlaGNC">           2 :         bool operator==(const mat3 &amp;other) const</span></span>
@@ -121,12 +121,12 @@
 <span id="L59"><span class="lineNum">      59</span> <span class="tlaGNC">           7 :                    cols[2].is_approx(other[2], precision);</span></span>
 <span id="L60"><span class="lineNum">      60</span>              :         }</span>
 <span id="L61"><span class="lineNum">      61</span>              : </span>
-<span id="L62"><span class="lineNum">      62</span> <span class="tlaGNC">       31730 :         mat3 transpose() const</span></span>
+<span id="L62"><span class="lineNum">      62</span> <span class="tlaGNC">       44770 :         mat3 transpose() const</span></span>
 <span id="L63"><span class="lineNum">      63</span>              :         {</span>
 <span id="L64"><span class="lineNum">      64</span>              :             return mat3(</span>
-<span id="L65"><span class="lineNum">      65</span> <span class="tlaGNC">       31730 :                 cols[0].x, cols[0].y, cols[0].z,</span></span>
-<span id="L66"><span class="lineNum">      66</span> <span class="tlaGNC">       31730 :                 cols[1].x, cols[1].y, cols[1].z,</span></span>
-<span id="L67"><span class="lineNum">      67</span> <span class="tlaGNC">       31730 :                 cols[2].x, cols[2].y, cols[2].z);</span></span>
+<span id="L65"><span class="lineNum">      65</span> <span class="tlaGNC">       44770 :                 cols[0].x, cols[0].y, cols[0].z,</span></span>
+<span id="L66"><span class="lineNum">      66</span> <span class="tlaGNC">       44770 :                 cols[1].x, cols[1].y, cols[1].z,</span></span>
+<span id="L67"><span class="lineNum">      67</span> <span class="tlaGNC">       44770 :                 cols[2].x, cols[2].y, cols[2].z);</span></span>
 <span id="L68"><span class="lineNum">      68</span>              :         }</span>
 <span id="L69"><span class="lineNum">      69</span>              : </span>
 <span id="L70"><span class="lineNum">      70</span> <span class="tlaGNC">           8 :         scalar determinant() const</span></span>
@@ -169,18 +169,18 @@
 <span id="L107"><span class="lineNum">     107</span>              :         }</span>
 <span id="L108"><span class="lineNum">     108</span>              :     };</span>
 <span id="L109"><span class="lineNum">     109</span>              : </span>
-<span id="L110"><span class="lineNum">     110</span> <span class="tlaGNC">       16370 :     inline mat3 mat3_cast(const quat &amp;q)</span></span>
+<span id="L110"><span class="lineNum">     110</span> <span class="tlaGNC">       22890 :     inline mat3 mat3_cast(const quat &amp;q)</span></span>
 <span id="L111"><span class="lineNum">     111</span>              :     {</span>
-<span id="L112"><span class="lineNum">     112</span> <span class="tlaGNC">       16370 :         mat3 m;</span></span>
-<span id="L113"><span class="lineNum">     113</span> <span class="tlaGNC">       16370 :         scalar x2 = q.x + q.x, y2 = q.y + q.y, z2 = q.z + q.z;</span></span>
-<span id="L114"><span class="lineNum">     114</span> <span class="tlaGNC">       16370 :         scalar xx = q.x * x2, xy = q.x * y2, xz = q.x * z2;</span></span>
-<span id="L115"><span class="lineNum">     115</span> <span class="tlaGNC">       16370 :         scalar yy = q.y * y2, yz = q.y * z2, zz = q.z * z2;</span></span>
-<span id="L116"><span class="lineNum">     116</span> <span class="tlaGNC">       16370 :         scalar wx = q.w * x2, wy = q.w * y2, wz = q.w * z2;</span></span>
+<span id="L112"><span class="lineNum">     112</span> <span class="tlaGNC">       22890 :         mat3 m;</span></span>
+<span id="L113"><span class="lineNum">     113</span> <span class="tlaGNC">       22890 :         scalar x2 = q.x + q.x, y2 = q.y + q.y, z2 = q.z + q.z;</span></span>
+<span id="L114"><span class="lineNum">     114</span> <span class="tlaGNC">       22890 :         scalar xx = q.x * x2, xy = q.x * y2, xz = q.x * z2;</span></span>
+<span id="L115"><span class="lineNum">     115</span> <span class="tlaGNC">       22890 :         scalar yy = q.y * y2, yz = q.y * z2, zz = q.z * z2;</span></span>
+<span id="L116"><span class="lineNum">     116</span> <span class="tlaGNC">       22890 :         scalar wx = q.w * x2, wy = q.w * y2, wz = q.w * z2;</span></span>
 <span id="L117"><span class="lineNum">     117</span>              : </span>
-<span id="L118"><span class="lineNum">     118</span> <span class="tlaGNC">       16370 :         m[0] = {1 - (yy + zz), xy + wz, xz - wy};</span></span>
-<span id="L119"><span class="lineNum">     119</span> <span class="tlaGNC">       16370 :         m[1] = {xy - wz, 1 - (xx + zz), yz + wx};</span></span>
-<span id="L120"><span class="lineNum">     120</span> <span class="tlaGNC">       16370 :         m[2] = {xz + wy, yz - wx, 1 - (xx + yy)};</span></span>
-<span id="L121"><span class="lineNum">     121</span> <span class="tlaGNC">       16370 :         return m;</span></span>
+<span id="L118"><span class="lineNum">     118</span> <span class="tlaGNC">       22890 :         m[0] = {1 - (yy + zz), xy + wz, xz - wy};</span></span>
+<span id="L119"><span class="lineNum">     119</span> <span class="tlaGNC">       22890 :         m[1] = {xy - wz, 1 - (xx + zz), yz + wx};</span></span>
+<span id="L120"><span class="lineNum">     120</span> <span class="tlaGNC">       22890 :         m[2] = {xz + wy, yz - wx, 1 - (xx + yy)};</span></span>
+<span id="L121"><span class="lineNum">     121</span> <span class="tlaGNC">       22890 :         return m;</span></span>
 <span id="L122"><span class="lineNum">     122</span>              :     }</span>
 <span id="L123"><span class="lineNum">     123</span>              : </span>
 <span id="L124"><span class="lineNum">     124</span>              :     struct smat3</span>
@@ -192,19 +192,19 @@
 <span id="L130"><span class="lineNum">     130</span> <span class="tlaGNC">       15728 :         smat3(scalar xx, scalar yy, scalar zz, scalar xy, scalar xz, scalar yz)</span></span>
 <span id="L131"><span class="lineNum">     131</span> <span class="tlaGNC">       15728 :             : xx(xx), yy(yy), zz(zz), xy(xy), xz(xz), yz(yz) {}</span></span>
 <span id="L132"><span class="lineNum">     132</span>              : </span>
-<span id="L133"><span class="lineNum">     133</span> <span class="tlaGNC">       31730 :         explicit smat3(const mat3 &amp;m)</span></span>
-<span id="L134"><span class="lineNum">     134</span> <span class="tlaGNC">       31730 :             : xx(m[0].x), yy(m[1].y), zz(m[2].z), xy(0.5 * (m[1].x + m[0].y)) // Average off-diagonal elements</span></span>
+<span id="L133"><span class="lineNum">     133</span> <span class="tlaGNC">       44770 :         explicit smat3(const mat3 &amp;m)</span></span>
+<span id="L134"><span class="lineNum">     134</span> <span class="tlaGNC">       44770 :             : xx(m[0].x), yy(m[1].y), zz(m[2].z), xy(0.5 * (m[1].x + m[0].y)) // Average off-diagonal elements</span></span>
 <span id="L135"><span class="lineNum">     135</span>              :               ,</span>
-<span id="L136"><span class="lineNum">     136</span> <span class="tlaGNC">       31730 :               xz(0.5 * (m[2].x + m[0].z)), yz(0.5 * (m[2].y + m[1].z))</span></span>
+<span id="L136"><span class="lineNum">     136</span> <span class="tlaGNC">       44770 :               xz(0.5 * (m[2].x + m[0].z)), yz(0.5 * (m[2].y + m[1].z))</span></span>
 <span id="L137"><span class="lineNum">     137</span>              :         {</span>
-<span id="L138"><span class="lineNum">     138</span> <span class="tlaGNC">       31730 :         }</span></span>
+<span id="L138"><span class="lineNum">     138</span> <span class="tlaGNC">       44770 :         }</span></span>
 <span id="L139"><span class="lineNum">     139</span>              : </span>
-<span id="L140"><span class="lineNum">     140</span> <span class="tlaGNC">       31727 :         vec3 operator*(const vec3 &amp;v) const</span></span>
+<span id="L140"><span class="lineNum">     140</span> <span class="tlaGNC">       44767 :         vec3 operator*(const vec3 &amp;v) const</span></span>
 <span id="L141"><span class="lineNum">     141</span>              :         {</span>
 <span id="L142"><span class="lineNum">     142</span>              :             return {</span>
-<span id="L143"><span class="lineNum">     143</span> <span class="tlaGNC">       31727 :                 xx * v.x + xy * v.y + xz * v.z,</span></span>
-<span id="L144"><span class="lineNum">     144</span> <span class="tlaGNC">       31727 :                 xy * v.x + yy * v.y + yz * v.z,</span></span>
-<span id="L145"><span class="lineNum">     145</span> <span class="tlaGNC">       31727 :                 xz * v.x + yz * v.y + zz * v.z};</span></span>
+<span id="L143"><span class="lineNum">     143</span> <span class="tlaGNC">       44767 :                 xx * v.x + xy * v.y + xz * v.z,</span></span>
+<span id="L144"><span class="lineNum">     144</span> <span class="tlaGNC">       44767 :                 xy * v.x + yy * v.y + yz * v.z,</span></span>
+<span id="L145"><span class="lineNum">     145</span> <span class="tlaGNC">       44767 :                 xz * v.x + yz * v.y + zz * v.z};</span></span>
 <span id="L146"><span class="lineNum">     146</span>              :         }</span>
 <span id="L147"><span class="lineNum">     147</span>              : </span>
 <span id="L148"><span class="lineNum">     148</span> <span class="tlaGNC">       15028 :         smat3 operator*(scalar s) const</span></span>
@@ -261,7 +261,7 @@
 <span id="L199"><span class="lineNum">     199</span>              :     }</span>
 <span id="L200"><span class="lineNum">     200</span>              : </span>
 <span id="L201"><span class="lineNum">     201</span>              :     // mat3 * smat3 multiplication</span>
-<span id="L202"><span class="lineNum">     202</span> <span class="tlaGNC">       31729 :     inline mat3 operator*(const mat3 &amp;lhs, const smat3 &amp;rhs)</span></span>
+<span id="L202"><span class="lineNum">     202</span> <span class="tlaGNC">       44769 :     inline mat3 operator*(const mat3 &amp;lhs, const smat3 &amp;rhs)</span></span>
 <span id="L203"><span class="lineNum">     203</span>              :     {</span>
 <span id="L204"><span class="lineNum">     204</span>              :         // Expand smat3 to full matrix and multiply</span>
 <span id="L205"><span class="lineNum">     205</span>              :         // rhs as matrix is:</span>
@@ -269,12 +269,12 @@
 <span id="L207"><span class="lineNum">     207</span>              :         // | xy  yy  yz |</span>
 <span id="L208"><span class="lineNum">     208</span>              :         // | xz  yz  zz |</span>
 <span id="L209"><span class="lineNum">     209</span>              : </span>
-<span id="L210"><span class="lineNum">     210</span> <span class="tlaGNC">       31729 :         mat3 result;</span></span>
+<span id="L210"><span class="lineNum">     210</span> <span class="tlaGNC">       44769 :         mat3 result;</span></span>
 <span id="L211"><span class="lineNum">     211</span>              :         // Each column of result = lhs * column of rhs</span>
-<span id="L212"><span class="lineNum">     212</span> <span class="tlaGNC">       31729 :         result[0] = lhs * vec3{rhs.xx, rhs.xy, rhs.xz};</span></span>
-<span id="L213"><span class="lineNum">     213</span> <span class="tlaGNC">       31729 :         result[1] = lhs * vec3{rhs.xy, rhs.yy, rhs.yz};</span></span>
-<span id="L214"><span class="lineNum">     214</span> <span class="tlaGNC">       31729 :         result[2] = lhs * vec3{rhs.xz, rhs.yz, rhs.zz};</span></span>
-<span id="L215"><span class="lineNum">     215</span> <span class="tlaGNC">       31729 :         return result;</span></span>
+<span id="L212"><span class="lineNum">     212</span> <span class="tlaGNC">       44769 :         result[0] = lhs * vec3{rhs.xx, rhs.xy, rhs.xz};</span></span>
+<span id="L213"><span class="lineNum">     213</span> <span class="tlaGNC">       44769 :         result[1] = lhs * vec3{rhs.xy, rhs.yy, rhs.yz};</span></span>
+<span id="L214"><span class="lineNum">     214</span> <span class="tlaGNC">       44769 :         result[2] = lhs * vec3{rhs.xz, rhs.yz, rhs.zz};</span></span>
+<span id="L215"><span class="lineNum">     215</span> <span class="tlaGNC">       44769 :         return result;</span></span>
 <span id="L216"><span class="lineNum">     216</span>              :     }</span>
 <span id="L217"><span class="lineNum">     217</span>              : </span>
 <span id="L218"><span class="lineNum">     218</span>              : }</span>
