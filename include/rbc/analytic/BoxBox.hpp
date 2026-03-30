@@ -333,11 +333,7 @@ struct CollisionAlgorithm<Box, Box>
                 if (signed_dist <= m3d::EPSILON) // on or below the reference face
                 {
                     keep_pts[keep_n] = buf0[i];
-                    keep_dep[keep_n] = -signed_dist + best_depth * 0.0; // penetration ≈ depth of this point
-                    // More precise per-point depth: project along normal onto box surfaces
-                    keep_dep[keep_n] = m3d::abs(signed_dist) > 0.0
-                                         ? m3d::abs(signed_dist)
-                                         : best_depth;
+                    keep_dep[keep_n] = -signed_dist;
                     ++keep_n;
                 }
             }
@@ -362,7 +358,7 @@ struct CollisionAlgorithm<Box, Box>
             for (int i = 0; i < red_n; ++i)
             {
                 manifold.points[i].position          = red_pts[i];
-                manifold.points[i].penetration_depth = best_depth; // uniform for face-face
+                manifold.points[i].penetration_depth = red_dep[i];
             }
         }
         else
