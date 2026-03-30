@@ -192,10 +192,11 @@ static void build_ground(rbps::World &w)
     w.create_collider(ball_cp);
 
     double y_pos = 0.5;
-    double k = 1.0;
-    for (int i = 0; i < 10; ++i)
+    int num_boxes = 10;
+    double k = 60.0;
+    for (int i = 0; i < num_boxes; ++i)
     {
-        rbc::Box box{{0.5, 0.5, 0.5}};
+        rbc::Box box{{0.5 + 60.0 / k  , 0.5, 0.5 + 60.0 / k}};
         rbps::BodyParams box_body_p{};
         box_body_p.type     = rbps::BodyType::DYNAMIC;
         box_body_p.position = m3d::vec3{2.0, y_pos, 4.0};
@@ -231,7 +232,7 @@ int main()
     app.screen_h = 900;
 
     app.world.timestep = 1.0 / 60.0;
-    app.world.substeps = 20;
+    app.world.substeps = 50;
 
     build_ground         (app.world);
     build_fixed_joint_demo   (app.world);

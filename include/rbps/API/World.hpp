@@ -6,7 +6,6 @@
 #include "rbps/CollisionPipeline.hpp"   // ContactList, run_narrow_phase, etc.
 #include "rbps/constraints/Contact.hpp" // solve_contacts_*
 #include "rbc/BroadPhase.hpp"
-
 // ============================================================================
 //  World.hpp
 //
@@ -50,7 +49,7 @@ namespace rbps
         BodyCollection bodies;
         ConstraintCollection constraints;
         JointCollection joints;
-        ContactList contacts; // unified pipeline output + solver state
+        ContactList contacts;
         ColliderCollection colliders;
         rbc::BroadPhaseState broad_phase_state;
 
@@ -130,20 +129,16 @@ namespace rbps
             const scalar h = timestep / substeps;
             const scalar inv_h = 1.0 / h;
 
-            // ── FRAME-LEVEL: broad phase + narrow phase (once per frame) ──
-
-            // 1. Sweep dynamic body AABBs (velocity expansion optional).
+            // ── 1. Broad phase (once per frame) ───────────────────────────────────
             update_broad_phase_aabbs(colliders, broad_phase_state,
-                                     bodies, timestep, /*use_velocity_expansion=*/true);
-
-            // 2. SAP sort + sweep → broad_phase_state.pairs
+                                     bodies, timestep,
+                                     /*use_velocity_expansion=*/true);
             rbc::broad_phase_update(broad_phase_state);
-            contacts.clear();
-            contacts.reserve(broad_phase_state.pairs.size() * 4); // rough pre-alloc
             
+            contacts.reserve(broad_phase_state.pairs.size() * 4);
             for (int i = 0; i < substeps; ++i)
             {
-                // 4. Narrow phase dispatch → contacts
+                contacts.clear(); // Contacts need to be cleared each substep and recomputed from the broad phase pairs.
                 rbps::run_narrow_phase(broad_phase_state, colliders, bodies, contacts);
                 update_position_and_orientation(bodies, h);
                 solve_positions(inv_h, h);
