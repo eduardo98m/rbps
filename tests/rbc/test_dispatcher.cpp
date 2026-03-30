@@ -20,7 +20,7 @@ TEST(dispatch_sphere_sphere_no_hit)
     m3d::tf tfA; tfA.pos = m3d::vec3(0, 0, 0);
     m3d::tf tfB; tfB.pos = m3d::vec3(3.0, 0, 0);
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     ASSERT_FALSE(rbc::dispatch(sA, tfA, sB, tfB, c));
 }
 
@@ -31,9 +31,9 @@ TEST(dispatch_sphere_sphere_hit)
     m3d::tf tfA; tfA.pos = m3d::vec3(0,   0, 0);
     m3d::tf tfB; tfB.pos = m3d::vec3(1.5, 0, 0);
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     ASSERT_TRUE(rbc::dispatch(sA, tfA, sB, tfB, c));
-    ASSERT_NEAR(c.penetration_depth, 0.5, 0.01);
+    ASSERT_NEAR(c.points[0].penetration_depth, 0.5, 0.01);
     ASSERT_NEAR(std::abs(c.normal.x), 1.0, 0.01);
     ASSERT_NEAR(m3d::length(c.normal), 1.0, 0.001);
 }
@@ -47,7 +47,7 @@ TEST(dispatch_sphere_box_no_hit)
     m3d::tf tfA; tfA.pos = m3d::vec3(0,   0, 0);
     m3d::tf tfB; tfB.pos = m3d::vec3(4.0, 0, 0);
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     ASSERT_FALSE(rbc::dispatch(sA, tfA, bB, tfB, c));
 }
 
@@ -58,9 +58,9 @@ TEST(dispatch_sphere_box_hit)
     m3d::tf tfA; tfA.pos = m3d::vec3(0,    0, 0);
     m3d::tf tfB; tfB.pos = m3d::vec3(0, 1.7, 0);
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     ASSERT_TRUE(rbc::dispatch(sA, tfA, bB, tfB, c));
-    ASSERT_NEAR(c.penetration_depth, 0.3, 0.05);
+    ASSERT_NEAR(c.points[0].penetration_depth, 0.3, 0.05);
     ASSERT_NEAR(std::abs(c.normal.y), 1.0, 0.05);
     ASSERT_NEAR(m3d::length(c.normal), 1.0, 0.001);
 }
@@ -74,9 +74,9 @@ TEST(dispatch_box_sphere_hit)
     m3d::tf tfA; tfA.pos = m3d::vec3(0, 1.7, 0);
     m3d::tf tfB; tfB.pos = m3d::vec3(0,    0, 0);
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     ASSERT_TRUE(rbc::dispatch(bA, tfA, sB, tfB, c));
-    ASSERT_NEAR(c.penetration_depth, 0.3, 0.05);
+    ASSERT_NEAR(c.points[0].penetration_depth, 0.3, 0.05);
     ASSERT_NEAR(m3d::length(c.normal), 1.0, 0.001);
 }
 
@@ -88,11 +88,11 @@ TEST(dispatch_sphere_box_symmetry)
     m3d::tf tfS; tfS.pos = m3d::vec3(0,    0, 0);
     m3d::tf tfB; tfB.pos = m3d::vec3(0, 1.7, 0);
 
-    rbc::Contact c1, c2;
+    rbc::ContactManifold c1, c2;
     rbc::dispatch(sA, tfS, bB, tfB, c1);   // Sphere first
     rbc::dispatch(bB, tfB, sA, tfS, c2);   // Box first
 
-    ASSERT_NEAR(c1.penetration_depth, c2.penetration_depth, 0.001);
+    ASSERT_NEAR(c1.points[0].penetration_depth, c2.points[0].penetration_depth, 0.001);
     ASSERT_NEAR(c1.normal.x, -c2.normal.x, 0.001);
     ASSERT_NEAR(c1.normal.y, -c2.normal.y, 0.001);
     ASSERT_NEAR(c1.normal.z, -c2.normal.z, 0.001);
@@ -107,7 +107,7 @@ TEST(dispatch_box_box_no_hit)
     m3d::tf tfA; tfA.pos = m3d::vec3(0,   0, 0);
     m3d::tf tfB; tfB.pos = m3d::vec3(2.5, 0, 0);
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     ASSERT_FALSE(rbc::dispatch(bA, tfA, bB, tfB, c));
 }
 
@@ -118,9 +118,9 @@ TEST(dispatch_box_box_hit)
     m3d::tf tfA; tfA.pos = m3d::vec3(0,   0, 0);
     m3d::tf tfB; tfB.pos = m3d::vec3(1.6, 0, 0);   // overlap = 0.4
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     ASSERT_TRUE(rbc::dispatch(bA, tfA, bB, tfB, c));
-    ASSERT_NEAR(c.penetration_depth, 0.4, 0.01);
+    ASSERT_NEAR(c.points[0].penetration_depth, 0.4, 0.01);
     ASSERT_NEAR(std::abs(c.normal.x), 1.0, 0.01);
     ASSERT_NEAR(m3d::length(c.normal), 1.0, 0.001);
 }
@@ -134,12 +134,12 @@ TEST(dispatch_matches_direct_call_sphere_sphere)
     m3d::tf tfA; tfA.pos = m3d::vec3(0,   0, 0);
     m3d::tf tfB; tfB.pos = m3d::vec3(1.5, 0, 0);
 
-    rbc::Contact c_dispatch, c_direct;
+    rbc::ContactManifold c_dispatch, c_direct;
     rbc::dispatch(sA, tfA, sB, tfB, c_dispatch);
     rbc::CollisionAlgorithm<rbc::Sphere, rbc::Sphere>::test(
         sA.get<rbc::Sphere>(), tfA, sB.get<rbc::Sphere>(), tfB, c_direct);
 
-    ASSERT_NEAR(c_dispatch.penetration_depth, c_direct.penetration_depth, 0.001);
+    ASSERT_NEAR(c_dispatch.points[0].penetration_depth, c_direct.points[0].penetration_depth, 0.001);
     ASSERT_NEAR(c_dispatch.normal.x,          c_direct.normal.x,          0.001);
     ASSERT_NEAR(c_dispatch.normal.y,          c_direct.normal.y,          0.001);
     ASSERT_NEAR(c_dispatch.normal.z,          c_direct.normal.z,          0.001);
@@ -152,12 +152,12 @@ TEST(dispatch_matches_direct_call_box_box)
     m3d::tf tfA; tfA.pos = m3d::vec3(0,   0, 0);
     m3d::tf tfB; tfB.pos = m3d::vec3(1.6, 0, 0);
 
-    rbc::Contact c_dispatch, c_direct;
+    rbc::ContactManifold c_dispatch, c_direct;
     rbc::dispatch(bA, tfA, bB, tfB, c_dispatch);
     rbc::CollisionAlgorithm<rbc::Box, rbc::Box>::test(
         bA.get<rbc::Box>(), tfA, bB.get<rbc::Box>(), tfB, c_direct);
 
-    ASSERT_NEAR(c_dispatch.penetration_depth, c_direct.penetration_depth, 0.001);
+    ASSERT_NEAR(c_dispatch.points[0].penetration_depth, c_direct.points[0].penetration_depth, 0.001);
     ASSERT_NEAR(c_dispatch.normal.x,          c_direct.normal.x,          0.001);
     ASSERT_NEAR(c_dispatch.normal.y,          c_direct.normal.y,          0.001);
     ASSERT_NEAR(c_dispatch.normal.z,          c_direct.normal.z,          0.001);

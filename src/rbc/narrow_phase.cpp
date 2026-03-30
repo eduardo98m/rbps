@@ -8,9 +8,9 @@ namespace rbc
 
     bool test_narrow_phase(const Shape &shape_a, const m3d::tf &tf_a,
                            const Shape &shape_b, const m3d::tf &tf_b,
-                           rbc::Contact &out_contact)
+                           rbc::ContactManifold &manifold)
     {
-        return dispatch(shape_a, tf_a, shape_b, tf_b, out_contact);
+        return dispatch(shape_a, tf_a, shape_b, tf_b, manifold);
     }
 
 } // namespace rbc

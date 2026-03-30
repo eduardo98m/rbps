@@ -12,7 +12,7 @@ namespace rbc
     {
         static bool test(const Capsule &a, const m3d::tf &tf_a,
                          const Capsule &b, const m3d::tf &tf_b,
-                         Contact &out)
+                         ContactManifold &manifold)
         {
             m3d::vec3 p1, p2, q1, q2;
             capsule_endpoints(a, tf_a, p1, p2);

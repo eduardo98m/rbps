@@ -141,7 +141,7 @@ namespace rbc::tri
     inline bool sphere_vs_triangle(const m3d::vec3 &centre, m3d::scalar radius,
                                    const m3d::vec3 &A, const m3d::vec3 &B, const m3d::vec3 &C,
                                    const m3d::vec3 &face_normal, // precomputed, unit
-                                   Contact &out)
+                                   ContactManifold &manifold)
     {
         const m3d::vec3 closest = closest_point_on_triangle(centre, A, B, C);
         const m3d::vec3 delta = centre - closest;
@@ -152,17 +152,19 @@ namespace rbc::tri
         const m3d::scalar dist = m3d::sqrt(dist2);
         if (dist > m3d::EPSILON)
         {
-            out.normal = delta / dist;
-            out.penetration_depth = radius - dist;
-            out.pos = closest;
+            manifold.normal = delta / dist;
+            manifold.points[0].penetration_depth = radius - dist;
+            manifold.points[0].position = closest;
+            manifold.num_points = 1;
         }
         else
         {
             // Centre is on or inside the face — use face normal
             const m3d::scalar side = m3d::dot(face_normal, centre - A);
-            out.normal = (side >= 0.0) ? face_normal : -face_normal;
-            out.penetration_depth = radius + m3d::abs(side);
-            out.pos = centre - out.normal * radius;
+            manifold.normal = (side >= 0.0) ? face_normal : -face_normal;
+            manifold.points[0].penetration_depth = radius + m3d::abs(side);
+            manifold.points[0].position = centre - manifold.normal * radius;
+            manifold.num_points = 1;
         }
         return true;
     }
@@ -173,7 +175,7 @@ namespace rbc::tri
                                     m3d::scalar radius,
                                     const m3d::vec3 &A, const m3d::vec3 &B, const m3d::vec3 &C,
                                     const m3d::vec3 &face_normal,
-                                    Contact &out)
+                                    ContactManifold &manifold)
     {
         // Project segment onto triangle plane to find the "closest" segment point
         // Strategy: find closest dist between segment and triangle, handle as sphere from that point
@@ -204,16 +206,18 @@ namespace rbc::tri
 
         if (dist > m3d::EPSILON)
         {
-            out.normal = delta / dist;
-            out.penetration_depth = radius - dist;
-            out.pos = ref_tri;
+            manifold.normal = delta / dist;
+            manifold.points[0].penetration_depth = radius - dist;
+            manifold.points[0].position = ref_tri;
+            manifold.num_points = 1;
         }
         else
         {
             // Segment lies on face
-            out.normal = face_normal;
-            out.penetration_depth = radius;
-            out.pos = ref_tri;
+            manifold.normal = face_normal;
+            manifold.points[0].penetration_depth = radius;
+            manifold.points[0].position = ref_tri;
+            manifold.num_points = 1;
         }
         return true;
     }

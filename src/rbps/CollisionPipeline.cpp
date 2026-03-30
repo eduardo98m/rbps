@@ -11,11 +11,11 @@ namespace rbps
     //  Step 1 — Update broad phase AABBs from body transforms
     // =========================================================================
 
-    void update_broad_phase_aabbs(rbps::ColliderCollection  &cc,
-                                  rbc::BroadPhaseState     &bp,
-                                  const BodyCollection     &bc,
-                                  m3d::scalar               dt,
-                                  bool                      use_velocity_expansion)
+    void update_broad_phase_aabbs(rbps::ColliderCollection &cc,
+                                  rbc::BroadPhaseState &bp,
+                                  const BodyCollection &bc,
+                                  m3d::scalar dt,
+                                  bool use_velocity_expansion)
     {
         for (u_int32_t i = 0; i < cc.count(); ++i)
         {
@@ -25,12 +25,12 @@ namespace rbps
             if (cc.is_static[i])
                 continue;
 
-            const uint32_t  bid      = cc.body_id[i];
+            const uint32_t bid = cc.body_id[i];
             const m3d::vec3 body_pos = bc.position[bid];
             const m3d::quat body_rot = bc.orientation[bid];
 
             const m3d::tf world_tf = rbps::collider_world_tf(cc, i, body_pos, body_rot);
-            const rbc::AABB tight  = rbc::compute_aabb(cc.shape[i], world_tf);
+            const rbc::AABB tight = rbc::compute_aabb(cc.shape[i], world_tf);
 
             if (use_velocity_expansion)
             {
@@ -64,62 +64,67 @@ namespace rbps
     //  Helper: emit one contact into the ContactList
     // =========================================================================
 
-        static void emit_contact(ContactList                    &out,
-                              const rbc::Contact             &c,
-                              uint32_t                        ba, uint32_t bb,
-                              uint32_t                        ca, uint32_t cb,
-                              const rbps::ColliderCollection &cc,
-                              const BodyCollection           &bc)
+    static void emit_contact(ContactList &out,
+                             const rbc::ContactManifold &manifold,
+                             uint32_t ba, uint32_t bb,
+                             uint32_t ca, uint32_t cb,
+                             const rbps::ColliderCollection &cc,
+                             const BodyCollection &bc)
     {
-        // World-space contact points split symmetrically along the normal.
-        const m3d::scalar half_depth = c.penetration_depth * 0.5;
-        const m3d::vec3   p_on_a     = c.pos + c.normal * half_depth;
-        const m3d::vec3   p_on_b     = c.pos - c.normal * half_depth;
- 
-        // Convert world-space lever arms to body-LOCAL space (eq. 26).
-        // conjugate(q) == inverse for unit quaternions.
-        const m3d::vec3 r_a_wc    = p_on_a - bc.position[ba];
-        const m3d::vec3 r_b_wc    = p_on_b - bc.position[bb];
-        const m3d::vec3 r_a_local = m3d::rotate(m3d::conjugate(bc.orientation[ba]), r_a_wc);
-        const m3d::vec3 r_b_local = m3d::rotate(m3d::conjugate(bc.orientation[bb]), r_b_wc);
- 
-        // Material mixing: average friction, minimum restitution.
-        const m3d::scalar rest = m3d::min(cc.restitution[ca],     cc.restitution[cb]);
-        const m3d::scalar sf   = (cc.static_friction[ca]  + cc.static_friction[cb])  * 0.5;
-        const m3d::scalar df   = (cc.dynamic_friction[ca] + cc.dynamic_friction[cb]) * 0.5;
- 
-        out.body_a           .push_back(ba);
-        out.body_b           .push_back(bb);
-        out.collider_a       .push_back(ca);
-        out.collider_b       .push_back(cb);
-        out.r_a_local        .push_back(r_a_local);
-        out.r_b_local        .push_back(r_b_local);
-        out.normal           .push_back(c.normal);
-        out.restitution      .push_back(rest);
-        out.static_friction  .push_back(sf);
-        out.dynamic_friction .push_back(df);
-        out.normal_lambda    .push_back(0.0);
-        out.tangent_lambda   .push_back(0.0);
-        // Substep fields — sized but not filled; apply_constraint_position_level
-        // reconstructs them each substep from r_local + current body transforms.
-        out.point_on_a       .push_back(p_on_a);   // initial value, overwritten each substep
-        out.point_on_b       .push_back(p_on_b);
-        out.penetration_depth.push_back(c.penetration_depth);
-        out.collision        .push_back(false);
-        out.relative_velocity.push_back(0.0);
-        out.normal_force     .push_back(m3d::vec3(0));
-        out.tangent_force    .push_back(m3d::vec3(0));
-        ++out.n_contacts;
+
+        for (uint32_t i = 0; i < manifold.num_points; ++i)
+        {
+            const rbc::ContactPoint &c = manifold.points[i];
+            // World-space contact points split symmetrically along the normal.
+            const m3d::scalar half_depth = c.penetration_depth * 0.5;
+            const m3d::vec3 p_on_a = c.position + manifold.normal * half_depth;
+            const m3d::vec3 p_on_b = c.position - manifold.normal * half_depth;
+
+            // Convert world-space lever arms to body-LOCAL space (eq. 26).
+            // conjugate(q) == inverse for unit quaternions.
+            const m3d::vec3 r_a_wc = p_on_a - bc.position[ba];
+            const m3d::vec3 r_b_wc = p_on_b - bc.position[bb];
+            const m3d::vec3 r_a_local = m3d::rotate(m3d::conjugate(bc.orientation[ba]), r_a_wc);
+            const m3d::vec3 r_b_local = m3d::rotate(m3d::conjugate(bc.orientation[bb]), r_b_wc);
+
+            // Material mixing: average friction, minimum restitution.
+            const m3d::scalar rest = m3d::min(cc.restitution[ca], cc.restitution[cb]);
+            const m3d::scalar sf = (cc.static_friction[ca] + cc.static_friction[cb]) * 0.5;
+            const m3d::scalar df = (cc.dynamic_friction[ca] + cc.dynamic_friction[cb]) * 0.5;
+
+            out.body_a.push_back(ba);
+            out.body_b.push_back(bb);
+            out.collider_a.push_back(ca);
+            out.collider_b.push_back(cb);
+            out.r_a_local.push_back(r_a_local);
+            out.r_b_local.push_back(r_b_local);
+            out.normal.push_back(manifold.normal);
+            out.restitution.push_back(rest);
+            out.static_friction.push_back(sf);
+            out.dynamic_friction.push_back(df);
+            out.normal_lambda.push_back(0.0);
+            out.tangent_lambda.push_back(0.0);
+            // Substep fields — sized but not filled; apply_constraint_position_level
+            // reconstructs them each substep from r_local + current body transforms.
+            out.point_on_a.push_back(p_on_a); // initial value, overwritten each substep
+            out.point_on_b.push_back(p_on_b);
+            out.penetration_depth.push_back(c.penetration_depth);
+            out.collision.push_back(false);
+            out.relative_velocity.push_back(0.0);
+            out.normal_force.push_back(m3d::vec3(0));
+            out.tangent_force.push_back(m3d::vec3(0));
+            ++out.n_contacts;
+        }
     }
 
     // =========================================================================
     //  Step 3 — Narrow phase filter + dispatch
     // =========================================================================
 
-    void run_narrow_phase(const rbc::BroadPhaseState    &bp,
-                                 const rbps::ColliderCollection  &cc,
-                                 const BodyCollection           &bc,
-                                 ContactList                    &out)
+    void run_narrow_phase(const rbc::BroadPhaseState &bp,
+                          const rbps::ColliderCollection &cc,
+                          const BodyCollection &bc,
+                          ContactList &out)
     {
         // Build a reverse map: user_id (ivc::ID.value) → collider slot index.
         // user_id was stored as ivc::ID.value in collider_add().
@@ -174,12 +179,12 @@ namespace rbps
             // Routed through the function-pointer table in Dispatcher.hpp.
             // Analytic algorithms (SphereSphere, SphereBox, BoxBox) are tried
             // first via template specialisation; GJK/EPA is the fallback.
-            rbc::Contact contact;
+            rbc::ContactManifold manifold;
             if (rbc::dispatch(cc.shape[ca], tf_a,
                               cc.shape[cb], tf_b,
-                              contact))
+                              manifold))
             {
-                emit_contact(out, contact,
+                emit_contact(out, manifold,
                              ba, bb,
                              static_cast<uint32_t>(ca),
                              static_cast<uint32_t>(cb),
@@ -192,12 +197,12 @@ namespace rbps
     //  Full pipeline
     // =========================================================================
 
-    void run_collision_pipeline(rbps::ColliderCollection        &cc,
-                                rbc::BroadPhaseState           &bp,
-                                const BodyCollection           &bc,
-                                m3d::scalar                     dt,
-                                ContactList                    &contacts_out,
-                                const CollisionPipelineConfig  &cfg)
+    void run_collision_pipeline(rbps::ColliderCollection &cc,
+                                rbc::BroadPhaseState &bp,
+                                const BodyCollection &bc,
+                                m3d::scalar dt,
+                                ContactList &contacts_out,
+                                const CollisionPipelineConfig &cfg)
     {
         contacts_out.clear();
         contacts_out.reserve(bp.pairs.size() * 2); // rough pre-alloc
@@ -233,7 +238,7 @@ namespace rbps
     // =========================================================================
 
     std::vector<std::vector<u_int32_t>>
-    get_collision_groups(const ContactList   &contacts,
+    get_collision_groups(const ContactList &contacts,
                          const BodyCollection &bc)
     {
         if (contacts.n_contacts == 0)
@@ -260,7 +265,8 @@ namespace rbps
         // FIX: original code had body_b[b] twice instead of body_a[b] + body_b[b].
         std::vector<u_int32_t> order(n);
         std::iota(order.begin(), order.end(), 0);
-        std::sort(order.begin(), order.end(), [&](u_int32_t a, u_int32_t b) {
+        std::sort(order.begin(), order.end(), [&](u_int32_t a, u_int32_t b)
+                  {
             auto deg = [&](u_int32_t ci) {
                 u_int32_t d = 0;
                 auto it_a = body_to_contacts.find(contacts.body_a[ci]);
@@ -269,8 +275,7 @@ namespace rbps
                 if (it_b != body_to_contacts.end()) d += it_b->second.size();
                 return d;
             };
-            return deg(a) > deg(b);
-        });
+            return deg(a) > deg(b); });
 
         // Greedy coloring — only propagate edges through dynamic bodies.
         for (u_int32_t ci : order)
@@ -291,7 +296,8 @@ namespace rbps
             }
 
             u_int32_t c = 0;
-            while (used_colors.count(c)) ++c;
+            while (used_colors.count(c))
+                ++c;
             color[ci] = c;
         }
 
@@ -306,7 +312,8 @@ namespace rbps
             groups.push_back(std::move(g));
 
         std::sort(groups.begin(), groups.end(),
-                  [](const auto &a, const auto &b) { return a.size() > b.size(); });
+                  [](const auto &a, const auto &b)
+                  { return a.size() > b.size(); });
 
         return groups;
     }

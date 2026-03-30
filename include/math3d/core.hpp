@@ -4,6 +4,10 @@
 #include <cassert>
 #include <iostream>
 
+#ifdef PI
+#  undef PI
+#endif
+
 namespace m3d
 {
     using scalar = double;

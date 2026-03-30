@@ -14,7 +14,7 @@ namespace rbc
     {
         static bool test(const Sphere &a, const m3d::tf &tf_a,
                          const Sphere &b, const m3d::tf &tf_b,
-                         Contact &out)
+                         ContactManifold &manifold)
         {
             const m3d::vec3 delta = tf_b.pos - tf_a.pos;
             const m3d::scalar dist = m3d::length(delta);
@@ -23,15 +23,15 @@ namespace rbc
             if (dist >= rsum)
                 return false; // separated
 
+
             // Normal points from A to B (the direction A needs to move to separate)
-            out.normal = (dist > m3d::EPSILON)
+            manifold.normal = (dist > m3d::EPSILON)
                              ? delta / dist
                              : m3d::vec3(1.0, 0.0, 0.0); // coincident centres — pick arbitrary axis
 
-            out.penetration_depth = rsum - dist;
-
-            // Contact point: surface of A along the collision normal
-            out.pos = tf_a.pos + out.normal * a.radius;
+            manifold.num_points = 1;
+            manifold.points[0].penetration_depth = rsum - dist;
+            manifold.points[0].position = tf_a.pos + manifold.normal * a.radius;
 
             return true;
         }

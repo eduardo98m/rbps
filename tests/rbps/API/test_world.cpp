@@ -193,7 +193,7 @@ TEST(world_sphere_lands_on_ground)
     int32_t  slot = w.bodies.index_of(bid);
 
     for (int i = 0; i < 180; ++i){ 
-        std::cout << "Step " << i << ": pos=" << w.bodies.position[slot] << " vel=" << w.bodies.linear_velocity[slot] << std::endl;
+        //std::cout << "Step " << i << ": pos=" << w.bodies.position[slot] << " vel=" << w.bodies.linear_velocity[slot] << std::endl;
         w.step();};
 
     scalar speed = m3d::magnitude(w.bodies.linear_velocity[slot]);
@@ -209,7 +209,7 @@ TEST(world_sphere_does_not_tunnel_through_ground)
     int32_t  slot = w.bodies.index_of(bid);
 
     for (int i = 0; i < 300; ++i){ 
-        std::cout << "Step " << i << ": pos=" << w.bodies.position[slot] << " vel=" << w.bodies.linear_velocity[slot] << std::endl;
+        //std::cout << "Step " << i << ": pos=" << w.bodies.position[slot] << " vel=" << w.bodies.linear_velocity[slot] << std::endl;
         w.step();};
 
     // Ground center at -3, half-extent 2 → bottom face at -5.
@@ -232,7 +232,7 @@ TEST(world_two_spheres_collide_and_separate)
 
     // Simulate until they should have collided (≈ 0.3 s)
     for (int i = 0; i < 30; ++i) {
-         std::cout << "Step " << i << ": pos=" << w.bodies.position[sa] << " vel=" << w.bodies.linear_velocity[sa] << std::endl;
+        //std::cout << "Step " << i << ": pos=" << w.bodies.position[sa] << " vel=" << w.bodies.linear_velocity[sa] << std::endl;
         w.step();};
 
     // After collision, they should be moving away from each other

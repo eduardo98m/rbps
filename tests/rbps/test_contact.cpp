@@ -53,6 +53,7 @@ static ContactList create_contact_list(size_t n)
     cl.tangent_lambda       .resize(n, 0.0);
     cl.normal_force         .resize(n, vec3{0, 0, 0});
     cl.tangent_force        .resize(n, vec3{0, 0, 0});
+    cl.use_dynamic_friction .resize(n, false);
     return cl;
 }
 
@@ -187,7 +188,7 @@ TEST(solve_tangent_constraint_with_slip)
     bc.position[0] = vec3{0.1, 0, 0};
     
     // Need normal force to apply friction
-    cc.normal_lambda[0] = 1.0;
+    cc.normal_lambda[0] = -1.0;
     cc.static_friction[0] = 0.5;
     
     solve_tangent_constraint(cc, 0, bc, 100.0);
@@ -211,7 +212,7 @@ TEST(solve_tangent_constraint_exceeds_static_friction)
     bc.position[0] = vec3{1.0, 0, 0};
     
     // Setup normal force
-    cc.normal_lambda[0] = 1.0;
+    cc.normal_lambda[0] = -1.0;
     cc.static_friction[0] = 0.5;
     
     vec3 pos1_initial = bc.position[0];
@@ -237,7 +238,7 @@ TEST(solve_tangent_constraint_with_rotation)
     bc.prev_position[0] = vec3{0, 0, 0};
     bc.prev_position[1] = vec3{0, 0, 0};
     
-    cc.normal_lambda[0] = 1.0;
+    cc.normal_lambda[0] = -1.0;
     cc.static_friction[0] = 0.5;
     
     solve_tangent_constraint(cc, 0, bc, 100.0);
@@ -371,7 +372,7 @@ TEST(apply_constraint_velocity_level_with_restitution)
     
     cc.restitution[0] = 0.8;
     cc.relative_velocity[0] = -1.0; // Stored from position level
-    cc.normal_lambda[0] = 1.0;
+    cc.normal_lambda[0] = - 1.0;
     
     scalar initial_vel = bc.linear_velocity[0].y;
     
@@ -499,7 +500,7 @@ TEST(solve_contacts_velocity_level_single_contact)
     
     cc.restitution[0] = 0.5;
     cc.relative_velocity[0] = -1.0;
-    cc.normal_lambda[0] = 1.0;
+    cc.normal_lambda[0] = - 1.0;
     cc.collision[0] = true;
     
     solve_contacts_velocity_level(cc, bc, 0.01);
@@ -539,8 +540,8 @@ TEST(solve_contacts_velocity_level_multiple_contacts)
     cc.restitution[1] = 0.5;
     cc.relative_velocity[0] = -1.0;
     cc.relative_velocity[1] = 1.0;
-    cc.normal_lambda[0] = 1.0;
-    cc.normal_lambda[1] = 1.0;
+    cc.normal_lambda[0] = -1.0;
+    cc.normal_lambda[1] = -1.0;
     cc.collision[0] = true;
     cc.collision[1] = true;
     

@@ -33,7 +33,7 @@ namespace rbc
         // `per_tri` is called with (A, B, C, world_normal, candidate_contact).
         template <typename PerTriFn>
         inline bool mesh_test_all(const Mesh &mesh, const m3d::tf &tf_mesh,
-                                  PerTriFn per_tri, Contact &out)
+                                  PerTriFn per_tri, ContactManifold &out)
         {
             if (!mesh.data)
                 return false;
@@ -68,9 +68,9 @@ namespace rbc
     {
         static bool test(const Sphere &sphere, const m3d::tf &tf_sphere,
                          const Mesh &mesh, const m3d::tf &tf_mesh,
-                         Contact &out)
+                         ContactManifold &out)
         {
-            return detail::mesh_test_all(mesh, tf_mesh, [&](const m3d::vec3 &A, const m3d::vec3 &B, const m3d::vec3 &C, const m3d::vec3 &wn, Contact &c)
+            return detail::mesh_test_all(mesh, tf_mesh, [&](const m3d::vec3 &A, const m3d::vec3 &B, const m3d::vec3 &C, const m3d::vec3 &wn, ContactManifold &c)
                                          { return tri::sphere_vs_triangle(tf_sphere.pos, sphere.radius,
                                                                           A, B, C, wn, c); }, out);
         }
@@ -86,12 +86,12 @@ namespace rbc
     {
         static bool test(const Capsule &cap, const m3d::tf &tf_cap,
                          const Mesh &mesh, const m3d::tf &tf_mesh,
-                         Contact &out)
+                         ContactManifold &out)
         {
             m3d::vec3 p1, p2;
             capsule_endpoints(cap, tf_cap, p1, p2);
 
-            return detail::mesh_test_all(mesh, tf_mesh, [&](const m3d::vec3 &A, const m3d::vec3 &B, const m3d::vec3 &C, const m3d::vec3 &wn, Contact &c)
+            return detail::mesh_test_all(mesh, tf_mesh, [&](const m3d::vec3 &A, const m3d::vec3 &B, const m3d::vec3 &C, const m3d::vec3 &wn, ContactManifold &c)
                                          { return tri::capsule_vs_triangle(p1, p2, cap.radius, A, B, C, wn, c); }, out);
         }
     };
@@ -111,7 +111,7 @@ namespace rbc
     {
         static bool test(const Box &box, const m3d::tf &tf_box,
                          const Mesh &mesh, const m3d::tf &tf_mesh,
-                         Contact &out)
+                         ContactManifold &out)
         {
             // Represent the box as a sphere (bounding) for fast rejection, then
             // test each passing triangle with sphere_vs_triangle on the box centre.
@@ -119,7 +119,7 @@ namespace rbc
             // Here we delegate via the sphere of the box's bounding radius.
             const m3d::scalar r = m3d::length(box.half_extents); // bounding sphere
 
-            return detail::mesh_test_all(mesh, tf_mesh, [&](const m3d::vec3 &A, const m3d::vec3 &B, const m3d::vec3 &C, const m3d::vec3 &wn, Contact &c) -> bool
+            return detail::mesh_test_all(mesh, tf_mesh, [&](const m3d::vec3 &A, const m3d::vec3 &B, const m3d::vec3 &C, const m3d::vec3 &wn, ContactManifold &c) -> bool
                                          {
                     // Quick face-normal projection of box onto triangle plane
                     const m3d::scalar centre_dist = m3d::dot(tf_box.pos - A, wn);
@@ -140,9 +140,11 @@ namespace rbc
                     if (edge_d > box_r) return false;
 
                     c.normal            = wn;
-                    c.penetration_depth = box_r - centre_dist;
-                    c.pos               = closest;
-                    return c.penetration_depth > 0.0; }, out);
+                    c.num_points = 1;
+                    c.points[0].penetration_depth = box_r - edge_d;
+                    c.points[0].position = closest;
+
+                    return c.points[0].penetration_depth > 0.0; }, out);
         }
     };
     template <>
@@ -159,14 +161,14 @@ namespace rbc
     {
         static bool test(const Mesh &a, const m3d::tf &tf_a,
                          const Mesh &b, const m3d::tf &tf_b,
-                         Contact &out)
+                         ContactManifold &out)
         {
             if (!a.data || !b.data)
                 return false;
 
             bool hit = false;
             m3d::scalar best_depth = 0.0;
-            Contact candidate;
+            ContactManifold candidate;
             const MeshData &md_a = *a.data;
 
             for (uint32_t fa = 0; fa < md_a.face_count; ++fa)
@@ -178,12 +180,12 @@ namespace rbc
                 const m3d::vec3 verts[3] = {A, B, C};
                 for (const auto &vtx : verts)
                 {
-                    if (detail::mesh_test_all(b, tf_b, [&](const m3d::vec3 &bA, const m3d::vec3 &bB, const m3d::vec3 &bC, const m3d::vec3 &wn_b, Contact &c)
+                    if (detail::mesh_test_all(b, tf_b, [&](const m3d::vec3 &bA, const m3d::vec3 &bB, const m3d::vec3 &bC, const m3d::vec3 &wn_b, ContactManifold &c)
                                               { return tri::sphere_vs_triangle(vtx, 0.0, bA, bB, bC, wn_b, c); }, candidate))
                     {
-                        if (candidate.penetration_depth > best_depth)
+                        if (candidate.points[0].penetration_depth > best_depth)
                         {
-                            best_depth = candidate.penetration_depth;
+                            best_depth = candidate.points[0].penetration_depth;
                             out = candidate;
                             hit = true;
                         }
