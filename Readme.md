@@ -9,6 +9,9 @@
 
 **RBPS** is a physics engine...
 
+* Check this tutorial for the daping of the joints:
+https://www.youtube.com/watch?v=YVaQxeWGlJA
+
 **RBC**
 
 # TODO : 

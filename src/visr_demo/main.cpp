@@ -27,21 +27,21 @@
 
 // Create a body whose inertia tensor is derived from its collider shape + mass.
 // This is the canonical way to avoid having to compute it by hand.
-static uint32_t make_sphere_body(rbps::World    &w,
-                                  m3d::vec3       pos,
-                                  m3d::scalar     mass,
-                                  m3d::scalar     radius,
-                                  rbps::BodyType  type     = rbps::BodyType::DYNAMIC,
-                                  m3d::scalar     restitution      = 0.5,
-                                  m3d::scalar     static_friction  = 0.4,
-                                  m3d::scalar     dynamic_friction = 0.3)
+static uint32_t make_sphere_body(rbps::World &w,
+                                 m3d::vec3 pos,
+                                 m3d::scalar mass,
+                                 m3d::scalar radius,
+                                 rbps::BodyType type = rbps::BodyType::DYNAMIC,
+                                 m3d::scalar restitution = 0.5,
+                                 m3d::scalar static_friction = 0.4,
+                                 m3d::scalar dynamic_friction = 0.3)
 {
     rbc::Sphere sphere{radius};
 
     rbps::BodyParams bp{};
-    bp.type     = type;
+    bp.type = type;
     bp.position = pos;
-    bp.mass     = mass;
+    bp.mass = mass;
     if (type == rbps::BodyType::DYNAMIC)
     {
         // I_shape is computed at unit density; scale to actual mass / volume.
@@ -51,12 +51,12 @@ static uint32_t make_sphere_body(rbps::World    &w,
     const uint32_t id = w.create_body(bp);
 
     rbps::ColliderParams cp{};
-    cp.body_id          = id;
-    cp.local_pos        = m3d::vec3{0, 0, 0};
-    cp.local_rot        = m3d::quat{1, 0, 0, 0};
-    cp.shape            = rbc::Shape(sphere);
-    cp.restitution      = restitution;
-    cp.static_friction  = static_friction;
+    cp.body_id = id;
+    cp.local_pos = m3d::vec3{0, 0, 0};
+    cp.local_rot = m3d::quat{1, 0, 0, 0};
+    cp.shape = rbc::Shape(sphere);
+    cp.restitution = restitution;
+    cp.static_friction = static_friction;
     cp.dynamic_friction = dynamic_friction;
     w.create_collider(cp);
 
@@ -72,9 +72,9 @@ static void build_fixed_joint_demo(rbps::World &w)
 {
     // Static anchor (no collider needed — it's just a reference point)
     rbps::BodyParams ap{};
-    ap.type     = rbps::BodyType::STATIC;
+    ap.type = rbps::BodyType::STATIC;
     ap.position = m3d::vec3{-4.0, 4.0, 0.0};
-    ap.mass     = 0.0;
+    ap.mass = 0.0;
     const uint32_t anchor = w.create_body(ap);
 
     // Dynamic bob attached to anchor
@@ -84,8 +84,8 @@ static void build_fixed_joint_demo(rbps::World &w)
     rbps::FixedJointParams fjp{};
     fjp.body_1 = anchor;
     fjp.body_2 = bob;
-    fjp.r_1    = m3d::vec3{0, -2.0,  0};
-    fjp.r_2    = m3d::vec3{0,  0.0,  0};
+    fjp.r_1 = m3d::vec3{0, -2.0, 0};
+    fjp.r_2 = m3d::vec3{0, 0.0, 0};
     w.create_fixed_joint(fjp);
 }
 
@@ -95,23 +95,23 @@ static void build_revolute_joint_demo(rbps::World &w)
 {
     // Static pivot
     rbps::BodyParams pp{};
-    pp.type     = rbps::BodyType::STATIC;
+    pp.type = rbps::BodyType::STATIC;
     pp.position = m3d::vec3{0.0, 4.0, 0.0};
-    pp.mass     = 0.0;
+    pp.mass = 0.0;
     const uint32_t pivot = w.create_body(pp);
 
     // Bob: displaced 1.8 m on X from the pivot so it has swing amplitude.
     const uint32_t bob = make_sphere_body(w, {1.8, 4.0, 0.0}, 1.0, 0.3);
 
     rbps::RevoluteJointParams rjp{};
-    rjp.body_1       = pivot;
-    rjp.body_2       = bob;
-    rjp.aligned_axis = m3d::vec3{0, 0, 1};   // rotation axis
-    rjp.limit_axis   = m3d::vec3{1, 0, 0};   // reference for angle measurement
-    rjp.r_1          = m3d::vec3{0,    0, 0};
-    rjp.r_2          = m3d::vec3{-1.8, 0, 0}; // bob offset from its own COM
-    rjp.limited      = false;
-    rjp.damping      = 0.05;
+    rjp.body_1 = pivot;
+    rjp.body_2 = bob;
+    rjp.aligned_axis = m3d::vec3{0, 0, 1}; // rotation axis
+    rjp.limit_axis = m3d::vec3{1, 0, 0};   // reference for angle measurement
+    rjp.r_1 = m3d::vec3{0, 0, 0};
+    rjp.r_2 = m3d::vec3{-1.8, 0, 0}; // bob offset from its own COM
+    rjp.limited = false;
+    rjp.damping = 0.05;
     w.create_revolute_joint(rjp);
 }
 
@@ -121,9 +121,9 @@ static void build_prismatic_joint_demo(rbps::World &w)
 {
     // Static rail anchor
     rbps::BodyParams rp{};
-    rp.type     = rbps::BodyType::STATIC;
+    rp.type = rbps::BodyType::STATIC;
     rp.position = m3d::vec3{4.0, 4.0, 0.0};
-    rp.mass     = 0.0;
+    rp.mass = 0.0;
     const uint32_t rail = w.create_body(rp);
 
     // Sliding bob — starts at the anchor position, will slide along Y.
@@ -134,15 +134,15 @@ static void build_prismatic_joint_demo(rbps::World &w)
     w.bodies.linear_velocity[slot] = m3d::vec3{0, -2.0, 0};
 
     rbps::PrismaticJointParams pjp{};
-    pjp.body_1       = rail;
-    pjp.body_2       = bob;
-    pjp.moving_axis  = m3d::vec3{0, 1, 0};  // slide along Y
-    pjp.r_1          = m3d::vec3{0, 0, 0};
-    pjp.r_2          = m3d::vec3{0, 0, 0};
-    pjp.limited      = true;
-    pjp.lower_limit  = -2.5;
-    pjp.upper_limit  =  2.5;
-    pjp.damping      = 0.1;
+    pjp.body_1 = rail;
+    pjp.body_2 = bob;
+    pjp.moving_axis = m3d::vec3{0, 1, 0}; // slide along Y
+    pjp.r_1 = m3d::vec3{0, 0, 0};
+    pjp.r_2 = m3d::vec3{0, 0, 0};
+    pjp.limited = true;
+    pjp.lower_limit = -2.5;
+    pjp.upper_limit = 2.5;
+    pjp.damping = 0.1;
     w.create_prismatic_joint(pjp);
 }
 
@@ -150,44 +150,44 @@ static void build_prismatic_joint_demo(rbps::World &w)
 static void build_ground(rbps::World &w)
 {
     rbps::BodyParams gp{};
-    gp.type     = rbps::BodyType::STATIC;
+    gp.type = rbps::BodyType::STATIC;
     gp.position = m3d::vec3{0.0, -0.5, 0.0};
     const m3d::scalar tilt_deg = 0.0;
     const m3d::scalar tilt_rad = tilt_deg * M_PI / 180.0;
-    gp.orientation = m3d::quat::from_axis_angle({0, 0, 1}, tilt_rad); // rotate box to lie flat
-    gp.mass     = 0.0;
+    gp.orientation = m3d::quat::from_axis_angle({0, 1, 1}, tilt_rad); // rotate box to lie flat
+    gp.mass = 0.0;
     const uint32_t ground = w.create_body(gp);
 
     rbps::ColliderParams cp{};
-    cp.body_id          = ground;
-    cp.local_pos        = m3d::vec3{0, 0, 0};
-    cp.local_rot        = m3d::quat{1, 0, 0, 0};
-    cp.shape            = rbc::Shape(rbc::Box{{100.0, 0.5, 100.0}});
-    cp.restitution      = 0.1;
-    cp.static_friction  = 0.9;
-    cp.dynamic_friction = 0.99;
+    cp.body_id = ground;
+    cp.local_pos = m3d::vec3{0, 0, 0};
+    cp.local_rot = m3d::quat{1, 0, 0, 0};
+    cp.shape = rbc::Shape(rbc::Box{{100.0, 0.5, 100.0}});
+    cp.restitution = 0.3;
+    cp.static_friction = 0.4;
+    cp.dynamic_friction = 0.3;
     w.create_collider(cp);
 
     rbc::Sphere sphere{0.5};
 
     rbps::BodyParams bp{};
-    bp.type     = rbps::BodyType::DYNAMIC;
-    bp.position = m3d::vec3{0.0, 1.0, 0.0};
-    bp.mass     = 50.0;
+    bp.type = rbps::BodyType::DYNAMIC;
+    bp.position = m3d::vec3{-2.0, 4.0, -4.01};
+    bp.mass = 50.0;
 
     // I_shape is computed at unit density; scale to actual mass / volume.
     const m3d::scalar vol = rbc::compute_volume(sphere);
     bp.inertia_tensor = rbc::compute_inertia_tensor(sphere) * (bp.mass / vol);
-    
+
     const uint32_t id = w.create_body(bp);
 
     rbps::ColliderParams ball_cp{};
-    ball_cp.body_id          = id;
-    ball_cp.local_pos        = m3d::vec3{0, 0, 0};
-    ball_cp.local_rot        = m3d::quat{1, 0, 0, 0};
-    ball_cp.shape            = rbc::Shape(sphere);
-    ball_cp.restitution      = 0.1;
-    ball_cp.static_friction  = 0.6;
+    ball_cp.body_id = id;
+    ball_cp.local_pos = m3d::vec3{0.0, 0.0, 0.0};
+    ball_cp.local_rot = m3d::quat{1, 0, 0, 0};
+    ball_cp.shape = rbc::Shape(sphere);
+    ball_cp.restitution = 0.1;
+    ball_cp.static_friction = 0.6;
     ball_cp.dynamic_friction = 0.4;
     w.create_collider(ball_cp);
 
@@ -196,30 +196,46 @@ static void build_ground(rbps::World &w)
     double k = 60.0;
     for (int i = 0; i < num_boxes; ++i)
     {
-        rbc::Box box{{0.5 + 60.0 / k  , 0.5, 0.5 + 60.0 / k}};
+        rbc::Box box{{0.5 + 60.0 / k, 0.5, 0.5 + 60.0 / k}};
         rbps::BodyParams box_body_p{};
-        box_body_p.type     = rbps::BodyType::DYNAMIC;
+        box_body_p.type = rbps::BodyType::DYNAMIC;
         box_body_p.position = m3d::vec3{2.0, y_pos, 4.0};
-        box_body_p.mass     = 10.0 / k; // make each box lighter than the last so they fall at different rates
+        box_body_p.mass = 10.0 / k; // make each box lighter than the last so they fall at different rates
         // I_shape is computed at unit density; scale to actual mass / volume.
         const m3d::scalar vol_box = rbc::compute_volume(box);
         box_body_p.inertia_tensor = rbc::compute_inertia_tensor(box) * (box_body_p.mass / vol_box);
         const uint32_t box_id = w.create_body(box_body_p);
         rbps::ColliderParams box_cp{};
-        box_cp.body_id          = box_id;
-        box_cp.local_pos        = m3d::vec3{0, 0, 0};
-        box_cp.local_rot        = m3d::quat{1, 0, 0, 0};
-        box_cp.shape            = rbc::Shape(box);
-        box_cp.restitution      = 0.1;
-        box_cp.static_friction  = 0.99;
+        box_cp.body_id = box_id;
+        box_cp.local_pos = m3d::vec3{0, 0, 0};
+        box_cp.local_rot = m3d::quat{1, 0, 0, 0};
+        box_cp.shape = rbc::Shape(box);
+        box_cp.restitution = 0.1;
+        box_cp.static_friction = 0.99;
         box_cp.dynamic_friction = 0.99;
         w.create_collider(box_cp);
         y_pos += 1.0;
         k *= 2.0;
     }
-    
 
-
+    rbc::Capsule capsule{0.5, 0.25};
+    rbps::BodyParams capsule_body_p{};
+    capsule_body_p.type = rbps::BodyType::DYNAMIC;
+    capsule_body_p.position = m3d::vec3{-2.0, 3.0, -4.0};
+    capsule_body_p.mass = 10.0; // make each box lighter than the last so they fall at different rates
+    // I_shape is computed at unit density; scale to actual mass / volume.
+    const m3d::scalar vol_capsule = rbc::compute_volume(capsule);
+    capsule_body_p.inertia_tensor = rbc::compute_inertia_tensor(capsule) * (capsule_body_p.mass / vol_capsule);
+    const uint32_t capsule_id = w.create_body(capsule_body_p);
+    rbps::ColliderParams capsule_cp{};
+    capsule_cp.body_id = capsule_id;
+    capsule_cp.local_pos = m3d::vec3{0, 0, 0};
+    capsule_cp.local_rot = m3d::quat{1, 0, 0, 0};
+    capsule_cp.shape = rbc::Shape(capsule);
+    capsule_cp.restitution = 0.1;
+    capsule_cp.static_friction = 0.99;
+    capsule_cp.dynamic_friction = 0.99;
+    w.create_collider(capsule_cp);
 }
 
 // ── main ──────────────────────────────────────────────────────────────────────
@@ -227,22 +243,21 @@ static void build_ground(rbps::World &w)
 int main()
 {
     visr::VisrApp app;
-    app.title    = "rbps — joint showcase";
+    app.title = "rbps — joint showcase";
     app.screen_w = 1440;
     app.screen_h = 900;
 
     app.world.timestep = 1.0 / 60.0;
     app.world.substeps = 50;
 
-    build_ground         (app.world);
-    build_fixed_joint_demo   (app.world);
-    build_revolute_joint_demo(app.world);
-    build_prismatic_joint_demo(app.world);
-
+    build_ground(app.world);
+    // build_fixed_joint_demo(app.world);
+    // build_revolute_joint_demo(app.world);
+    // build_prismatic_joint_demo(app.world);
 
     // ── Extra demo panel ──────────────────────────────────────────────────
     app.extra_guis.push_back([&]()
-    {
+                             {
         ImGui::Begin("Demo");
         ImGui::SeparatorText("Joint showcase");
         ImGui::TextDisabled("Left:   Fixed    (two spheres welded)");
@@ -276,8 +291,7 @@ int main()
                 }
             }
         }
-        ImGui::End();
-    });
+        ImGui::End(); });
 
     app.run();
     return 0;
