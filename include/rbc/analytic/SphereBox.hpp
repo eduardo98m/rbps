@@ -25,7 +25,7 @@ namespace rbc
     {
         static bool test(const Sphere &sphere, const m3d::tf &tf_sphere,
                          const Box    &box,    const m3d::tf &tf_box,
-                         Contact &out)
+                         ContactManifold &out)
         {
             // Sphere centre expressed in the box's local frame.
             const m3d::vec3 local_centre =
@@ -48,9 +48,10 @@ namespace rbc
 
                 // local_diff / dist  points B→A.
                 // Negate for the required A→B convention (sphere → box).
+                out.num_points = 1;
                 out.normal            = -tf_box.rotate_vector(local_diff / dist);
-                out.penetration_depth = sphere.radius - dist;
-                out.pos               = tf_box.transform_point(closest); // box surface contact
+                out.points[0].penetration_depth = sphere.radius - dist;
+                out.points[0].position          = tf_box.transform_point(closest); // box surface contact
                 return true;
             }
 
@@ -70,8 +71,9 @@ namespace rbc
                 local_normal = m3d::vec3(0.0, 0.0, local_centre.z > 0 ? 1.0 : -1.0);
 
             // Negate outward face normal (B→A) → A→B convention for the solver.
+            out.num_points = 1;
             out.normal            = -tf_box.rotate_vector(local_normal);
-            out.penetration_depth = sphere.radius + m3d::min(px, m3d::min(py, pz));
+            out.points[0].penetration_depth = sphere.radius + m3d::min(px, m3d::min(py, pz));
 
             // Contact point: closest point on the exit face to the sphere centre.
             // The exit-face axis is fixed by local_normal (one component is ±1, rest 0).
@@ -87,7 +89,7 @@ namespace rbc
                     ? local_normal.z * box.half_extents.z
                     : m3d::clamp(local_centre.z, -box.half_extents.z, box.half_extents.z));
 
-            out.pos = tf_box.transform_point(face_point);
+            out.points[0].position = tf_box.transform_point(face_point);
             return true;
         }
     };

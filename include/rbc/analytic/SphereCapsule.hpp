@@ -13,7 +13,7 @@ namespace rbc
     {
         static bool test(const Sphere &sphere, const m3d::tf &tf_sphere,
                          const Capsule &capsule, const m3d::tf &tf_capsule,
-                         Contact &out)
+                         ContactManifold &manifold)
         {
             // World-space capsule endpoints
             m3d::vec3 p1, p2;
@@ -35,11 +35,13 @@ namespace rbc
             if (dist >= rsum)
                 return false;
 
-            out.normal = (dist > m3d::EPSILON)
+            manifold.num_points = 1;
+            manifold.normal = (dist > m3d::EPSILON)
                              ? delta / dist
                              : m3d::vec3(1.0, 0.0, 0.0); // coincident centres
-            out.penetration_depth = rsum - dist;
-            out.pos = closest + out.normal * capsule.radius; // surface of capsule
+            manifold.points[0].penetration_depth = rsum - dist;
+            manifold.points[0].position = closest + manifold.normal * capsule.radius; // surface of capsule
+            manifold.num_points = 1;
             return true;
         }
     };

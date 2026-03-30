@@ -30,7 +30,7 @@ namespace rbc
         template <typename A>
         inline bool convex_vs_plane(const A &shape, const m3d::tf &tf_shape,
                                     const Plane &plane, const m3d::tf &tf_plane,
-                                    Contact &out)
+                                    ContactManifold &out)
         {
             const m3d::vec3   world_n = tf_plane.rotate_vector(plane.normal);
             const m3d::scalar world_d = plane.d + m3d::dot(world_n, tf_plane.pos);
@@ -57,7 +57,7 @@ namespace rbc
     {                                                                          \
         static bool test(const ShapeType &a, const m3d::tf &tf_a,             \
                          const Plane &b, const m3d::tf &tf_b,                 \
-                         Contact &out)                                         \
+                         ContactManifold &out)                                         \
         { return detail::convex_vs_plane(a, tf_a, b, tf_b, out); }           \
     };                                                                         \
     template <>                                                                \
@@ -79,7 +79,7 @@ namespace rbc
     {
         static bool test(const Plane &, const m3d::tf &,
                          const Plane &, const m3d::tf &,
-                         Contact &) { return false; }
+                         ContactManifold &) { return false; }
     };
 
     // ── Plane vs Heightmap / Heightmap vs Plane — skip ────────────────────────
@@ -90,7 +90,7 @@ namespace rbc
     {
         static bool test(const Plane &, const m3d::tf &,
                          const Heightmap &, const m3d::tf &,
-                         Contact &) { return false; }
+                         ContactManifold &) { return false; }
     };
     template <>
     struct CollisionAlgorithm<Heightmap, Plane>

@@ -158,7 +158,7 @@ namespace rbc
     struct CollisionAlgorithm<Heightmap, Heightmap>
     {
         static bool test(const Heightmap &, const m3d::tf &,
-                         const Heightmap &, const m3d::tf &, Contact &)
+                         const Heightmap &, const m3d::tf &, ContactManifold &)
         {
             return false;
         }

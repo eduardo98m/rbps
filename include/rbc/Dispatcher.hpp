@@ -1,107 +1,101 @@
 #pragma once
+// ============================================================================
+//  Dispatcher.hpp
+//
+//  Routes each shape-pair to the correct CollisionAlgorithm specialisation.
+//  The primary template falls back to GJK + EPA + ContactManifoldGenerator
+//  which gives a proper 1-4 point manifold even for non-analytic pairs.
+//
+//  Analytic specialisations (SphereSphere, SphereBox, BoxBox, …) should
+//  fill the ContactManifold directly and bypass GJK/EPA entirely.
+// ============================================================================
+
 #include "rbc/shapes/ShapeTypes.hpp"
 #include "rbc/Contact.hpp"
 #include "rbc/gjk/GJK.hpp"
 #include "rbc/gjk/EPA.hpp"
 #include "rbc/gjk/MinkowskiDiff.hpp"
+#include "rbc/gjk/ContactManifoldGenerator.hpp"   // gjk_epa_manifold + generate_manifold
 #include <variant>
 
 namespace rbc
 {
 
-    //  Primary template: GJK/EPA fallback for any unspecialised pair
+    // ── Primary template: GJK/EPA + manifold generation ──────────────────────
     template <typename A, typename B>
     struct CollisionAlgorithm
     {
-        static bool test(const A &a, const m3d::tf &tf_a,
-                         const B &b, const m3d::tf &tf_b,
-                         Contact &out)
+        static bool test(const A       &a, const m3d::tf &tf_a,
+                         const B       &b, const m3d::tf &tf_b,
+                         ContactManifold &manifold)
         {
             Shape sa = a, sb = b;
-            MinkowskiDiff md(&sa, &sb, tf_a, tf_b);
-
-            // Guard against zero-length initial guess (when centers coincide)
-            m3d::vec3 guess = tf_b.pos - tf_a.pos;
-            if (m3d::length_sq(guess) < m3d::EPSILON)
-                guess = m3d::vec3(1.0, 0.0, 0.0);
-
-            GJK gjk;
-            if (gjk.evaluate(md, guess) != GJK::Inside)
-                return false;
-
-            EPA epa;
-            if (epa.evaluate(gjk, md) != EPA::Valid)
-                return false;
-
-            out.normal = epa.normal;
-            out.penetration_depth = epa.depth;
-            out.pos = epa.contact_point;
-            return true;
+            return gjk_epa_manifold(sa, tf_a, sb, tf_b, manifold);
         }
     };
 
-    // Symmetric helper: (B,A) reuses (A,B) and flips normal
+    // ── Symmetric helper: (B,A) reuses (A,B) and flips the normal ────────────
     template <typename A, typename B>
     struct CollisionAlgorithmSym
     {
-        static bool test(const A &a, const m3d::tf &tf_a,
-                         const B &b, const m3d::tf &tf_b,
-                         Contact &out)
+        static bool test(const A       &a, const m3d::tf &tf_a,
+                         const B       &b, const m3d::tf &tf_b,
+                         ContactManifold &manifold)
         {
-            bool hit = CollisionAlgorithm<B, A>::test(b, tf_b, a, tf_a, out);
+            bool hit = CollisionAlgorithm<B, A>::test(b, tf_b, a, tf_a, manifold);
             if (hit)
-                out.normal = -out.normal;
+                manifold.normal = -manifold.normal;
             return hit;
         }
     };
-}
 
+} // namespace rbc
+
+// ── Analytic specialisations ─────────────────────────────────────────────────
 #include "rbc/analytic/SphereSphere.hpp"
 #include "rbc/analytic/SphereBox.hpp"
 #include "rbc/analytic/BoxBox.hpp"
-#include "rbc/analytic/SphereCapsule.hpp"
-#include "rbc/analytic/CapsuleCapsule.hpp"
-#include "rbc/analytic/PlaneCollision.hpp"   // generic partial spec for all convex vs Plane
-//#include "rbc/analytic/MeshCollision.hpp"    // Sphere/Capsule/Box vs Mesh
-#include "rbc/analytic/HeightmapCollision.hpp" // Sphere/Capsule/Box vs Heightmap
-
+//#include "rbc/analytic/SphereCapsule.hpp"
+//#include "rbc/analytic/CapsuleCapsule.hpp"
+//#include "rbc/analytic/PlaneCollision.hpp"
+// #include "rbc/analytic/MeshCollision.hpp"
+//#include "rbc/analytic/HeightmapCollision.hpp"
 
 namespace rbc
 {
-    // Generic Wrapper: Extracts the correct types using get `get<T>()`
-    // and calls the correct CollisionAlgorithm specialization. This is what the dispatch table will call.
+    // ── Dispatch wrapper ──────────────────────────────────────────────────────
     template <typename A, typename B>
-    bool dispatch_wrapper(const Shape &a, const m3d::tf &tf_a,
-                          const Shape &b, const m3d::tf &tf_b,
-                          Contact &out)
+    bool dispatch_wrapper(const Shape     &a, const m3d::tf &tf_a,
+                          const Shape     &b, const m3d::tf &tf_b,
+                          ContactManifold &out)
     {
         return CollisionAlgorithm<A, B>::test(a.get<A>(), tf_a, b.get<B>(), tf_b, out);
     }
 
-    using CollisionFunc = bool (*)(const Shape &, const m3d::tf &, const Shape &, const m3d::tf &, Contact &);
+    using CollisionFunc = bool (*)(const Shape &, const m3d::tf &,
+                                   const Shape &, const m3d::tf &,
+                                   ContactManifold &);
 
-    /**
-     * 2D DISPATCH MATRIX GENERATION (X-Macros)
-     * ---------------------------------------
-     * We use a nested expansion technique to automatically generate a N x N
-     * lookup table of function pointers.
-     * 2. GENERATE_ROW: Creates a single entry: dispatch_wrapper<RowType, ColType>.
-     * 3. GENERATE_MATRIX_LINE: Wraps a full horizontal expansion in braces { ... }.
-     */
 #define GENERATE_ROW(InnerType, InnerName, FixedOuterType) \
     dispatch_wrapper<FixedOuterType, InnerType>,
 
 #define GENERATE_MATRIX_LINE(OuterType, OuterName) \
     {RBC_SHAPE_LIST_INNER(GENERATE_ROW, OuterType)},
 
-    static constexpr CollisionFunc DispatchTable[static_cast<int>(ShapeType::Count)][static_cast<int>(ShapeType::Count)] = {
-        RBC_SHAPE_LIST(GENERATE_MATRIX_LINE)};
-
-    inline bool dispatch(const Shape &a, const m3d::tf &tf_a,
-                         const Shape &b, const m3d::tf &tf_b,
-                         Contact &out)
+    static constexpr CollisionFunc DispatchTable
+        [static_cast<int>(ShapeType::Count)]
+        [static_cast<int>(ShapeType::Count)] =
     {
-        return DispatchTable[static_cast<int>(a.type)][static_cast<int>(b.type)](a, tf_a, b, tf_b, out);
+        RBC_SHAPE_LIST(GENERATE_MATRIX_LINE)
+    };
+
+    inline bool dispatch(const Shape     &a, const m3d::tf &tf_a,
+                         const Shape     &b, const m3d::tf &tf_b,
+                         ContactManifold &out)
+    {
+        return DispatchTable
+            [static_cast<int>(a.type)]
+            [static_cast<int>(b.type)](a, tf_a, b, tf_b, out);
     }
 
 } // namespace rbc
