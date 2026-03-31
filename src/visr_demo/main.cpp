@@ -112,6 +112,7 @@ static void build_revolute_joint_demo(rbps::World &w)
     rjp.r_2 = m3d::vec3{-1.8, 0, 0}; // bob offset from its own COM
     rjp.limited = false;
     rjp.damping = 0.05;
+    rjp.actuation_type = rbps::JointActuationType::FREE;
     w.create_revolute_joint(rjp);
 }
 
@@ -232,8 +233,8 @@ static void build_ground(rbps::World &w)
     capsule_cp.local_pos = m3d::vec3{0, 0, 0};
     capsule_cp.local_rot = m3d::quat{1, 0, 0, 0};
     capsule_cp.shape = rbc::Shape(capsule);
-    capsule_cp.restitution = 0.1;
-    capsule_cp.static_friction = 0.99;
+    capsule_cp.restitution = 0.4;
+    capsule_cp.static_friction = 0.2;
     capsule_cp.dynamic_friction = 0.99;
     w.create_collider(capsule_cp);
 }
@@ -248,12 +249,12 @@ int main()
     app.screen_h = 900;
 
     app.world.timestep = 1.0 / 60.0;
-    app.world.substeps = 50;
+    app.world.substeps = 20;
 
     build_ground(app.world);
-    // build_fixed_joint_demo(app.world);
-    // build_revolute_joint_demo(app.world);
-    // build_prismatic_joint_demo(app.world);
+    build_fixed_joint_demo(app.world);
+    build_revolute_joint_demo(app.world);
+    build_prismatic_joint_demo(app.world);
 
     // ── Extra demo panel ──────────────────────────────────────────────────
     app.extra_guis.push_back([&]()
