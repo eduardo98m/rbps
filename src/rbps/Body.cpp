@@ -84,6 +84,13 @@ namespace rbps
         bc.angular_velocity[i] += bc.inverse_inertia_tensor_world[i] * m3d::cross(r, impulse);
     }
 
+    void apply_rotational_velocity_constraint_impulse(BodyCollection &bc, uint32_t i, vec3 impulse)
+    {
+        if (bc.type[i] == STATIC)
+            return;
+        bc.angular_velocity[i] += bc.inverse_inertia_tensor_world[i] * impulse;
+    }
+
     scalar get_positional_generalized_inverse_mass(BodyCollection &bc, uint32_t i, vec3 r, vec3 n)
     {
         if (bc.type[i] == STATIC)

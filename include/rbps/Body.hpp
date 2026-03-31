@@ -144,6 +144,20 @@ namespace rbps
      */
     void apply_positional_velocity_constraint_impulse(BodyCollection &bc, uint32_t i, vec3 impulse, vec3 r);
 
+
+    /**
+     * @brief Apply a velocity-level rotational impulse at to body i.
+     *
+     * Adjusts  angular_velocity. Used during velocity-level
+     * joint damping solver.
+     * No-op if the body is STATIC.
+     *
+     * @param bc      The BodyCollection.
+     * @param i       Packed data index.
+     * @param impulse Impulse vector in world space.
+     */
+    void apply_rotational_velocity_constraint_impulse(BodyCollection &bc, uint32_t i, vec3 impulse);
+
     /**
      * @brief Compute the generalised inverse mass for a positional constraint.
      *

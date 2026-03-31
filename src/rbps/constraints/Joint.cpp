@@ -189,7 +189,7 @@ namespace rbps
         const uint32_t b1 = jc.body_1[i];
         const uint32_t b2 = jc.body_2[i];
         vec3 delta_v = (bc.linear_velocity[b2] - bc.linear_velocity[b1]) * std::min(jc.damping[i] * time_step, 1.0);
-        if (m3d::magnitude(delta_v) < EPSILON)
+        if (m3d::length_sq(delta_v) < EPSILON)
             return;
         vec3 r_1_wc = m3d::rotate(bc.orientation[b1], jc.r_1[i]);
         vec3 r_2_wc = m3d::rotate(bc.orientation[b2], jc.r_2[i]);
@@ -209,8 +209,14 @@ namespace rbps
         const uint32_t b1 = jc.body_1[i];
         const uint32_t b2 = jc.body_2[i];
         vec3 delta_omega = (bc.angular_velocity[b2] - bc.angular_velocity[b1]) * std::min(jc.damping[i] * time_step, 1.0);
-        bc.angular_velocity[b1] += delta_omega;
-        bc.angular_velocity[b2] -= delta_omega;
+        if (m3d::length_sq(delta_omega) < EPSILON)
+            return;
+        vec3 n = m3d::normalize(delta_omega);
+        scalar w_1 = get_rotational_generalized_inverse_mass(bc, b1, n);
+        scalar w_2 = get_rotational_generalized_inverse_mass(bc, b2, n);
+        vec3 impulse = delta_omega / (w_1 + w_2);
+        apply_rotational_velocity_constraint_impulse(bc, b1, impulse);
+        apply_rotational_velocity_constraint_impulse(bc, b2, -impulse);
     };
 
     void compute_joint_errors(JointCollection &jc,
