@@ -29,47 +29,51 @@ namespace rbc
         // Returns true and fills `out` when `shape` penetrates `plane`.
         // Works for ANY convex shape that has a support() function.
         template <typename A>
-        inline bool convex_vs_plane(const A       &shape,   const m3d::tf &tf_shape,
-                                    const Plane   &plane,   const m3d::tf &tf_plane,
+        inline bool convex_vs_plane(const A &shape, const m3d::tf &tf_shape,
+                                    const Plane &plane, const m3d::tf &tf_plane,
                                     ContactManifold &out)
         {
-            const m3d::vec3   world_n = tf_plane.rotate_vector(plane.normal);
+            const m3d::vec3 world_n = tf_plane.rotate_vector(plane.normal);
             const m3d::scalar world_d = plane.d + m3d::dot(world_n, tf_plane.pos);
 
-            const m3d::vec3 local_dir     = tf_shape.inverse_rotate_vector(-world_n);
+            const m3d::vec3 local_dir = tf_shape.inverse_rotate_vector(-world_n);
             const m3d::vec3 local_support = support(shape, local_dir);
             const m3d::vec3 world_support = tf_shape.pos + tf_shape.rotate_vector(local_support);
 
             const m3d::scalar signed_dist = m3d::dot(world_support, world_n) - world_d;
             if (signed_dist >= 0.0)
-                return false; 
+                return false;
 
-            out.normal                    = -world_n;
-            out.num_points                = 1;
-            out.points[0].penetration_depth = -signed_dist;      
-            out.points[0].position          = world_support;     
+            out.normal = -world_n;
+            out.num_points = 1;
+            out.points[0].penetration_depth = -signed_dist;
+            out.points[0].position = world_support;
             return true;
         }
-    } 
+    }
 
     // ── Partial specialisations for single-point convex shapes vs Plane ───────
-#define RBC_PLANE_SPEC(ShapeType)                                                \
-    template <>                                                                  \
-    struct CollisionAlgorithm<ShapeType, Plane>                                  \
-    {                                                                            \
-        static bool test(const ShapeType &a, const m3d::tf &tf_a,                \
-                         const Plane     &b, const m3d::tf &tf_b,                \
-                         ContactManifold &out)                                   \
-        { return detail::convex_vs_plane(a, tf_a, b, tf_b, out); }               \
-    };                                                                           \
-    template <>                                                                  \
-    struct CollisionAlgorithm<Plane, ShapeType>                                  \
-        : CollisionAlgorithmSym<Plane, ShapeType> {};
+#define RBC_PLANE_SPEC(ShapeType)                                  \
+    template <>                                                    \
+    struct CollisionAlgorithm<ShapeType, Plane>                    \
+    {                                                              \
+        static bool test(const ShapeType &a, const m3d::tf &tf_a,  \
+                         const Plane &b, const m3d::tf &tf_b,      \
+                         ContactManifold &out)                     \
+        {                                                          \
+            return detail::convex_vs_plane(a, tf_a, b, tf_b, out); \
+        }                                                          \
+    };                                                             \
+    template <>                                                    \
+    struct CollisionAlgorithm<Plane, ShapeType>                    \
+        : CollisionAlgorithmSym<Plane, ShapeType>                  \
+    {                                                              \
+    };
 
     RBC_PLANE_SPEC(Sphere)
     RBC_PLANE_SPEC(Ellipsoid)
     RBC_PLANE_SPEC(Cone)
-    RBC_PLANE_SPEC(Mesh) 
+    RBC_PLANE_SPEC(Mesh)
 
 #undef RBC_PLANE_SPEC
 
@@ -77,61 +81,85 @@ namespace rbc
     template <>
     struct CollisionAlgorithm<Box, Plane>
     {
-        static bool test(const Box &a, const m3d::tf &tf_a,
-                         const Plane &b, const m3d::tf &tf_b,
-                         ContactManifold &out)
+        static bool test(const Box &a, const m3d::tf &tf_a, const Plane &b, const m3d::tf &tf_b, ContactManifold &out)
         {
+
+            // 1. Transform plane to world space
             const m3d::vec3 world_n = tf_b.rotate_vector(b.normal);
             const m3d::scalar world_d = b.d + m3d::dot(world_n, tf_b.pos);
 
-            // Get the scaled local axes in world space
-            const m3d::vec3 axes[3] = {
-                tf_a.rotate_vector(m3d::vec3(1, 0, 0)) * a.half_extents.x,
-                tf_a.rotate_vector(m3d::vec3(0, 1, 0)) * a.half_extents.y,
-                tf_a.rotate_vector(m3d::vec3(0, 0, 1)) * a.half_extents.z
-            };
+            // 2. Get Box local axes in world space
+            const m3d::vec3 u[3] = {
+                tf_a.rotate_vector(m3d::vec3(1, 0, 0)),
+                tf_a.rotate_vector(m3d::vec3(0, 1, 0)),
+                tf_a.rotate_vector(m3d::vec3(0, 0, 1))};
 
-            struct DeepPoint { m3d::vec3 pos; m3d::scalar depth; };
-            DeepPoint hits[8];
-            int hit_count = 0;
+            // 3. Find reference face (most anti-aligned with plane normal)
+            m3d::scalar min_alignment = std::numeric_limits<m3d::scalar>::max();
+            int best_axis = -1;
+            int best_sign = 0;
 
-            // Test all 8 corners of the box
-            for (int i = 0; i < 8; ++i)
+            for (int i = 0; i < 3; ++i)
             {
-                m3d::vec3 pt = tf_a.pos
-                    + axes[0] * ((i & 1) ? 1.0f : -1.0f)
-                    + axes[1] * ((i & 2) ? 1.0f : -1.0f)
-                    + axes[2] * ((i & 4) ? 1.0f : -1.0f);
-
-                m3d::scalar signed_dist = m3d::dot(pt, world_n) - world_d;
-                if (signed_dist < 0.0)
+                for (int s = -1; s <= 1; s += 2)
                 {
-                    hits[hit_count++] = { pt, -signed_dist };
+                    m3d::vec3 f_n = static_cast<m3d::scalar>(s) * u[i];
+                    m3d::scalar align = m3d::dot(f_n, world_n);
+                    if (align < min_alignment)
+                    {
+                        min_alignment = align;
+                        best_axis = i;
+                        best_sign = s;
+                    }
                 }
             }
 
-            if (hit_count == 0) return false;
+            // 4. Calculate the 4 corners of the incident face
+            m3d::vec3 face_center = tf_a.pos + static_cast<m3d::scalar>(best_sign) *
+                                                   (best_axis == 0 ? a.half_extents.x * u[0] : best_axis == 1 ? a.half_extents.y * u[1]
+                                                                                                              : a.half_extents.z * u[2]);
 
-            // Sort descending by depth so we keep the deepest points
-            std::sort(hits, hits + hit_count, [](const DeepPoint& A, const DeepPoint& B) {
-                return A.depth > B.depth;
-            });
+            int a1 = (best_axis + 1) % 3;
+            int a2 = (best_axis + 2) % 3;
+            const m3d::vec3 span1 = (a1 == 0 ? a.half_extents.x * u[0] : a1 == 1 ? a.half_extents.y * u[1]
+                                                                                 : a.half_extents.z * u[2]);
+            const m3d::vec3 span2 = (a2 == 0 ? a.half_extents.x * u[0] : a2 == 1 ? a.half_extents.y * u[1]
+                                                                                 : a.half_extents.z * u[2]);
 
-            out.normal = -world_n; // Pushing box away
-            out.num_points = (hit_count > 4) ? 4 : hit_count; // Cap at 4 points max
-            
-            for (int i = 0; i < out.num_points; ++i)
+            m3d::vec3 face_pts[4] = {
+                face_center + span1 + span2,
+                face_center + span1 - span2,
+                face_center - span1 - span2,
+                face_center - span1 + span2};
+
+            // 5. Check vertices against the plane (NO CLIPPING REQUIRED)
+            out.num_points = 0;
+            out.normal = -world_n; // Keeping your convention
+
+            const m3d::scalar eps = m3d::scalar(1e-4f); // Collision margin/epsilon
+
+            for (int i = 0; i < 4; ++i)
             {
-                out.points[i].position = hits[i].pos;
-                out.points[i].penetration_depth = hits[i].depth;
+                // Distance from point to plane
+                m3d::scalar dist = m3d::dot(face_pts[i], world_n) - world_d;
+
+                // If the point is behind the plane (plus small epsilon), it's a contact
+                if (dist <= eps)
+                {
+                    out.points[out.num_points].position = face_pts[i];
+                    out.points[out.num_points].penetration_depth = -dist; // Positive depth
+                    out.num_points++;
+                }
             }
 
-            return true;
+            return out.num_points > 0;
         }
     };
 
     template <>
-    struct CollisionAlgorithm<Plane, Box> : CollisionAlgorithmSym<Plane, Box> {};
+    struct CollisionAlgorithm<Plane, Box> : CollisionAlgorithmSym<Plane, Box>
+    {
+    };
 
     // ── Capsule vs Plane (Multi-point manifold) ───────────────────────────────
     template <>
@@ -174,8 +202,9 @@ namespace rbc
     };
 
     template <>
-    struct CollisionAlgorithm<Plane, Capsule> : CollisionAlgorithmSym<Plane, Capsule> {};
-
+    struct CollisionAlgorithm<Plane, Capsule> : CollisionAlgorithmSym<Plane, Capsule>
+    {
+    };
 
     // ── Plane vs Plane — always false (two infinite half-spaces) ──────────────
     template <>
@@ -196,6 +225,8 @@ namespace rbc
     };
     template <>
     struct CollisionAlgorithm<Heightmap, Plane>
-        : CollisionAlgorithmSym<Heightmap, Plane> {};
+        : CollisionAlgorithmSym<Heightmap, Plane>
+    {
+    };
 
 } // namespace rbc
