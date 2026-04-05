@@ -136,7 +136,7 @@ namespace rbc
             out.num_points = 0;
             out.normal = -world_n; // Keeping your convention
 
-            const m3d::scalar eps = m3d::scalar(1e-4f); // Collision margin/epsilon
+            const m3d::scalar epsilon = 1e-4; // Collision margin/epsilon
 
             for (int i = 0; i < 4; ++i)
             {
@@ -144,7 +144,7 @@ namespace rbc
                 m3d::scalar dist = m3d::dot(face_pts[i], world_n) - world_d;
 
                 // If the point is behind the plane (plus small epsilon), it's a contact
-                if (dist <= eps)
+                if (dist <= epsilon)
                 {
                     out.points[out.num_points].position = face_pts[i];
                     out.points[out.num_points].penetration_depth = -dist; // Positive depth
@@ -169,30 +169,38 @@ namespace rbc
                          const Plane &b, const m3d::tf &tf_b,
                          ContactManifold &out)
         {
+            // 1. Transform plane to world space
             const m3d::vec3 world_n = tf_b.rotate_vector(b.normal);
             const m3d::scalar world_d = b.d + m3d::dot(world_n, tf_b.pos);
 
+            // 2. Get capsule internal segment endpoints in world space
             m3d::vec3 p1, p2;
             capsule_endpoints(a, tf_a, p1, p2);
 
+            // 3. Distance from internal endpoints to the plane
             const m3d::scalar dist1 = m3d::dot(p1, world_n) - world_d;
             const m3d::scalar dist2 = m3d::dot(p2, world_n) - world_d;
 
             out.num_points = 0;
             out.normal = -world_n;
 
-            // Check if top hemisphere penetrates
-            if (dist1 < a.radius)
+            // 4. Optimization: Cache the radius offset vector and collision margin
+            const m3d::scalar epsilon = 1e-4; // Tune to match your physics scale
+            const m3d::vec3 radius_offset = world_n * a.radius;
+            const m3d::scalar threshold = a.radius + epsilon;
+
+            // Check if endpoint 1 (hemisphere) penetrates
+            if (dist1 <= threshold)
             {
-                out.points[out.num_points].position = p1 - world_n * a.radius;
+                out.points[out.num_points].position = p1 - radius_offset;
                 out.points[out.num_points].penetration_depth = a.radius - dist1;
                 out.num_points++;
             }
 
-            // Check if bottom hemisphere penetrates
-            if (dist2 < a.radius)
+            // Check if endpoint 2 (hemisphere) penetrates
+            if (dist2 <= threshold)
             {
-                out.points[out.num_points].position = p2 - world_n * a.radius;
+                out.points[out.num_points].position = p2 - radius_offset;
                 out.points[out.num_points].penetration_depth = a.radius - dist2;
                 out.num_points++;
             }
