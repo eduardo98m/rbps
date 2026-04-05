@@ -21,8 +21,14 @@ namespace rbps
         {
             // ── STATIC BODY OPTIMISATION ──────────────────────────────────────
             // Static bodies never move. Their AABB was inserted at creation time
-            // and never needs updating. Skip entirely — zero cost per static collider.
+            // and never needs updating.
             if (cc.is_static[i])
+                continue;
+
+            // ── BROAD-PHASE BYPASS ────────────────────────────────────────────
+            // Planes (and future heightmaps) have BP_INVALID_HANDLE — they never
+            // enter the SAP endpoint list, so there is nothing to update.
+            if (cc.bp_handle[i] == rbc::BP_INVALID_HANDLE)
                 continue;
 
             const uint32_t bid = cc.body_id[i];
@@ -44,20 +50,6 @@ namespace rbps
                 rbc::broad_phase_move(bp, cc.bp_handle[i], tight);
             }
         }
-
-        // ── PLANE / HEIGHTMAP HOOK ─────────────────────────────────────────
-        // Planes and heightmaps cannot live in the SAP endpoint list because
-        // their AABB is infinite (plane) or enormous (full heightmap).
-        // The pattern is:
-        //
-        //   for (auto &plane : cc.static_planes)
-        //       for (u_int32_t i = 0; i < cc.count(); ++i)
-        //           if (!cc.is_static[i] && aabb_vs_plane(cc tight_aabb[i], plane))
-        //               emit_pair_for_narrow_phase(i, plane);
-        //
-        // Heightmaps: keep a spatial hash of active cells; only register the cells
-        // within range of dynamic bodies (each cell is a small AABB in SAP).
-        // ──────────────────────────────────────────────────────────────────────
     }
 
     // =========================================================================
@@ -71,23 +63,18 @@ namespace rbps
                              const rbps::ColliderCollection &cc,
                              const BodyCollection &bc)
     {
-
-        for (uint32_t i = 0; i < manifold.num_points; ++i)
+        for (uint32_t i = 0; i < static_cast<uint32_t>(manifold.num_points); ++i)
         {
             const rbc::ContactPoint &c = manifold.points[i];
-            // World-space contact points split symmetrically along the normal.
             const m3d::scalar half_depth = c.penetration_depth * 0.5;
             const m3d::vec3 p_on_a = c.position + manifold.normal * half_depth;
             const m3d::vec3 p_on_b = c.position - manifold.normal * half_depth;
 
-            // Convert world-space lever arms to body-LOCAL space (eq. 26).
-            // conjugate(q) == inverse for unit quaternions.
             const m3d::vec3 r_a_wc = p_on_a - bc.position[ba];
             const m3d::vec3 r_b_wc = p_on_b - bc.position[bb];
             const m3d::vec3 r_a_local = m3d::rotate(m3d::conjugate(bc.orientation[ba]), r_a_wc);
             const m3d::vec3 r_b_local = m3d::rotate(m3d::conjugate(bc.orientation[bb]), r_b_wc);
 
-            // Material mixing: average friction, minimum restitution.
             const m3d::scalar rest = m3d::min(cc.restitution[ca], cc.restitution[cb]);
             const m3d::scalar sf = (cc.static_friction[ca] + cc.static_friction[cb]) * 0.5;
             const m3d::scalar df = (cc.dynamic_friction[ca] + cc.dynamic_friction[cb]) * 0.5;
@@ -104,9 +91,7 @@ namespace rbps
             out.dynamic_friction.push_back(df);
             out.normal_lambda.push_back(0.0);
             out.tangent_lambda.push_back(0.0);
-            // Substep fields — sized but not filled; apply_constraint_position_level
-            // reconstructs them each substep from r_local + current body transforms.
-            out.point_on_a.push_back(p_on_a); // initial value, overwritten each substep
+            out.point_on_a.push_back(p_on_a);
             out.point_on_b.push_back(p_on_b);
             out.penetration_depth.push_back(c.penetration_depth);
             out.collision.push_back(false);
@@ -118,7 +103,7 @@ namespace rbps
     }
 
     // =========================================================================
-    //  Step 3 — Narrow phase filter + dispatch
+    //  Step 3 — Narrow phase: SAP pairs + plane loop
     // =========================================================================
 
     void run_narrow_phase(const rbc::BroadPhaseState &bp,
@@ -126,22 +111,9 @@ namespace rbps
                           const BodyCollection &bc,
                           ContactList &out)
     {
-        // Build a reverse map: user_id (ivc::ID.value) → collider slot index.
-        // user_id was stored as ivc::ID.value in collider_add().
-        // For simple sequential IDs, this is just the slot itself, but we
-        // keep it explicit to be correct after remove/add cycles.
-        //
-        // OPTIMISATION NOTE: in a large scene you can cache this map and update
-        // it only when colliders are added or removed.
-        std::vector<u_int32_t> uid_to_slot(cc.count());
-        for (u_int32_t i = 0; i < cc.count(); ++i)
-            uid_to_slot[i] = i; // user_id == slot for now (see collider_add)
-
+        // ── A. SAP candidate pairs ─────────────────────────────────────────────
         for (const rbc::BroadPhasePair &pair : bp.pairs)
         {
-            // Recover collider slot from user_id.
-            // user_id was set to ivc::ID.value in collider_add(); since we
-            // use ivc which compacts slots, slot == user_id here.
             const u_int32_t ca = pair.id_a;
             const u_int32_t cb = pair.id_b;
 
@@ -151,44 +123,75 @@ namespace rbps
             const uint32_t ba = cc.body_id[ca];
             const uint32_t bb = cc.body_id[cb];
 
-            // ── STATIC-STATIC FILTER ─────────────────────────────────────────
-            // Two static bodies can never move, so even if their AABBs overlap
-            // they will never penetrate further. Skip narrow phase entirely.
-            // This is free — no GJK/EPA call, no contact emitted.
+            // Static-static: will never penetrate further — skip.
             if (cc.is_static[ca] && cc.is_static[cb])
                 continue;
 
-            // ── SAME-BODY FILTER ──────────────────────────────────────────────
-            // Multiple colliders on the same body (composite shapes) should not
-            // collide with each other.
+            // Same body: composite shapes on one body must not self-collide.
             if (ba == bb)
                 continue;
 
-            // ── COLLISION GROUP FILTER ────────────────────────────────────────
-            // TODO: add a collision_mask / collision_group per collider here
-            // (e.g. robot links that should not self-collide).
-            // if (!groups_should_collide(cc.group[ca], cc.group[cb])) continue;
+            const m3d::tf tf_a = rbps::collider_world_tf(cc, ca, bc.position[ba], bc.orientation[ba]);
+            const m3d::tf tf_b = rbps::collider_world_tf(cc, cb, bc.position[bb], bc.orientation[bb]);
 
-            // Compute world transforms
-            const m3d::tf tf_a = rbps::collider_world_tf(
-                cc, ca, bc.position[ba], bc.orientation[ba]);
-            const m3d::tf tf_b = rbps::collider_world_tf(
-                cc, cb, bc.position[bb], bc.orientation[bb]);
-
-            // ── NARROW PHASE DISPATCH ─────────────────────────────────────────
-            // Routed through the function-pointer table in Dispatcher.hpp.
-            // Analytic algorithms (SphereSphere, SphereBox, BoxBox) are tried
-            // first via template specialisation; GJK/EPA is the fallback.
             rbc::ContactManifold manifold;
-            if (rbc::dispatch(cc.shape[ca], tf_a,
-                              cc.shape[cb], tf_b,
-                              manifold))
-            {
-                emit_contact(out, manifold,
-                             ba, bb,
+            if (rbc::dispatch(cc.shape[ca], tf_a, cc.shape[cb], tf_b, manifold))
+                emit_contact(out, manifold, ba, bb,
                              static_cast<uint32_t>(ca),
-                             static_cast<uint32_t>(cb),
-                             cc, bc);
+                             static_cast<uint32_t>(cb), cc, bc);
+        }
+
+        // ── B. Plane (and future heightmap) loop ──────────────────────────────
+        //
+        //  Planes bypass the SAP entirely (BP_INVALID_HANDLE).  We test every
+        //  plane collider against every non-plane collider.  This is O(P × N)
+        //  where P = number of planes (almost always tiny: 0–4) and N = total
+        //  colliders.  The cost is negligible for any practical scene.
+        //
+        //  Filters applied identically to the SAP path:
+        //    • static-static pairs skipped
+        //    • same-body pairs skipped
+        //    • plane vs plane skipped (always returns false anyway)
+        for (uint32_t pi = 0; pi < cc.count(); ++pi)
+        {
+            // Only process plane colliders in this loop.
+            if (cc.shape[pi].type != rbc::ShapeType::Plane)
+                continue;
+
+            const uint32_t bp_body = cc.body_id[pi];
+            const m3d::tf tf_plane = rbps::collider_world_tf(
+                cc, pi, bc.position[bp_body], bc.orientation[bp_body]);
+
+            for (uint32_t di = 0; di < cc.count(); ++di)
+            {
+                // Don't test the plane against itself or another plane.
+                if (di == pi)
+                    continue;
+                if (cc.shape[di].type == rbc::ShapeType::Plane)
+                    continue;
+
+                const uint32_t d_body = cc.body_id[di];
+
+                // Static-static: nothing moves — skip.
+                if (cc.is_static[pi] && cc.is_static[di])
+                    continue;
+
+                // Composite shapes on the same body must not self-collide.
+                if (bp_body == d_body)
+                    continue;
+
+                const m3d::tf tf_dyn = rbps::collider_world_tf(
+                    cc, di, bc.position[d_body], bc.orientation[d_body]);
+
+                // Dispatch: the plane is always shape B so the normal convention
+                // (A→B, i.e. shape toward plane) is consistent with the SAP path.
+                rbc::ContactManifold manifold;
+                if (rbc::dispatch(cc.shape[di], tf_dyn, cc.shape[pi], tf_plane, manifold))
+                    emit_contact(out, manifold,
+                                 d_body, bp_body,
+                                 static_cast<uint32_t>(di),
+                                 static_cast<uint32_t>(pi),
+                                 cc, bc);
             }
         }
     }
@@ -205,36 +208,15 @@ namespace rbps
                                 const CollisionPipelineConfig &cfg)
     {
         contacts_out.clear();
-        contacts_out.reserve(bp.pairs.size() * 2); // rough pre-alloc
+        contacts_out.reserve(bp.pairs.size() * 2);
 
-        // 1. Push world-space AABBs into the broad phase
         update_broad_phase_aabbs(cc, bp, bc, dt, cfg.use_velocity_expansion);
-
-        // 2. SAP sort + sweep → bp.pairs
         rbc::broad_phase_update(bp);
-
-        // 3. Narrow phase: filter + dispatch → contacts_out
         run_narrow_phase(bp, cc, bc, contacts_out);
     }
 
     // =========================================================================
     //  Graph coloring — independent contact groups for parallel solving
-    // =========================================================================
-    //  Contacts are nodes in a graph; two contacts share an edge when they
-    //  both involve the same DYNAMIC body (solving them together would cause
-    //  a write race on that body's state).
-    //
-    //  KEY INSIGHT — static bodies do NOT create edges:
-    //    The solver never writes back to a static body (inverse_mass == 0,
-    //    no velocity update). Two contacts that share only a static body
-    //    therefore have no actual data dependency and CAN be solved in parallel.
-    //
-    //    Without this rule, a ground plane shared by N independent tower stacks
-    //    would merge all of them into a single sequential group even though no
-    //    two towers interact with each other at all.
-    //
-    //  Returns groups sorted by size (largest first) so the parallel scheduler
-    //  can use work-stealing effectively.
     // =========================================================================
 
     std::vector<std::vector<u_int32_t>>
@@ -246,8 +228,6 @@ namespace rbps
 
         const u_int32_t n = contacts.n_contacts;
 
-        // Build adjacency: dynamic body_id → list of contact indices.
-        // Static bodies are intentionally excluded: they create no edges.
         std::unordered_map<uint32_t, std::vector<u_int32_t>> body_to_contacts;
         body_to_contacts.reserve(n * 2);
 
@@ -261,8 +241,6 @@ namespace rbps
 
         std::vector<u_int32_t> color(n, UINT32_MAX);
 
-        // Sort contacts: highest dynamic-body degree first (better greedy result).
-        // FIX: original code had body_b[b] twice instead of body_a[b] + body_b[b].
         std::vector<u_int32_t> order(n);
         std::iota(order.begin(), order.end(), 0);
         std::sort(order.begin(), order.end(), [&](u_int32_t a, u_int32_t b)
@@ -277,31 +255,26 @@ namespace rbps
             };
             return deg(a) > deg(b); });
 
-        // Greedy coloring — only propagate edges through dynamic bodies.
         for (u_int32_t ci : order)
         {
             std::unordered_set<u_int32_t> used_colors;
-
             for (uint32_t bid : {contacts.body_a[ci], contacts.body_b[ci]})
             {
                 auto it = body_to_contacts.find(bid); // miss = static body, no edge
                 if (it == body_to_contacts.end())
                     continue;
-
                 for (u_int32_t neighbor : it->second)
                 {
                     if (neighbor != ci && color[neighbor] != SIZE_MAX)
                         used_colors.insert(color[neighbor]);
                 }
             }
-
             u_int32_t c = 0;
             while (used_colors.count(c))
                 ++c;
             color[ci] = c;
         }
 
-        // Collect groups by color, sort descending by size.
         std::unordered_map<u_int32_t, std::vector<u_int32_t>> color_groups;
         for (u_int32_t i = 0; i < n; ++i)
             color_groups[color[i]].push_back(i);

@@ -5,7 +5,7 @@ namespace rbps
 {
 
     // -----------------------------------------------------------------------
-    //  Params passed to collider_add()
+    //  Params passed to create_collider()
     // -----------------------------------------------------------------------
     struct ColliderParams
     {
@@ -20,30 +20,45 @@ namespace rbps
     };
 
     // -----------------------------------------------------------------------
-    //  ColliderAPI
+    //  Shape types that cannot enter the SAP broad phase because their AABB
+    //  is infinite (Plane) or must be handled outside the endpoint list.
+    //  These colliders receive BP_INVALID_HANDLE and are tested analytically
+    //  in run_narrow_phase() by iterating them against every dynamic collider.
     // -----------------------------------------------------------------------
-
-    /// Register a collider and insert it into the broad phase.
-    /// Returns a stable uint32_t ID for referencing this collider later (e.g. to remove it).
-    inline u_int32_t create_collider(ColliderCollection &cc,
-                                rbc::BroadPhaseState &bp,
-                                const ColliderParams &p,
-                                const m3d::tf &body_world_tf)
+    inline bool shape_bypasses_broadphase(const rbc::Shape &s)
     {
-        u_int32_t id = cc.add();
+        return s.type == rbc::ShapeType::Plane;
+        // Heightmap will be added here in Phase 2.
+    }
+
+    // -----------------------------------------------------------------------
+    //  Register a collider and (conditionally) insert it into the broad phase.
+    //  Returns a stable uint32_t ID.
+    //
+    //  Planes and other infinite shapes skip broad-phase insertion entirely
+    //  and receive BP_INVALID_HANDLE.  The collision pipeline handles them
+    //  in a dedicated loop inside run_narrow_phase().
+    // -----------------------------------------------------------------------
+    inline uint32_t create_collider(ColliderCollection &cc,
+                                    rbc::BroadPhaseState &bp,
+                                    const ColliderParams &p,
+                                    const m3d::tf &body_world_tf)
+    {
+        uint32_t id = cc.add();
         uint32_t i = cc.index_of(id);
 
-        // Compute the world-space transform for the initial AABB
-        m3d::vec3 world_pos = body_world_tf.pos + m3d::rotate(body_world_tf.rot, p.local_pos);
-        m3d::quat world_rot = body_world_tf.rot * p.local_rot;
-        m3d::tf world_tf{world_pos, world_rot};
+        // Compute world transform and tight AABB for the initial broad-phase entry.
+        const m3d::vec3 world_pos = body_world_tf.pos + m3d::rotate(body_world_tf.rot, p.local_pos);
+        const m3d::quat world_rot = body_world_tf.rot * p.local_rot;
+        const m3d::tf world_tf{world_pos, world_rot};
 
-        rbc::AABB tight = compute_aabb(p.shape, world_tf);
-
-        // Arent this the same?
-        rbc::BPHandle bph = p.is_static
-                           ? rbc::broad_phase_insert(bp, static_cast<uint32_t>(id), tight)
-                           : rbc::broad_phase_insert(bp, static_cast<uint32_t>(id), tight);
+        // Decide whether this shape participates in the SAP.
+        rbc::BPHandle bph = rbc::BP_INVALID_HANDLE;
+        if (!shape_bypasses_broadphase(p.shape))
+        {
+            const rbc::AABB tight = rbc::compute_aabb(p.shape, world_tf);
+            bph = rbc::broad_phase_insert(bp, static_cast<uint32_t>(id), tight);
+        }
 
         cc.shape[i] = p.shape;
         cc.local_pos[i] = p.local_pos;
@@ -58,14 +73,16 @@ namespace rbps
         return id;
     }
 
-
-    /// Remove a collider and unregister it from the broad phase.
+    // -----------------------------------------------------------------------
+    //  Remove a collider and (if it was in the broad phase) unregister it.
+    // -----------------------------------------------------------------------
     inline void collider_remove(ColliderCollection &cc,
                                 rbc::BroadPhaseState &bp,
-                                u_int32_t id)
+                                uint32_t id)
     {
-        size_t idx =  cc.index_of(id);
-        rbc::broad_phase_remove(bp, cc.bp_handle[idx]);
+        const size_t idx = cc.index_of(id);
+        if (cc.bp_handle[idx] != rbc::BP_INVALID_HANDLE) // Avoid out of index for planes and other non-BP shapes
+            rbc::broad_phase_remove(bp, cc.bp_handle[idx]);
         cc.remove(id);
     }
 

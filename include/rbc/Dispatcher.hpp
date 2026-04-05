@@ -58,7 +58,7 @@ namespace rbc
 #include "rbc/analytic/SphereCapsule.hpp"
 #include "rbc/analytic/CapsuleCapsule.hpp"
 #include "rbc/analytic/CapsuleBox.hpp"
-//#include "rbc/analytic/PlaneCollision.hpp"
+#include "rbc/analytic/PlaneCollision.hpp"
 // #include "rbc/analytic/MeshCollision.hpp"
 //#include "rbc/analytic/HeightmapCollision.hpp"
 

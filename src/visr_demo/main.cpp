@@ -161,17 +161,20 @@ static void build_ground(rbps::World &w)
     rbps::BodyParams gp{};
     gp.type = rbps::BodyType::STATIC;
     gp.position = m3d::vec3{0.0, -0.5, 0.0};
-    const m3d::scalar tilt_deg = 0.0;
+    const m3d::scalar tilt_deg = 10.4;
     const m3d::scalar tilt_rad = tilt_deg * M_PI / 180.0;
     gp.orientation = m3d::quat::from_axis_angle({0, 1, 1}, tilt_rad); // rotate box to lie flat
     gp.mass = 0.0;
+
     const uint32_t ground = w.create_body(gp);
 
     rbps::ColliderParams cp{};
     cp.body_id = ground;
     cp.local_pos = m3d::vec3{0, 0, 0};
     cp.local_rot = m3d::quat{1, 0, 0, 0};
-    cp.shape = rbc::Shape(rbc::Box{{100.0, 0.5, 100.0}});
+    // rbc::Shape::Plane();
+    cp.shape = rbc::Shape(rbc::Plane({0.0, 1.0, 0.0}, 0.0)); // rbc::Shape(rbc::Box{{100.0, 0.5, 100.0}});
+
     cp.restitution = 0.3;
     cp.static_friction = 0.4;
     cp.dynamic_friction = 0.3;
@@ -199,7 +202,6 @@ static void build_ground(rbps::World &w)
     ball_cp.static_friction = 0.6;
     ball_cp.dynamic_friction = 0.4;
     w.create_collider(ball_cp);
-
 
     rbc::Capsule capsule{0.5, 0.25};
     rbps::BodyParams capsule_body_p{};

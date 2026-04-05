@@ -125,6 +125,11 @@ namespace visr::draw
     //  Shape wireframes
     // =========================================================================
 
+    // =========================================================================
+    //  Shape wireframes  (drop-in replacement for the draw_shape() function
+    //  in include/visr/ui/RaylibDraw.hpp)
+    // =========================================================================
+
     static inline void draw_shape(const ColliderSnap &c, Color col)
     {
         const Vector3 pos = to_rl(c.world_pos);
@@ -133,6 +138,7 @@ namespace visr::draw
         {
             using T = std::decay_t<decltype(shape)>;
 
+            // ── Sphere ───────────────────────────────────────────────────────
             if constexpr (std::is_same_v<T, SpherSnap>)
             {
                 Vector3 axis; float deg;
@@ -142,8 +148,8 @@ namespace visr::draw
                 rlRotatef(deg, axis.x, axis.y, axis.z);
                 DrawSphereWires({0.0, 0.0, 0.0}, (float)shape.radius, 10, 10, col);
                 rlPopMatrix();
-            
             }
+            // ── Box ──────────────────────────────────────────────────────────
             else if constexpr (std::is_same_v<T, BoxSnap>)
             {
                 Vector3 axis; float deg;
@@ -154,15 +160,14 @@ namespace visr::draw
                 DrawCubeWires({0, 0, 0},
                               (float)shape.half_extents.x * 2.0f,
                               (float)shape.half_extents.y * 2.0f,
-                              (float)shape.half_extents.z * 2.0f,
-                              col);
+                              (float)shape.half_extents.z * 2.0f, col);
                 rlPopMatrix();
             }
+            // ── Capsule ──────────────────────────────────────────────────────
             else if constexpr (std::is_same_v<T, CapsuleSnap>)
             {
                 const float r  = (float)shape.radius;
                 const float hh = (float)shape.half_height;
-                // Draw in local space so it respects world_rot
                 Vector3 axis; float deg;
                 quat_to_axis_angle(c.world_rot, axis, deg);
                 rlPushMatrix();
@@ -173,22 +178,61 @@ namespace visr::draw
                 DrawSphereWires({0, -hh, 0}, r, 6, 6, col);
                 rlPopMatrix();
             }
+            // ── Plane ────────────────────────────────────────────────────────
+            // Draw an oriented grid in the plane's tangent space, plus a
+            // normal arrow.  The grid is centered at the plane's world origin
+            // (c.world_pos), shifted by shape.distance along the normal.
             else if constexpr (std::is_same_v<T, PlaneSnap>)
             {
-                // Draw an oriented grid for the plane
-                Vector3 axis; float deg;
-                quat_to_axis_angle(c.world_rot, axis, deg);
-                rlPushMatrix();
-                rlTranslatef(pos.x, pos.y, pos.z);
-                rlRotatef(deg, axis.x, axis.y, axis.z);
-                DrawGrid(20, 1.0f);
-                rlPopMatrix();
+                // World-space normal: rotate local normal by the body's orientation.
+                const m3d::vec3 raw_n = m3d::rotate(c.world_rot, shape.normal);
+
+                // Build an orthonormal tangent frame in the plane.
+                // Choose the axis least aligned with raw_n to avoid degeneracy.
+                m3d::vec3 tangent;
+                if (std::fabs(raw_n.y) < 0.9)
+                    tangent = m3d::normalize(m3d::cross(raw_n, m3d::vec3(0, 1, 0)));
+                else
+                    tangent = m3d::normalize(m3d::cross(raw_n, m3d::vec3(1, 0, 0)));
+                const m3d::vec3 bitangent = m3d::cross(raw_n, tangent);
+
+                // Plane origin: body position shifted by the plane's d offset.
+                // shape.distance stores the local-space d value; the body
+                // rotation is already applied via raw_n, so we shift along it.
+                const m3d::vec3 origin = c.world_pos + raw_n * (double)shape.distance;
+
+                // Draw a 20×80 grid of lines (1-unit spacing).
+                constexpr int   HALF  = 50;
+                constexpr float STEP  = 1.0f;
+                constexpr float EXT   = HALF * STEP;
+
+                for (int k = -HALF; k <= HALF; ++k)
+                {
+                    const double t = k * STEP;
+
+                    // Lines along the tangent direction
+                    const m3d::vec3 a1 = origin + tangent * t + bitangent * (double)(-EXT);
+                    const m3d::vec3 b1 = origin + tangent * t + bitangent * (double)( EXT);
+                    DrawLine3D(to_rl(a1), to_rl(b1), col);
+
+                    // Lines along the bitangent direction
+                    const m3d::vec3 a2 = origin + bitangent * t + tangent * (double)(-EXT);
+                    const m3d::vec3 b2 = origin + bitangent * t + tangent * (double)( EXT);
+                    DrawLine3D(to_rl(a2), to_rl(b2), col);
+                }
+
+                // Normal arrow so the plane orientation is immediately visible.
+                const m3d::vec3 tip = origin + raw_n * 0.75;
+                DrawLine3D(to_rl(origin), to_rl(tip), PURPLE);
+                DrawSphere(to_rl(tip), 0.05f, PURPLE);
             }
+            // ── Cone ─────────────────────────────────────────────────────────
             else if constexpr (std::is_same_v<T, ConeSnap>)
             {
                 DrawCylinderWires(pos, 0.0f, (float)shape.radius,
                                   (float)shape.height, 10, col);
             }
+            // ── Ellipsoid ────────────────────────────────────────────────────
             else if constexpr (std::is_same_v<T, EllipsoidSnap>)
             {
                 rlPushMatrix();
@@ -199,12 +243,14 @@ namespace visr::draw
                 DrawSphereWires({0, 0, 0}, 1.0f, 10, 10, col);
                 rlPopMatrix();
             }
+            // ── Heightmap ────────────────────────────────────────────────────
             else if constexpr (std::is_same_v<T, HeightmapSnap>)
             {
                 const float w = shape.cols * (float)shape.cell_size;
                 const float d = shape.rows * (float)shape.cell_size;
                 DrawCubeWires(pos, w, 0.1f, d, col);
             }
+            // ── Mesh ─────────────────────────────────────────────────────────
             else if constexpr (std::is_same_v<T, MeshSnap>)
             {
                 DrawSphereWires(pos, 0.2f, 4, 4, col);
