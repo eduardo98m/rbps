@@ -161,7 +161,7 @@ static void build_ground(rbps::World &w)
     rbps::BodyParams gp{};
     gp.type = rbps::BodyType::STATIC;
     gp.position = m3d::vec3{0.0, -0.5, 0.0};
-    const m3d::scalar tilt_deg = 10.4;
+    const m3d::scalar tilt_deg = 0.0;
     const m3d::scalar tilt_rad = tilt_deg * M_PI / 180.0;
     gp.orientation = m3d::quat::from_axis_angle({0, 1, 1}, tilt_rad); // rotate box to lie flat
     gp.mass = 0.0;
