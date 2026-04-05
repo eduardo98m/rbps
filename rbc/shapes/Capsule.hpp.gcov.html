@@ -32,16 +32,16 @@
             <td></td>
             <td class="headerItem">Lines:</td>
             <td class="headerCovTableEntryLo">0.0&nbsp;%</td>
-            <td class="headerCovTableEntry">14</td>
+            <td class="headerCovTableEntry">19</td>
             <td class="headerCovTableEntry">0</td>
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-03-30 03:13:12</td>
+            <td class="headerValue">2026-04-05 10:28:31</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryLo">0.0&nbsp;%</td>
-            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">3</td>
             <td class="headerCovTableEntry">0</td>
           </tr>
                   <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
@@ -87,18 +87,18 @@
 <span id="L25"><span class="lineNum">      25</span>              :     };</span>
 <span id="L26"><span class="lineNum">      26</span>              : </span>
 <span id="L27"><span class="lineNum">      27</span>              :     // ── World-space endpoints (convenience, used by collision algorithms) ─────</span>
-<span id="L28"><span class="lineNum">      28</span>              :     inline void capsule_endpoints(const Capsule &amp;c, const m3d::tf &amp;tf,</span>
+<span id="L28"><span class="lineNum">      28</span> <span class="tlaUNC tlaBgUNC">           0 :     inline void capsule_endpoints(const Capsule &amp;c, const m3d::tf &amp;tf,</span></span>
 <span id="L29"><span class="lineNum">      29</span>              :                                   m3d::vec3 &amp;p1_out, m3d::vec3 &amp;p2_out)</span>
 <span id="L30"><span class="lineNum">      30</span>              :     {</span>
-<span id="L31"><span class="lineNum">      31</span>              :         const m3d::vec3 axis = tf.rotate_vector(m3d::vec3(0, c.half_height, 0));</span>
-<span id="L32"><span class="lineNum">      32</span>              :         p1_out = tf.pos + axis;</span>
-<span id="L33"><span class="lineNum">      33</span>              :         p2_out = tf.pos - axis;</span>
-<span id="L34"><span class="lineNum">      34</span>              :     }</span>
+<span id="L31"><span class="lineNum">      31</span> <span class="tlaUNC">           0 :         const m3d::vec3 axis = tf.rotate_vector(m3d::vec3(0, c.half_height, 0));</span></span>
+<span id="L32"><span class="lineNum">      32</span> <span class="tlaUNC">           0 :         p1_out = tf.pos + axis;</span></span>
+<span id="L33"><span class="lineNum">      33</span> <span class="tlaUNC">           0 :         p2_out = tf.pos - axis;</span></span>
+<span id="L34"><span class="lineNum">      34</span> <span class="tlaUNC">           0 :     }</span></span>
 <span id="L35"><span class="lineNum">      35</span>              : </span>
 <span id="L36"><span class="lineNum">      36</span>              :     // ── Support function (local space, axis = local Y) ────────────────────────</span>
 <span id="L37"><span class="lineNum">      37</span>              :     // Capsule = Minkowski sum of segment [(0,-h,0),(0,+h,0)] and sphere of radius r.</span>
 <span id="L38"><span class="lineNum">      38</span>              :     // Support = endpoint in dir.y sign direction, then nudge by r·normalize(dir).</span>
-<span id="L39"><span class="lineNum">      39</span> <span class="tlaUNC tlaBgUNC">           0 :     inline m3d::vec3 support(const Capsule &amp;c, const m3d::vec3 &amp;dir)</span></span>
+<span id="L39"><span class="lineNum">      39</span> <span class="tlaUNC">           0 :     inline m3d::vec3 support(const Capsule &amp;c, const m3d::vec3 &amp;dir)</span></span>
 <span id="L40"><span class="lineNum">      40</span>              :     {</span>
 <span id="L41"><span class="lineNum">      41</span>              :         const m3d::vec3 endpoint(0.0,</span>
 <span id="L42"><span class="lineNum">      42</span> <span class="tlaUNC">           0 :                                   (dir.y &gt;= 0.0 ? c.half_height : -c.half_height),</span></span>

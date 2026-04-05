@@ -31,13 +31,13 @@
             <td class="headerValue">coverage_clean.info</td>
             <td></td>
             <td class="headerItem">Lines:</td>
-            <td class="headerCovTableEntryHi">97.2&nbsp;%</td>
-            <td class="headerCovTableEntry">145</td>
-            <td class="headerCovTableEntry">141</td>
+            <td class="headerCovTableEntryHi">97.3&nbsp;%</td>
+            <td class="headerCovTableEntry">150</td>
+            <td class="headerCovTableEntry">146</td>
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-03-30 03:13:12</td>
+            <td class="headerValue">2026-04-05 10:28:31</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -251,7 +251,7 @@
 <span id="L189"><span class="lineNum">     189</span> <span class="tlaGNC">           4 :         const uint32_t b1 = jc.body_1[i];</span></span>
 <span id="L190"><span class="lineNum">     190</span> <span class="tlaGNC">           4 :         const uint32_t b2 = jc.body_2[i];</span></span>
 <span id="L191"><span class="lineNum">     191</span> <span class="tlaGNC">           4 :         vec3 delta_v = (bc.linear_velocity[b2] - bc.linear_velocity[b1]) * std::min(jc.damping[i] * time_step, 1.0);</span></span>
-<span id="L192"><span class="lineNum">     192</span> <span class="tlaGNC">           4 :         if (m3d::magnitude(delta_v) &lt; EPSILON)</span></span>
+<span id="L192"><span class="lineNum">     192</span> <span class="tlaGNC">           4 :         if (m3d::length_sq(delta_v) &lt; EPSILON)</span></span>
 <span id="L193"><span class="lineNum">     193</span> <span class="tlaGNC">           1 :             return;</span></span>
 <span id="L194"><span class="lineNum">     194</span> <span class="tlaGNC">           3 :         vec3 r_1_wc = m3d::rotate(bc.orientation[b1], jc.r_1[i]);</span></span>
 <span id="L195"><span class="lineNum">     195</span> <span class="tlaGNC">           3 :         vec3 r_2_wc = m3d::rotate(bc.orientation[b2], jc.r_2[i]);</span></span>
@@ -263,65 +263,71 @@
 <span id="L201"><span class="lineNum">     201</span> <span class="tlaGNC">           3 :         apply_positional_velocity_constraint_impulse(bc, b2, -impulse, r_2_wc);</span></span>
 <span id="L202"><span class="lineNum">     202</span>              :     }</span>
 <span id="L203"><span class="lineNum">     203</span>              : </span>
-<span id="L204"><span class="lineNum">     204</span> <span class="tlaGNC">           5 :     void apply_revolute_joint_damping(JointCollection &amp;jc,</span></span>
+<span id="L204"><span class="lineNum">     204</span> <span class="tlaGNC">           3 :     void apply_revolute_joint_damping(JointCollection &amp;jc,</span></span>
 <span id="L205"><span class="lineNum">     205</span>              :                                       uint32_t i,</span>
 <span id="L206"><span class="lineNum">     206</span>              :                                       BodyCollection &amp;bc,</span>
 <span id="L207"><span class="lineNum">     207</span>              :                                       scalar time_step)</span>
 <span id="L208"><span class="lineNum">     208</span>              :     {</span>
-<span id="L209"><span class="lineNum">     209</span> <span class="tlaGNC">           5 :         const uint32_t b1 = jc.body_1[i];</span></span>
-<span id="L210"><span class="lineNum">     210</span> <span class="tlaGNC">           5 :         const uint32_t b2 = jc.body_2[i];</span></span>
-<span id="L211"><span class="lineNum">     211</span> <span class="tlaGNC">           5 :         vec3 delta_omega = (bc.angular_velocity[b2] - bc.angular_velocity[b1]) * std::min(jc.damping[i] * time_step, 1.0);</span></span>
-<span id="L212"><span class="lineNum">     212</span> <span class="tlaGNC">           5 :         bc.angular_velocity[b1] += delta_omega;</span></span>
-<span id="L213"><span class="lineNum">     213</span> <span class="tlaGNC">           5 :         bc.angular_velocity[b2] -= delta_omega;</span></span>
-<span id="L214"><span class="lineNum">     214</span> <span class="tlaGNC">           5 :     };</span></span>
-<span id="L215"><span class="lineNum">     215</span>              : </span>
-<span id="L216"><span class="lineNum">     216</span> <span class="tlaGNC">       13441 :     void compute_joint_errors(JointCollection &amp;jc,</span></span>
-<span id="L217"><span class="lineNum">     217</span>              :                               BodyCollection &amp;bc,</span>
-<span id="L218"><span class="lineNum">     218</span>              :                               ConstraintCollection &amp;cc,</span>
-<span id="L219"><span class="lineNum">     219</span>              :                               scalar time_step)</span>
-<span id="L220"><span class="lineNum">     220</span>              :     {</span>
-<span id="L221"><span class="lineNum">     221</span> <span class="tlaGNC">       13444 :         for (uint32_t i = 0; i &lt; jc.count(); ++i)</span></span>
-<span id="L222"><span class="lineNum">     222</span>              :         {</span>
-<span id="L223"><span class="lineNum">     223</span> <span class="tlaGNC">           3 :             switch (jc.type[i])</span></span>
-<span id="L224"><span class="lineNum">     224</span>              :             {</span>
-<span id="L225"><span class="lineNum">     225</span> <span class="tlaGNC">           1 :             case PRISMATIC:</span></span>
-<span id="L226"><span class="lineNum">     226</span> <span class="tlaGNC">           1 :                 compute_prismatic_joint_errors(jc, i, bc, cc, time_step);</span></span>
-<span id="L227"><span class="lineNum">     227</span> <span class="tlaGNC">           1 :                 break;</span></span>
-<span id="L228"><span class="lineNum">     228</span> <span class="tlaGNC">           1 :             case REVOLUTE:</span></span>
-<span id="L229"><span class="lineNum">     229</span> <span class="tlaGNC">           1 :                 compute_revolute_joint_errors(jc, i, bc, cc, time_step);</span></span>
-<span id="L230"><span class="lineNum">     230</span> <span class="tlaGNC">           1 :                 break;</span></span>
-<span id="L231"><span class="lineNum">     231</span> <span class="tlaGNC">           1 :             case FIXED:</span></span>
-<span id="L232"><span class="lineNum">     232</span> <span class="tlaGNC">           1 :                 compute_fixed_joint_errors(jc, i, bc, cc, time_step);</span></span>
+<span id="L209"><span class="lineNum">     209</span> <span class="tlaGNC">           3 :         const uint32_t b1 = jc.body_1[i];</span></span>
+<span id="L210"><span class="lineNum">     210</span> <span class="tlaGNC">           3 :         const uint32_t b2 = jc.body_2[i];</span></span>
+<span id="L211"><span class="lineNum">     211</span> <span class="tlaGNC">           3 :         vec3 delta_omega = (bc.angular_velocity[b2] - bc.angular_velocity[b1]) * std::min(jc.damping[i] * time_step, 1.0);</span></span>
+<span id="L212"><span class="lineNum">     212</span> <span class="tlaGNC">           3 :         if (m3d::length_sq(delta_omega) &lt; EPSILON)</span></span>
+<span id="L213"><span class="lineNum">     213</span> <span class="tlaGNC">           1 :             return;</span></span>
+<span id="L214"><span class="lineNum">     214</span> <span class="tlaGNC">           2 :         vec3 n = m3d::normalize(delta_omega);</span></span>
+<span id="L215"><span class="lineNum">     215</span> <span class="tlaGNC">           2 :         scalar w_1 = get_rotational_generalized_inverse_mass(bc, b1, n);</span></span>
+<span id="L216"><span class="lineNum">     216</span> <span class="tlaGNC">           2 :         scalar w_2 = get_rotational_generalized_inverse_mass(bc, b2, n);</span></span>
+<span id="L217"><span class="lineNum">     217</span> <span class="tlaGNC">           2 :         vec3 impulse = delta_omega / (w_1 + w_2);</span></span>
+<span id="L218"><span class="lineNum">     218</span> <span class="tlaGNC">           2 :         apply_rotational_velocity_constraint_impulse(bc, b1, impulse);</span></span>
+<span id="L219"><span class="lineNum">     219</span> <span class="tlaGNC">           2 :         apply_rotational_velocity_constraint_impulse(bc, b2, -impulse);</span></span>
+<span id="L220"><span class="lineNum">     220</span>              :     };</span>
+<span id="L221"><span class="lineNum">     221</span>              : </span>
+<span id="L222"><span class="lineNum">     222</span> <span class="tlaGNC">       13441 :     void compute_joint_errors(JointCollection &amp;jc,</span></span>
+<span id="L223"><span class="lineNum">     223</span>              :                               BodyCollection &amp;bc,</span>
+<span id="L224"><span class="lineNum">     224</span>              :                               ConstraintCollection &amp;cc,</span>
+<span id="L225"><span class="lineNum">     225</span>              :                               scalar time_step)</span>
+<span id="L226"><span class="lineNum">     226</span>              :     {</span>
+<span id="L227"><span class="lineNum">     227</span> <span class="tlaGNC">       13444 :         for (uint32_t i = 0; i &lt; jc.count(); ++i)</span></span>
+<span id="L228"><span class="lineNum">     228</span>              :         {</span>
+<span id="L229"><span class="lineNum">     229</span> <span class="tlaGNC">           3 :             switch (jc.type[i])</span></span>
+<span id="L230"><span class="lineNum">     230</span>              :             {</span>
+<span id="L231"><span class="lineNum">     231</span> <span class="tlaGNC">           1 :             case PRISMATIC:</span></span>
+<span id="L232"><span class="lineNum">     232</span> <span class="tlaGNC">           1 :                 compute_prismatic_joint_errors(jc, i, bc, cc, time_step);</span></span>
 <span id="L233"><span class="lineNum">     233</span> <span class="tlaGNC">           1 :                 break;</span></span>
-<span id="L234"><span class="lineNum">     234</span> <span class="tlaUNC tlaBgUNC">           0 :             default:</span></span>
-<span id="L235"><span class="lineNum">     235</span> <span class="tlaUNC">           0 :                 break;</span></span>
-<span id="L236"><span class="lineNum">     236</span>              :             }</span>
-<span id="L237"><span class="lineNum">     237</span>              :         }</span>
-<span id="L238"><span class="lineNum">     238</span> <span class="tlaGNC tlaBgGNC">       13441 :     }</span></span>
-<span id="L239"><span class="lineNum">     239</span>              : </span>
-<span id="L240"><span class="lineNum">     240</span>              :     /**</span>
-<span id="L241"><span class="lineNum">     241</span>              :      * @brief Applies joint damping</span>
-<span id="L242"><span class="lineNum">     242</span>              :      */</span>
-<span id="L243"><span class="lineNum">     243</span> <span class="tlaGNC">       13441 :     void apply_joint_damping(JointCollection &amp;jc,</span></span>
-<span id="L244"><span class="lineNum">     244</span>              :                              BodyCollection &amp;bc,</span>
-<span id="L245"><span class="lineNum">     245</span>              :                              scalar time_step)</span>
-<span id="L246"><span class="lineNum">     246</span>              :     {</span>
-<span id="L247"><span class="lineNum">     247</span> <span class="tlaGNC">       13443 :         for (uint32_t i = 0; i &lt; jc.count(); ++i)</span></span>
-<span id="L248"><span class="lineNum">     248</span>              :         {</span>
-<span id="L249"><span class="lineNum">     249</span> <span class="tlaGNC">           2 :             switch (jc.type[i])</span></span>
-<span id="L250"><span class="lineNum">     250</span>              :             {</span>
-<span id="L251"><span class="lineNum">     251</span> <span class="tlaGNC">           1 :             case PRISMATIC:</span></span>
-<span id="L252"><span class="lineNum">     252</span> <span class="tlaGNC">           1 :                 apply_prismatic_joint_damping(jc, i, bc, time_step);</span></span>
-<span id="L253"><span class="lineNum">     253</span> <span class="tlaGNC">           1 :                 break;</span></span>
-<span id="L254"><span class="lineNum">     254</span> <span class="tlaGNC">           1 :             case REVOLUTE:</span></span>
-<span id="L255"><span class="lineNum">     255</span> <span class="tlaGNC">           1 :                 apply_revolute_joint_damping(jc, i, bc, time_step);</span></span>
-<span id="L256"><span class="lineNum">     256</span> <span class="tlaGNC">           1 :                 break;</span></span>
-<span id="L257"><span class="lineNum">     257</span> <span class="tlaUNC tlaBgUNC">           0 :             default:</span></span>
-<span id="L258"><span class="lineNum">     258</span> <span class="tlaUNC">           0 :                 break;</span></span>
-<span id="L259"><span class="lineNum">     259</span>              :             }</span>
-<span id="L260"><span class="lineNum">     260</span>              :         }</span>
-<span id="L261"><span class="lineNum">     261</span> <span class="tlaGNC tlaBgGNC">       13441 :     }</span></span>
-<span id="L262"><span class="lineNum">     262</span>              : }</span>
+<span id="L234"><span class="lineNum">     234</span> <span class="tlaGNC">           1 :             case REVOLUTE:</span></span>
+<span id="L235"><span class="lineNum">     235</span> <span class="tlaGNC">           1 :                 compute_revolute_joint_errors(jc, i, bc, cc, time_step);</span></span>
+<span id="L236"><span class="lineNum">     236</span> <span class="tlaGNC">           1 :                 break;</span></span>
+<span id="L237"><span class="lineNum">     237</span> <span class="tlaGNC">           1 :             case FIXED:</span></span>
+<span id="L238"><span class="lineNum">     238</span> <span class="tlaGNC">           1 :                 compute_fixed_joint_errors(jc, i, bc, cc, time_step);</span></span>
+<span id="L239"><span class="lineNum">     239</span> <span class="tlaGNC">           1 :                 break;</span></span>
+<span id="L240"><span class="lineNum">     240</span> <span class="tlaUNC tlaBgUNC">           0 :             default:</span></span>
+<span id="L241"><span class="lineNum">     241</span> <span class="tlaUNC">           0 :                 break;</span></span>
+<span id="L242"><span class="lineNum">     242</span>              :             }</span>
+<span id="L243"><span class="lineNum">     243</span>              :         }</span>
+<span id="L244"><span class="lineNum">     244</span> <span class="tlaGNC tlaBgGNC">       13441 :     }</span></span>
+<span id="L245"><span class="lineNum">     245</span>              : </span>
+<span id="L246"><span class="lineNum">     246</span>              :     /**</span>
+<span id="L247"><span class="lineNum">     247</span>              :      * @brief Applies joint damping</span>
+<span id="L248"><span class="lineNum">     248</span>              :      */</span>
+<span id="L249"><span class="lineNum">     249</span> <span class="tlaGNC">       13441 :     void apply_joint_damping(JointCollection &amp;jc,</span></span>
+<span id="L250"><span class="lineNum">     250</span>              :                              BodyCollection &amp;bc,</span>
+<span id="L251"><span class="lineNum">     251</span>              :                              scalar time_step)</span>
+<span id="L252"><span class="lineNum">     252</span>              :     {</span>
+<span id="L253"><span class="lineNum">     253</span> <span class="tlaGNC">       13443 :         for (uint32_t i = 0; i &lt; jc.count(); ++i)</span></span>
+<span id="L254"><span class="lineNum">     254</span>              :         {</span>
+<span id="L255"><span class="lineNum">     255</span> <span class="tlaGNC">           2 :             switch (jc.type[i])</span></span>
+<span id="L256"><span class="lineNum">     256</span>              :             {</span>
+<span id="L257"><span class="lineNum">     257</span> <span class="tlaGNC">           1 :             case PRISMATIC:</span></span>
+<span id="L258"><span class="lineNum">     258</span> <span class="tlaGNC">           1 :                 apply_prismatic_joint_damping(jc, i, bc, time_step);</span></span>
+<span id="L259"><span class="lineNum">     259</span> <span class="tlaGNC">           1 :                 break;</span></span>
+<span id="L260"><span class="lineNum">     260</span> <span class="tlaGNC">           1 :             case REVOLUTE:</span></span>
+<span id="L261"><span class="lineNum">     261</span> <span class="tlaGNC">           1 :                 apply_revolute_joint_damping(jc, i, bc, time_step);</span></span>
+<span id="L262"><span class="lineNum">     262</span> <span class="tlaGNC">           1 :                 break;</span></span>
+<span id="L263"><span class="lineNum">     263</span> <span class="tlaUNC tlaBgUNC">           0 :             default:</span></span>
+<span id="L264"><span class="lineNum">     264</span> <span class="tlaUNC">           0 :                 break;</span></span>
+<span id="L265"><span class="lineNum">     265</span>              :             }</span>
+<span id="L266"><span class="lineNum">     266</span>              :         }</span>
+<span id="L267"><span class="lineNum">     267</span> <span class="tlaGNC tlaBgGNC">       13441 :     }</span></span>
+<span id="L268"><span class="lineNum">     268</span>              : }</span>
         </pre>
               </td>
             </tr>

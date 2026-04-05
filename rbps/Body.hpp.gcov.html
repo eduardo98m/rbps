@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-03-30 03:13:12</td>
+            <td class="headerValue">2026-04-05 10:28:31</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -126,7 +126,7 @@
 <span id="L64"><span class="lineNum">      64</span>              :      * @brief SoA collection for rigid bodies.  All body data is stored in</span>
 <span id="L65"><span class="lineNum">      65</span>              :      * separate vectors, indexed by a packed data index.</span>
 <span id="L66"><span class="lineNum">      66</span>              :      */</span>
-<span id="L67"><span class="lineNum">      67</span> <span class="tlaGNC tlaBgGNC">         390 :     DEFINE_DYN_SOA(BodyCollection, uint32_t, /*GenerationBits=*/8, BODY_FIELDS)</span></span>
+<span id="L67"><span class="lineNum">      67</span> <span class="tlaGNC tlaBgGNC">         384 :     DEFINE_DYN_SOA(BodyCollection, uint32_t, /*GenerationBits=*/8, BODY_FIELDS)</span></span>
 <span id="L68"><span class="lineNum">      68</span>              : </span>
 <span id="L69"><span class="lineNum">      69</span>              :     // ─────────────────────────────────────────────────────────────────────────────</span>
 <span id="L70"><span class="lineNum">      70</span>              :     //  Free functions — implementations in Body.cpp</span>
@@ -206,34 +206,48 @@
 <span id="L144"><span class="lineNum">     144</span>              :      */</span>
 <span id="L145"><span class="lineNum">     145</span>              :     void apply_positional_velocity_constraint_impulse(BodyCollection &amp;bc, uint32_t i, vec3 impulse, vec3 r);</span>
 <span id="L146"><span class="lineNum">     146</span>              : </span>
-<span id="L147"><span class="lineNum">     147</span>              :     /**</span>
-<span id="L148"><span class="lineNum">     148</span>              :      * @brief Compute the generalised inverse mass for a positional constraint.</span>
-<span id="L149"><span class="lineNum">     149</span>              :      *</span>
-<span id="L150"><span class="lineNum">     150</span>              :      * Returns  w = 1/m + (r×n)ᵀ I⁻¹ (r×n).</span>
-<span id="L151"><span class="lineNum">     151</span>              :      * Returns 0 for STATIC bodies.</span>
-<span id="L152"><span class="lineNum">     152</span>              :      *</span>
-<span id="L153"><span class="lineNum">     153</span>              :      * @param bc  The BodyCollection.</span>
-<span id="L154"><span class="lineNum">     154</span>              :      * @param i   Packed data index.</span>
-<span id="L155"><span class="lineNum">     155</span>              :      * @param r   Vector from centre of mass to contact point.</span>
-<span id="L156"><span class="lineNum">     156</span>              :      * @param n   Constraint direction (unit normal).</span>
-<span id="L157"><span class="lineNum">     157</span>              :      * @return    Generalised inverse mass scalar.</span>
+<span id="L147"><span class="lineNum">     147</span>              : </span>
+<span id="L148"><span class="lineNum">     148</span>              :     /**</span>
+<span id="L149"><span class="lineNum">     149</span>              :      * @brief Apply a velocity-level rotational impulse at to body i.</span>
+<span id="L150"><span class="lineNum">     150</span>              :      *</span>
+<span id="L151"><span class="lineNum">     151</span>              :      * Adjusts  angular_velocity. Used during velocity-level</span>
+<span id="L152"><span class="lineNum">     152</span>              :      * joint damping solver.</span>
+<span id="L153"><span class="lineNum">     153</span>              :      * No-op if the body is STATIC.</span>
+<span id="L154"><span class="lineNum">     154</span>              :      *</span>
+<span id="L155"><span class="lineNum">     155</span>              :      * @param bc      The BodyCollection.</span>
+<span id="L156"><span class="lineNum">     156</span>              :      * @param i       Packed data index.</span>
+<span id="L157"><span class="lineNum">     157</span>              :      * @param impulse Impulse vector in world space.</span>
 <span id="L158"><span class="lineNum">     158</span>              :      */</span>
-<span id="L159"><span class="lineNum">     159</span>              :     scalar get_positional_generalized_inverse_mass(BodyCollection &amp;bc, uint32_t i, vec3 r, vec3 n);</span>
+<span id="L159"><span class="lineNum">     159</span>              :     void apply_rotational_velocity_constraint_impulse(BodyCollection &amp;bc, uint32_t i, vec3 impulse);</span>
 <span id="L160"><span class="lineNum">     160</span>              : </span>
 <span id="L161"><span class="lineNum">     161</span>              :     /**</span>
-<span id="L162"><span class="lineNum">     162</span>              :      * @brief Compute the generalised inverse mass for a rotational constraint.</span>
+<span id="L162"><span class="lineNum">     162</span>              :      * @brief Compute the generalised inverse mass for a positional constraint.</span>
 <span id="L163"><span class="lineNum">     163</span>              :      *</span>
-<span id="L164"><span class="lineNum">     164</span>              :      * Returns  w = nᵀ I⁻¹ n.</span>
+<span id="L164"><span class="lineNum">     164</span>              :      * Returns  w = 1/m + (r×n)ᵀ I⁻¹ (r×n).</span>
 <span id="L165"><span class="lineNum">     165</span>              :      * Returns 0 for STATIC bodies.</span>
 <span id="L166"><span class="lineNum">     166</span>              :      *</span>
 <span id="L167"><span class="lineNum">     167</span>              :      * @param bc  The BodyCollection.</span>
 <span id="L168"><span class="lineNum">     168</span>              :      * @param i   Packed data index.</span>
-<span id="L169"><span class="lineNum">     169</span>              :      * @param n   Rotation axis (unit direction).</span>
-<span id="L170"><span class="lineNum">     170</span>              :      * @return    Generalised inverse mass scalar.</span>
-<span id="L171"><span class="lineNum">     171</span>              :      */</span>
-<span id="L172"><span class="lineNum">     172</span>              :     scalar get_rotational_generalized_inverse_mass(BodyCollection &amp;bc, uint32_t i, vec3 n);</span>
-<span id="L173"><span class="lineNum">     173</span>              : </span>
-<span id="L174"><span class="lineNum">     174</span>              : } // namespace rbps</span>
+<span id="L169"><span class="lineNum">     169</span>              :      * @param r   Vector from centre of mass to contact point.</span>
+<span id="L170"><span class="lineNum">     170</span>              :      * @param n   Constraint direction (unit normal).</span>
+<span id="L171"><span class="lineNum">     171</span>              :      * @return    Generalised inverse mass scalar.</span>
+<span id="L172"><span class="lineNum">     172</span>              :      */</span>
+<span id="L173"><span class="lineNum">     173</span>              :     scalar get_positional_generalized_inverse_mass(BodyCollection &amp;bc, uint32_t i, vec3 r, vec3 n);</span>
+<span id="L174"><span class="lineNum">     174</span>              : </span>
+<span id="L175"><span class="lineNum">     175</span>              :     /**</span>
+<span id="L176"><span class="lineNum">     176</span>              :      * @brief Compute the generalised inverse mass for a rotational constraint.</span>
+<span id="L177"><span class="lineNum">     177</span>              :      *</span>
+<span id="L178"><span class="lineNum">     178</span>              :      * Returns  w = nᵀ I⁻¹ n.</span>
+<span id="L179"><span class="lineNum">     179</span>              :      * Returns 0 for STATIC bodies.</span>
+<span id="L180"><span class="lineNum">     180</span>              :      *</span>
+<span id="L181"><span class="lineNum">     181</span>              :      * @param bc  The BodyCollection.</span>
+<span id="L182"><span class="lineNum">     182</span>              :      * @param i   Packed data index.</span>
+<span id="L183"><span class="lineNum">     183</span>              :      * @param n   Rotation axis (unit direction).</span>
+<span id="L184"><span class="lineNum">     184</span>              :      * @return    Generalised inverse mass scalar.</span>
+<span id="L185"><span class="lineNum">     185</span>              :      */</span>
+<span id="L186"><span class="lineNum">     186</span>              :     scalar get_rotational_generalized_inverse_mass(BodyCollection &amp;bc, uint32_t i, vec3 n);</span>
+<span id="L187"><span class="lineNum">     187</span>              : </span>
+<span id="L188"><span class="lineNum">     188</span>              : } // namespace rbps</span>
         </pre>
               </td>
             </tr>

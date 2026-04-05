@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-03-30 03:13:12</td>
+            <td class="headerValue">2026-04-05 10:28:31</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -139,10 +139,10 @@
 <span id="L77"><span class="lineNum">      77</span>              : </span>
 <span id="L78"><span class="lineNum">      78</span>              :     // Insertion sort: O(n²) worst case but O(n) when the array is nearly sorted,</span>
 <span id="L79"><span class="lineNum">      79</span>              :     // which is exactly what happens frame-to-frame for slowly-moving objects.</span>
-<span id="L80"><span class="lineNum">      80</span> <span class="tlaGNC">         112 :     void bp_insertion_sort(std::vector&lt;SAPEndpoint&gt; &amp;ep)</span></span>
+<span id="L80"><span class="lineNum">      80</span> <span class="tlaGNC">         110 :     void bp_insertion_sort(std::vector&lt;SAPEndpoint&gt; &amp;ep)</span></span>
 <span id="L81"><span class="lineNum">      81</span>              :     {</span>
-<span id="L82"><span class="lineNum">      82</span> <span class="tlaGNC">         112 :         const int n = static_cast&lt;int&gt;(ep.size());</span></span>
-<span id="L83"><span class="lineNum">      83</span> <span class="tlaGNC">         430 :         for (int i = 1; i &lt; n; ++i)</span></span>
+<span id="L82"><span class="lineNum">      82</span> <span class="tlaGNC">         110 :         const int n = static_cast&lt;int&gt;(ep.size());</span></span>
+<span id="L83"><span class="lineNum">      83</span> <span class="tlaGNC">         428 :         for (int i = 1; i &lt; n; ++i)</span></span>
 <span id="L84"><span class="lineNum">      84</span>              :         {</span>
 <span id="L85"><span class="lineNum">      85</span> <span class="tlaGNC">         318 :             SAPEndpoint key = ep[i];</span></span>
 <span id="L86"><span class="lineNum">      86</span> <span class="tlaGNC">         318 :             int j = i - 1;</span></span>
@@ -153,7 +153,7 @@
 <span id="L91"><span class="lineNum">      91</span>              :             }</span>
 <span id="L92"><span class="lineNum">      92</span> <span class="tlaGNC">         318 :             ep[j + 1] = key;</span></span>
 <span id="L93"><span class="lineNum">      93</span>              :         }</span>
-<span id="L94"><span class="lineNum">      94</span> <span class="tlaGNC">         112 :     }</span></span>
+<span id="L94"><span class="lineNum">      94</span> <span class="tlaGNC">         110 :     }</span></span>
 <span id="L95"><span class="lineNum">      95</span>              : </span>
 <span id="L96"><span class="lineNum">      96</span>              :     // =========================================================================</span>
 <span id="L97"><span class="lineNum">      97</span>              :     //  Sweep</span>
@@ -299,8 +299,8 @@
 <span id="L237"><span class="lineNum">     237</span>              :         {</span>
 <span id="L238"><span class="lineNum">     238</span>              :             // Use insertion sort — exploits near-sortedness from previous frame.</span>
 <span id="L239"><span class="lineNum">     239</span>              :             // Falls back to std::sort for the very first frame or after many insertions.</span>
-<span id="L240"><span class="lineNum">     240</span> <span class="tlaGNC">         112 :             bp_insertion_sort(bp.endpoints);</span></span>
-<span id="L241"><span class="lineNum">     241</span> <span class="tlaGNC">         112 :             bp.dirty = false;</span></span>
+<span id="L240"><span class="lineNum">     240</span> <span class="tlaGNC">         110 :             bp_insertion_sort(bp.endpoints);</span></span>
+<span id="L241"><span class="lineNum">     241</span> <span class="tlaGNC">         110 :             bp.dirty = false;</span></span>
 <span id="L242"><span class="lineNum">     242</span>              :         }</span>
 <span id="L243"><span class="lineNum">     243</span>              : </span>
 <span id="L244"><span class="lineNum">     244</span> <span class="tlaGNC">         627 :         bp_sweep(bp);</span></span>
