@@ -28,7 +28,7 @@ xdg-open build/docs/html/index.html
 
 - **Using the engine:** open the `rbps` module page and read the `World` class.
 - **Adding a new shape:** start at the `rbc/shapes` group.
-- **Contributing a new feature:** see the **Design Docs** section in the sidebar.
+- **Contributing a new feature:** see the @ref planned_features "Planned Features" section in the sidebar.
 - **Writing documentation:** read [STYLE.md](STYLE.md) for the docstring conventions.
 
 ## Internals
