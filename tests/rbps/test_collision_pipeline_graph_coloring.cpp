@@ -1,6 +1,5 @@
 #include "tests/test_helper.hpp"
-#include "rbps/CollisionPipeline.hpp"
-#include "rbps/API/BodyAPI.hpp"
+#include "tests/rbps/pipeline_helpers.hpp"
 
 // =============================================================================
 // GRAPH COLORING TESTS
@@ -16,27 +15,11 @@
 //   4. Size ordering: groups are sorted largest-first.
 // =============================================================================
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-static uint32_t add_dynamic(rbps::BodyCollection &bc, m3d::vec3 pos = m3d::vec3(0))
-{
-    rbps::BodyParams p;
-    p.type     = rbps::DYNAMIC;
-    p.mass     = 1.0;
-    p.position = pos;
-    uint32_t id = rbps::create_body(bc, p);
-    return bc.index_of(id);
-}
-
-static uint32_t add_static(rbps::BodyCollection &bc, m3d::vec3 pos = m3d::vec3(0))
-{
-    rbps::BodyParams p;
-    p.type     = rbps::STATIC;
-    p.mass     = 1.0;
-    p.position = pos;
-    uint32_t id = rbps::create_body(bc, p);
-    return bc.index_of(id);
-}
+// add_dynamic / add_static are short aliases for the shared helpers.
+inline uint32_t add_dynamic(rbps::BodyCollection &bc, m3d::vec3 pos = m3d::vec3(0))
+    { return test::add_dynamic_body(bc, pos); }
+inline uint32_t add_static(rbps::BodyCollection &bc, m3d::vec3 pos = m3d::vec3(0))
+    { return test::add_static_body(bc, pos); }
 
 // Verify the core correctness invariant: no two contacts in the same group
 // share a DYNAMIC body.

@@ -1,165 +1,25 @@
 #include "rbps/constraints/Joint.hpp"
 #include "rbps/constraints/Constraint.hpp"
 #include "tests/test_helper.hpp"
+#include "tests/rbps/body_helpers.hpp"
+#include "tests/rbps/constraint_helpers.hpp"
 
 using namespace rbps;
 using namespace m3d;
 
-// Helper function to create test bodies
-static BodyCollection create_test_bodies(uint32_t n)
-{
-    BodyCollection bc;
-    for (uint32_t k = 0; k < n; ++k)
-    {
-        uint32_t i = bc.index_of(bc.add());
-        bc.mass[i] = 1.0;
-        bc.inverse_mass[i] = 1.0;
-        bc.type[i] = BodyType::DYNAMIC;
-        bc.position[i] = vec3{0, 0, 0};
-        bc.linear_velocity[i] = vec3{0, 0, 0};
-        bc.orientation[i] = quat(1, 0, 0, 0);
-        bc.angular_velocity[i] = vec3{0, 0, 0};
-        bc.prev_orientation[i] = quat(1, 0, 0, 0);
-        bc.inertia_tensor[i] = smat3(1, 1, 1, 0, 0, 0);
-        bc.inverse_inertia_tensor[i] = smat3(1, 1, 1, 0, 0, 0);
-        bc.inertia_tensor_world[i] = smat3(1, 1, 1, 0, 0, 0);
-        bc.inverse_inertia_tensor_world[i] = smat3(1, 1, 1, 0, 0, 0);
-    }
-    return bc;
-}
-
-
-
-// Helper to create constraint collection
-static ConstraintCollection create_constraint_collection(uint32_t n)
-{
-    ConstraintCollection cc;
-    for (uint32_t k = 0; k < n; ++k)
-    {
-        int32_t i = cc.index_of(cc.add());
-        cc.body_1[i] = 0;
-        cc.body_2[i] = 0;
-        cc.r_1[i] = vec3{0, 0, 0};
-        cc.r_2[i] = vec3{0, 0, 0};
-        cc.direction[i] = vec3{1, 0, 0};
-        cc.magnitude[i] = 0.0;
-        cc.lambda[i] = 0.0;
-        cc.force[i] = vec3{0, 0, 0};
-        cc.torque[i] = vec3{0, 0, 0};
-        cc.compliance[i] = 0.0;
-        cc.type[i] = ConstraintType::POSITIONAL;
-        cc.impulse[i] = vec3{0, 0, 0};        
-    }
-    return cc;
-}
-
-static std::vector<uint32_t> add_test_constraints(ConstraintCollection& cc, uint32_t n)
-{
-    std::vector<uint32_t> ids;
-    ids.reserve(n);
-    
-    for (uint32_t k = 0; k < n; ++k)
-    {
-        // 1. Allocate a new element in the SoA and get its stable ID
-        uint32_t id = cc.add();
-        ids.push_back(id);
-        
-        // 2. Resolve the ID to the current memory index
-        uint32_t i = cc.index_of(id);
-        
-        // 3. Initialize all data fields to safe defaults
-        cc.body_1[i]      = 0;
-        cc.body_2[i]      = 0;
-        cc.r_1[i]         = vec3{0, 0, 0};
-        cc.r_2[i]         = vec3{0, 0, 0};
-        cc.direction[i]   = vec3{1, 0, 0}; // Default axis
-        cc.magnitude[i]   = 0.0;
-        cc.lambda[i]      = 0.0;
-        cc.force[i]       = vec3{0, 0, 0};
-        cc.torque[i]      = vec3{0, 0, 0};
-        cc.compliance[i]  = 0.0;
-        cc.type[i]        = ConstraintType::POSITIONAL;
-        cc.impulse[i]     = vec3{0, 0, 0};
-    }
-    return ids;
-}
-
-// -------------------------------------------------------------
-// Test utilities for creating joints
-// -------------------------------------------------------------
-
-static uint32_t create_prismatic_joint(
-    JointCollection& jc,
-    uint32_t body1,
-    uint32_t body2,
-    const m3d::vec3& axis)
-{
-    uint32_t jid = jc.add();
-    uint32_t i = jc.index_of(jid);
-
-    jc.type[i] = PRISMATIC;
-    jc.body_1[i] = body1;
-    jc.body_2[i] = body2;
-    jc.main_axis[i] = axis;
-
-    jc.target_position[i] = 0.0;
-    jc.target_speed[i] = 0.0;
-
-    jc.lower_limit[i] = -std::numeric_limits<double>::infinity();
-    jc.upper_limit[i] = std::numeric_limits<double>::infinity();
-
-    jc.constraint_count[i] = 3; // 1 for rotation lock, 2 for positional constraints
-
-    return jid;
-}
-
-static uint32_t create_revolute_joint(
-    JointCollection& jc,
-    uint32_t body1,
-    uint32_t body2,
-    const m3d::vec3& axis)
-{
-    uint32_t jid = jc.add();
-    uint32_t i = jc.index_of(jid);
-
-    jc.type[i] = REVOLUTE;
-    jc.body_1[i] = body1;
-    jc.body_2[i] = body2;
-    jc.main_axis[i] = axis;
-
-    jc.target_position[i] = 0.0;
-    jc.target_speed[i] = 0.0;
-
-    jc.lower_limit[i] = -std::numeric_limits<double>::infinity();
-    jc.upper_limit[i] = std::numeric_limits<double>::infinity();
-
-    jc.constraint_count[i] = 4; // 2 for rotation lock, 2 for attachment
-
-    return jid;
-}
-
-static uint32_t create_fixed_joint(
-    JointCollection& jc,
-    uint32_t body1,
-    uint32_t body2)
-{
-    uint32_t jid = jc.add();
-    uint32_t i = jc.index_of(jid);
-
-    jc.type[i] = FIXED;
-    jc.body_1[i] = body1;
-    jc.body_2[i] = body2;
-    jc.constraint_count[i] = 2; // 1 rotational + 1 positional constraint for full lock
-
-    return jid;
-}
+// Local aliases keep the existing TEST bodies short — the helpers live in
+// tests/rbps/constraint_helpers.hpp.
+using test::add_test_constraints;
+using test::add_prismatic_joint;
+using test::add_revolute_joint;
+using test::add_fixed_joint;
 // ============================================================================
 // PRISMATIC JOINT TESTS
 // ============================================================================
 
 TEST(compute_prismatic_joint_errors_basic)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
     ConstraintCollection cc;
     
     // 1. Create the 3 constraints needed and keep their IDs
@@ -196,7 +56,7 @@ TEST(compute_prismatic_joint_errors_basic)
 
 TEST(compute_prismatic_joint_errors_misaligned_orientation)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
     ConstraintCollection cc;
     auto c_ids = add_test_constraints(cc, 3);
     
@@ -221,7 +81,7 @@ TEST(compute_prismatic_joint_errors_misaligned_orientation)
 
 TEST(compute_prismatic_joint_errors_with_offset)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
     ConstraintCollection cc;
     auto c_ids = add_test_constraints(cc, 3);
     
@@ -245,7 +105,7 @@ TEST(compute_prismatic_joint_errors_with_offset)
 
 TEST(compute_prismatic_joint_errors_with_limits_within_range)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
     ConstraintCollection cc;
     auto c_ids = add_test_constraints(cc, 3);
 
@@ -281,7 +141,7 @@ TEST(compute_prismatic_joint_errors_with_limits_within_range)
 
 TEST(compute_prismatic_joint_errors_with_limits_exceeded)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
     ConstraintCollection cc;
     auto c_ids = add_test_constraints(cc, 3);
 
@@ -289,7 +149,7 @@ TEST(compute_prismatic_joint_errors_with_limits_exceeded)
     bc.position[1] = vec3{2.0, 0, 0};
 
     JointCollection jc;
-    uint32_t jid = create_prismatic_joint(jc, 0, 1, vec3{1,0,0});
+    uint32_t jid = add_prismatic_joint(jc, 0, 1, vec3{1,0,0});
     uint32_t i   = jc.index_of(jid);
 
     jc.actuation_type[i] = FREE;
@@ -310,14 +170,14 @@ TEST(compute_prismatic_joint_errors_with_limits_exceeded)
 
 TEST(compute_prismatic_joint_errors_position_actuation)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
     ConstraintCollection cc;
     auto c_ids = add_test_constraints(cc, 3);
 
     bc.position[1] = vec3{0.5, 0, 0};
 
     JointCollection jc;
-    uint32_t jid = create_prismatic_joint(jc,0,1,vec3{1,0,0});
+    uint32_t jid = add_prismatic_joint(jc,0,1,vec3{1,0,0});
     uint32_t i   = jc.index_of(jid);
 
     jc.actuation_type[i] = POSITION;
@@ -335,12 +195,12 @@ TEST(compute_prismatic_joint_errors_position_actuation)
 
 TEST(compute_prismatic_joint_errors_speed_actuation)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
     ConstraintCollection cc;
     auto c_ids = add_test_constraints(cc, 3);
 
     JointCollection jc;
-    uint32_t jid = create_prismatic_joint(jc,0,1,vec3{1,0,0});
+    uint32_t jid = add_prismatic_joint(jc,0,1,vec3{1,0,0});
     uint32_t i   = jc.index_of(jid);
 
     jc.actuation_type[i] = SPEED;
@@ -362,7 +222,7 @@ TEST(compute_prismatic_joint_errors_speed_actuation)
 
 TEST(compute_prismatic_joint_errors_perpendicular_offset)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
     ConstraintCollection cc;
     auto c_ids = add_test_constraints(cc, 3);
 
@@ -370,7 +230,7 @@ TEST(compute_prismatic_joint_errors_perpendicular_offset)
     bc.position[1] = vec3{0, 1.0, 0};
 
     JointCollection jc;
-    uint32_t jid = create_prismatic_joint(jc, 0, 1, vec3{1,0,0});
+    uint32_t jid = add_prismatic_joint(jc, 0, 1, vec3{1,0,0});
     uint32_t i   = jc.index_of(jid);
 
     jc.actuation_type[i] = FREE;
@@ -396,7 +256,7 @@ TEST(compute_prismatic_joint_errors_perpendicular_offset)
 
 TEST(compute_revolute_joint_errors_basic)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
     ConstraintCollection cc;
     auto c_ids = add_test_constraints(cc, 4); 
     
@@ -419,14 +279,14 @@ TEST(compute_revolute_joint_errors_basic)
 
 TEST(compute_revolute_joint_errors_axis_misalignment)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
     ConstraintCollection cc;
     auto c_ids = add_test_constraints(cc, 4);
 
     bc.orientation[1] = quat::from_rpy(M_PI/4.0,0,0);
 
     JointCollection jc;
-    uint32_t jid = create_revolute_joint(jc,0,1,vec3{0,0,1});
+    uint32_t jid = add_revolute_joint(jc,0,1,vec3{0,0,1});
     uint32_t i   = jc.index_of(jid);
 
     jc.limit_axis[i] = vec3{1,0,0};
@@ -443,7 +303,7 @@ TEST(compute_revolute_joint_errors_axis_misalignment)
 
 TEST(compute_revolute_joint_errors_position_offset)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
     ConstraintCollection cc;
     auto c_ids = add_test_constraints(cc, 4);
 
@@ -451,7 +311,7 @@ TEST(compute_revolute_joint_errors_position_offset)
     bc.position[1] = vec3{1.0, 0, 0};
 
     JointCollection jc;
-    uint32_t jid = create_revolute_joint(jc, 0, 1, vec3{0,0,1});
+    uint32_t jid = add_revolute_joint(jc, 0, 1, vec3{0,0,1});
     uint32_t i = jc.index_of(jid);
 
     jc.limit_axis[i] = vec3{1,0,0};
@@ -470,14 +330,14 @@ TEST(compute_revolute_joint_errors_position_offset)
 
 TEST(compute_revolute_joint_errors_with_rotation)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
     ConstraintCollection cc;
     auto c_ids = add_test_constraints(cc, 4);
 
     bc.orientation[1] = quat::from_rpy(0,0,M_PI/4.0);
 
     JointCollection jc;
-    uint32_t jid = create_revolute_joint(jc,0,1,vec3{0,0,1});
+    uint32_t jid = add_revolute_joint(jc,0,1,vec3{0,0,1});
     uint32_t i = jc.index_of(jid);
 
     jc.limit_axis[i] = vec3{1,0,0};
@@ -496,14 +356,14 @@ TEST(compute_revolute_joint_errors_with_rotation)
 
 TEST(compute_revolute_joint_errors_with_limits_within_range)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
     ConstraintCollection cc;
     auto c_ids = add_test_constraints(cc, 4);
 
     bc.orientation[1] = quat::from_rpy(0,0,0.5);
 
     JointCollection jc;
-    uint32_t jid = create_revolute_joint(jc,0,1,vec3{0,0,1});
+    uint32_t jid = add_revolute_joint(jc,0,1,vec3{0,0,1});
     uint32_t i = jc.index_of(jid);
 
     jc.limit_axis[i] = vec3{1,0,0};
@@ -525,14 +385,14 @@ TEST(compute_revolute_joint_errors_with_limits_within_range)
 
 TEST(compute_revolute_joint_errors_with_limits_exceeded)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
     ConstraintCollection cc;
     auto c_ids = add_test_constraints(cc, 4);
 
     bc.orientation[1] = quat::from_rpy(0,0,M_PI);
 
     JointCollection jc;
-    uint32_t jid = create_revolute_joint(jc,0,1,vec3{0,0,1});
+    uint32_t jid = add_revolute_joint(jc,0,1,vec3{0,0,1});
     uint32_t i = jc.index_of(jid);
 
     jc.limit_axis[i] = vec3{1,0,0};
@@ -552,12 +412,12 @@ TEST(compute_revolute_joint_errors_with_limits_exceeded)
 
 TEST(compute_revolute_joint_errors_position_actuation)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
     ConstraintCollection cc;
     auto c_ids = add_test_constraints(cc, 4);
 
     JointCollection jc;
-    uint32_t jid = create_revolute_joint(jc,0,1,vec3{0,0,1});
+    uint32_t jid = add_revolute_joint(jc,0,1,vec3{0,0,1});
     uint32_t i = jc.index_of(jid);
 
     jc.limit_axis[i] = vec3{1,0,0};
@@ -576,12 +436,12 @@ TEST(compute_revolute_joint_errors_position_actuation)
 
 TEST(compute_revolute_joint_errors_speed_actuation)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
     ConstraintCollection cc;
     auto c_ids = add_test_constraints(cc, 4);
 
     JointCollection jc;
-    uint32_t jid = create_revolute_joint(jc,0,1,vec3{0,0,1});
+    uint32_t jid = add_revolute_joint(jc,0,1,vec3{0,0,1});
     uint32_t i = jc.index_of(jid);
 
     jc.limit_axis[i] = vec3{1,0,0};
@@ -612,12 +472,12 @@ TEST(compute_revolute_joint_errors_speed_actuation)
 
 TEST(compute_fixed_joint_errors_basic)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
     ConstraintCollection cc;
     auto c_ids = add_test_constraints(cc,2);
 
     JointCollection jc;
-    uint32_t jid = create_fixed_joint(jc,0,1);
+    uint32_t jid = add_fixed_joint(jc,0,1);
     uint32_t i   = jc.index_of(jid);
 
     for(int k=0;k<2;k++)
@@ -640,7 +500,7 @@ TEST(compute_fixed_joint_errors_basic)
 
 TEST(compute_fixed_joint_errors_orientation_mismatch)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
     ConstraintCollection cc;
     auto c_ids = add_test_constraints(cc, 2);
 
@@ -648,7 +508,7 @@ TEST(compute_fixed_joint_errors_orientation_mismatch)
     bc.orientation[1] = quat::from_rpy(0, 0, M_PI / 2.0);
 
     JointCollection jc;
-    uint32_t jid = create_fixed_joint(jc, 0, 1);
+    uint32_t jid = add_fixed_joint(jc, 0, 1);
     uint32_t i   = jc.index_of(jid);
 
     jc.r_1[i] = vec3{0,0,0};
@@ -669,7 +529,7 @@ TEST(compute_fixed_joint_errors_orientation_mismatch)
 
 TEST(compute_fixed_joint_errors_position_mismatch)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
     ConstraintCollection cc;
     auto c_ids = add_test_constraints(cc, 2);
 
@@ -677,7 +537,7 @@ TEST(compute_fixed_joint_errors_position_mismatch)
     bc.position[1] = vec3{1.0, 2.0, 3.0};
 
     JointCollection jc;
-    uint32_t jid = create_fixed_joint(jc, 0, 1);
+    uint32_t jid = add_fixed_joint(jc, 0, 1);
     uint32_t i   = jc.index_of(jid);
 
     jc.r_1[i] = vec3{0,0,0};
@@ -701,7 +561,7 @@ TEST(compute_fixed_joint_errors_position_mismatch)
 
 TEST(compute_fixed_joint_errors_with_attachment_points)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
     ConstraintCollection cc;
     auto c_ids = add_test_constraints(cc, 2);
     
@@ -799,10 +659,10 @@ TEST(compute_angle_limit_correction_at_limit_boundary)
 
 TEST(apply_prismatic_joint_damping_no_relative_velocity)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
 
     JointCollection jc;
-    uint32_t jid = create_prismatic_joint(jc, 0, 1, vec3{1,0,0});
+    uint32_t jid = add_prismatic_joint(jc, 0, 1, vec3{1,0,0});
     uint32_t i   = jc.index_of(jid);
 
     jc.r_1[i] = vec3{0,0,0};
@@ -824,7 +684,7 @@ TEST(apply_prismatic_joint_damping_no_relative_velocity)
 
 TEST(apply_prismatic_joint_damping_with_relative_velocity)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
 
     bc.linear_velocity[0] = vec3{0,0,0};
     bc.linear_velocity[1] = vec3{1,0,0};
@@ -836,7 +696,7 @@ TEST(apply_prismatic_joint_damping_with_relative_velocity)
     bc.inverse_inertia_tensor_world[1] = smat3(1,1,1,0,0,0);
 
     JointCollection jc;
-    uint32_t jid = create_prismatic_joint(jc,0,1,vec3{1,0,0});
+    uint32_t jid = add_prismatic_joint(jc,0,1,vec3{1,0,0});
     uint32_t i   = jc.index_of(jid);
 
     jc.r_1[i] = vec3{0,0,0};
@@ -855,7 +715,7 @@ TEST(apply_prismatic_joint_damping_with_relative_velocity)
 
 TEST(apply_prismatic_joint_damping_high_damping)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
 
     bc.linear_velocity[0] = vec3{0,0,0};
     bc.linear_velocity[1] = vec3{10,0,0};
@@ -867,7 +727,7 @@ TEST(apply_prismatic_joint_damping_high_damping)
     bc.inverse_inertia_tensor_world[1] = smat3(1,1,1,0,0,0);
 
     JointCollection jc;
-    uint32_t jid = create_prismatic_joint(jc,0,1,vec3{1,0,0});
+    uint32_t jid = add_prismatic_joint(jc,0,1,vec3{1,0,0});
     uint32_t i   = jc.index_of(jid);
 
     jc.r_1[i] = vec3{0,0,0};
@@ -888,10 +748,10 @@ TEST(apply_prismatic_joint_damping_high_damping)
 
 TEST(apply_revolute_joint_damping_no_relative_velocity)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
 
     JointCollection jc;
-    uint32_t jid = create_revolute_joint(jc,0,1,vec3{0,0,1});
+    uint32_t jid = add_revolute_joint(jc,0,1,vec3{0,0,1});
     uint32_t i   = jc.index_of(jid);
 
     jc.damping[i] = 0.5;
@@ -908,13 +768,13 @@ TEST(apply_revolute_joint_damping_no_relative_velocity)
 
 TEST(apply_revolute_joint_damping_with_relative_velocity)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
 
     bc.angular_velocity[0] = vec3{0,0,0};
     bc.angular_velocity[1] = vec3{0,0,2.0};
 
     JointCollection jc;
-    uint32_t jid = create_revolute_joint(jc,0,1,vec3{0,0,1});
+    uint32_t jid = add_revolute_joint(jc,0,1,vec3{0,0,1});
     uint32_t i   = jc.index_of(jid);
 
     jc.damping[i] = 1.0;
@@ -928,13 +788,13 @@ TEST(apply_revolute_joint_damping_with_relative_velocity)
 
 // TEST(apply_revolute_joint_damping_high_damping)
 // {
-//     BodyCollection bc = create_test_bodies(2);
+//     BodyCollection bc; test::init_test_bodies(bc, 2);
 
 //     bc.angular_velocity[0] = vec3{0,0,0};
 //     bc.angular_velocity[1] = vec3{0,0,10.0};
 
 //     JointCollection jc;
-//     uint32_t jid = create_revolute_joint(jc,0,1,vec3{0,0,1});
+//     uint32_t jid = add_revolute_joint(jc,0,1,vec3{0,0,1});
 //     uint32_t i   = jc.index_of(jid);
 
 //     jc.damping[i] = 100.0;
@@ -953,13 +813,13 @@ TEST(apply_revolute_joint_damping_with_relative_velocity)
 
 // TEST(apply_revolute_joint_damping_moderate_damping)
 // {
-//     BodyCollection bc = create_test_bodies(2);
+//     BodyCollection bc; test::init_test_bodies(bc, 2);
 
 //     bc.angular_velocity[0] = vec3{0,0,0};
 //     bc.angular_velocity[1] = vec3{0,0,10.0};
 
 //     JointCollection jc;
-//     uint32_t jid = create_revolute_joint(jc,0,1,vec3{0,0,1});
+//     uint32_t jid = add_revolute_joint(jc,0,1,vec3{0,0,1});
 //     uint32_t i   = jc.index_of(jid);
 
 //     jc.damping[i] = 5.0;
@@ -987,7 +847,7 @@ TEST(apply_revolute_joint_damping_with_relative_velocity)
 
 TEST(compute_joint_errors_multiple_joints)
 {
-    BodyCollection bc = create_test_bodies(4);
+    BodyCollection bc; test::init_test_bodies(bc, 4);
     ConstraintCollection cc;
 
     auto c_prismatic = add_test_constraints(cc,3);
@@ -996,9 +856,9 @@ TEST(compute_joint_errors_multiple_joints)
 
     JointCollection jc;
 
-    uint32_t j0 = create_prismatic_joint(jc,0,1,vec3{1,0,0});
-    uint32_t j1 = create_revolute_joint(jc,1,2,vec3{0,0,1});
-    uint32_t j2 = create_fixed_joint(jc,2,3);
+    uint32_t j0 = add_prismatic_joint(jc,0,1,vec3{1,0,0});
+    uint32_t j1 = add_revolute_joint(jc,1,2,vec3{0,0,1});
+    uint32_t j2 = add_fixed_joint(jc,2,3);
 
     uint32_t i0 = jc.index_of(j0);
     uint32_t i1 = jc.index_of(j1);
@@ -1016,7 +876,7 @@ TEST(compute_joint_errors_multiple_joints)
 
 TEST(apply_joint_damping_multiple_joints)
 {
-    BodyCollection bc = create_test_bodies(4);
+    BodyCollection bc; test::init_test_bodies(bc, 4);
     
     // Setup some velocities
     bc.linear_velocity[1] = vec3{1, 0, 0};
@@ -1046,12 +906,12 @@ TEST(apply_joint_damping_multiple_joints)
 
 TEST(joint_errors_with_attachment_points)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
     ConstraintCollection cc;
     auto c_ids = add_test_constraints(cc, 4);
 
     JointCollection jc;
-    uint32_t jid = create_revolute_joint(jc, 0, 1, vec3{0,0,1});
+    uint32_t jid = add_revolute_joint(jc, 0, 1, vec3{0,0,1});
     uint32_t i   = jc.index_of(jid);
 
     jc.actuation_type[i] = FREE;

@@ -4,7 +4,7 @@
 TEST(rpy_conversion)
 {
     // 90 degrees around Z axis (Yaw)
-    m3d::quat q = m3d::quat::from_rpy(0, 0, 1.57079632679);
+    m3d::quat q = m3d::quat::from_rpy(0, 0, test::kHalfPi);
 
     m3d::vec3 v(1, 0, 0);
     m3d::vec3 rotated = m3d::rotate(v, q);
@@ -17,8 +17,8 @@ TEST(rpy_conversion)
 TEST(quat_multiplication)
 {
     // Rotate 90 around X then 90 around Y
-    m3d::quat qX = m3d::quat::from_rpy(1.57079632679, 0, 0);
-    m3d::quat qY = m3d::quat::from_rpy(0, 1.57079632679, 0);
+    m3d::quat qX = m3d::quat::from_rpy(test::kHalfPi, 0, 0);
+    m3d::quat qY = m3d::quat::from_rpy(0, test::kHalfPi, 0);
 
     m3d::quat qCombined = qY * qX; // Order matters
 
@@ -65,9 +65,9 @@ TEST(quat_drift_stress)
 TEST(quat_multiplication_logic)
 {
     // 90 deg around X
-    m3d::quat qX = m3d::quat::from_axis_angle({1, 0, 0}, 1.57079632679);
+    m3d::quat qX = m3d::quat::from_axis_angle({1, 0, 0}, test::kHalfPi);
     // 90 deg around Y
-    m3d::quat qY = m3d::quat::from_axis_angle({0, 1, 0}, 1.57079632679);
+    m3d::quat qY = m3d::quat::from_axis_angle({0, 1, 0}, test::kHalfPi);
 
     m3d::quat qCombined = qY * qX;
 

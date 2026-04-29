@@ -11,6 +11,13 @@
 #include "rbps/API/ColliderAPI.hpp"
 #include "rbps/API/JointAPI.hpp"
 
+// Stable ID of the first body in the world's body collection. Encapsulates
+// the `_ids[0]` pattern used at many sites in test_debug_channel.cpp.
+inline uint32_t get_first_body_id(const rbps::World &w)
+{
+    return w.bodies._ids[0];
+}
+
 // Creates a dynamic body at `pos` with given mass.
 inline uint32_t make_dynamic_body(rbps::World &w,
                                    m3d::vec3 pos  = {0, 0, 0},

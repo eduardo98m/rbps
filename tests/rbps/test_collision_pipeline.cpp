@@ -1,60 +1,14 @@
 #include "tests/test_helper.hpp"
-#include "rbps/CollisionPipeline.hpp"
-#include "rbps/API/ColliderAPI.hpp"
-#include "rbps/API/BodyAPI.hpp"
-#include "rbc/BroadPhase.hpp"
+#include "tests/rbps/pipeline_helpers.hpp"
 
 // =============================================================================
 // COLLISION PIPELINE TESTS
 // =============================================================================
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-static uint32_t add_dynamic_body(rbps::BodyCollection &bc, m3d::vec3 pos)
-{
-    rbps::BodyParams p;
-    p.type     = rbps::DYNAMIC;
-    p.mass     = 1.0;
-    p.position = pos;
-    uint32_t id = rbps::create_body(bc, p);
-    return bc.index_of(id);
-}
-
-static uint32_t add_static_body(rbps::BodyCollection &bc, m3d::vec3 pos)
-{
-    rbps::BodyParams p;
-    p.type     = rbps::STATIC;
-    p.mass     = 1.0;
-    p.position = pos;
-    uint32_t id = rbps::create_body(bc, p);
-    return bc.index_of(id);
-}
-
-static m3d::tf tf_at(float x, float y, float z)
-{
-    m3d::tf tf;
-    tf.pos = m3d::vec3(x, y, z);
-    tf.rot = m3d::quat(1, 0, 0, 0);
-    return tf;
-}
-
-// Adds a sphere collider owned by `body_idx` at the body's current position.
-static void add_sphere_collider(rbps::ColliderCollection &cc,
-                                rbc::BroadPhaseState     &bp,
-                                rbps::BodyCollection     &bc,
-                                uint32_t                  body_idx,
-                                float                     radius,
-                                bool                      is_static = false)
-{
-    rbps::ColliderParams p;
-    p.shape     = rbc::Sphere(radius);
-    p.body_id   = body_idx;
-    p.is_static = is_static;
-    m3d::tf init_tf = tf_at(bc.position[body_idx].x,
-                             bc.position[body_idx].y,
-                             bc.position[body_idx].z);
-    rbps::create_collider(cc, bp, p, init_tf);
-}
+using test::add_dynamic_body;
+using test::add_static_body;
+using test::add_sphere_collider;
+using test::tf_at;
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 

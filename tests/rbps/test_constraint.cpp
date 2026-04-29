@@ -1,60 +1,17 @@
 #include "rbps/constraints/Constraint.hpp"
 #include "rbps/Body.hpp"
 #include "tests/test_helper.hpp"
+#include "tests/rbps/body_helpers.hpp"
+#include "tests/rbps/constraint_helpers.hpp"
 
 using namespace rbps;
 using namespace m3d;
-
-static BodyCollection create_bodies(uint32_t n)
-{
-    BodyCollection bc;
-    for (uint32_t k = 0; k < n; ++k)
-    {
-        int32_t i = bc.index_of(bc.add());
-        bc.mass[i] = 1.0;
-        bc.inverse_mass[i] = 1.0;
-        bc.type[i] = BodyType::DYNAMIC;
-        bc.position[i] = vec3{0, 0, 0};
-        bc.linear_velocity[i] = vec3{0, 0, 0};
-        bc.orientation[i] = quat(1, 0, 0, 0);
-        bc.angular_velocity[i] = vec3{0, 0, 0};
-        bc.prev_orientation[i] = quat(1, 0, 0, 0);
-        bc.inertia_tensor[i] = smat3(1, 1, 1, 0, 0, 0);
-        bc.inverse_inertia_tensor[i] = smat3(1, 1, 1, 0, 0, 0);
-        bc.inertia_tensor_world[i] = smat3(1, 1, 1, 0, 0, 0);
-        bc.inverse_inertia_tensor_world[i] = smat3(1, 1, 1, 0, 0, 0);
-    }
-    return bc;
-}
-
-
-static ConstraintCollection create_constraints(uint32_t n)
-{
-    ConstraintCollection cc;
-    for (uint32_t k = 0; k < n; ++k)
-    {
-        int32_t i = cc.index_of(cc.add());
-        cc.body_1[i] = 0;
-        cc.body_2[i] = 0;
-        cc.r_1[i] = vec3{0, 0, 0};
-        cc.r_2[i] = vec3{0, 0, 0};
-        cc.direction[i] = vec3{1, 0, 0};
-        cc.magnitude[i] = 0.0;
-        cc.lambda[i] = 0.0;
-        cc.force[i] = vec3{0, 0, 0};
-        cc.torque[i] = vec3{0, 0, 0};
-        cc.compliance[i] = 0.0;
-        cc.type[i] = ConstraintType::POSITIONAL;
-        cc.impulse[i] = vec3{0, 0, 0};        
-    }
-    return cc;
-}
 
 // --- Tests ---
 
 TEST(set_value_normal)
 {
-    ConstraintCollection cc = create_constraints(1);
+    ConstraintCollection cc; test::init_test_constraints(cc, 1);
 
     // A vector with magnitude 5 along X=3, Y=4
     vec3 val{3.0, 4.0, 0.0};
@@ -69,7 +26,7 @@ TEST(set_value_normal)
 
 TEST(set_value_epsilon)
 {
-    ConstraintCollection cc = create_constraints(1);
+    ConstraintCollection cc; test::init_test_constraints(cc, 1);
     vec3 val{0.0, 0.0, 0.0};
     set_value(cc, 0, val);
     ASSERT_NEAR(cc.magnitude[0], 0.0, 1e-5);
@@ -78,7 +35,7 @@ TEST(set_value_epsilon)
 
 TEST(compute_delta_lambda_pure_math)
 {
-    ConstraintCollection cc = create_constraints(1);
+    ConstraintCollection cc; test::init_test_constraints(cc, 1);
 
     cc.magnitude[0] = 0.5;  // Constraint violation C
     cc.compliance[0] = 0.0; // Alpha = 0
@@ -97,7 +54,7 @@ TEST(compute_delta_lambda_pure_math)
 
 TEST(compute_delta_lambda_with_compliance)
 {
-    ConstraintCollection cc = create_constraints(1);
+    ConstraintCollection cc; test::init_test_constraints(cc, 1);
 
     scalar dt = 0.1;
     scalar inv_dt = 10.0;
@@ -117,8 +74,8 @@ TEST(compute_delta_lambda_with_compliance)
 
 TEST(positional_constraint_updates_position)
 {
-    BodyCollection bc = create_bodies(2);
-    ConstraintCollection cc = create_constraints(1);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
+    ConstraintCollection cc; test::init_test_constraints(cc, 1);
 
     // Body 1 at (0,0,0), Body 2 at (1,0,0)
     bc.position[1] = vec3{1.0, 0.0, 0.0};
@@ -148,8 +105,8 @@ TEST(positional_constraint_updates_position)
 
 TEST(rotational_constraint_updates_orientation)
 {
-    BodyCollection bc = create_bodies(2);
-    ConstraintCollection cc = create_constraints(1);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
+    ConstraintCollection cc; test::init_test_constraints(cc, 1);
 
     cc.body_1[0] = 0;
     cc.body_2[0] = 1;
@@ -180,7 +137,7 @@ TEST(rotational_constraint_updates_orientation)
 
 TEST(reset_lagrange)
 {
-    ConstraintCollection cc = create_constraints(1);
+    ConstraintCollection cc; test::init_test_constraints(cc, 1);
     cc.lambda[0] = 5.0;
 
     reset_lagrange_multiplier(cc, 0);
@@ -190,8 +147,8 @@ TEST(reset_lagrange)
 
 TEST(solve_constraints_loop)
 {
-    BodyCollection bc = create_bodies(2);
-    ConstraintCollection cc = create_constraints(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
+    ConstraintCollection cc; test::init_test_constraints(cc, 2);
 
     // Setup two constraints
     cc.type[0] = ConstraintType::POSITIONAL;

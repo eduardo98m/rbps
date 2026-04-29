@@ -1,36 +1,15 @@
 #include "rbps/Body.hpp"
 #include "tests/test_helper.hpp"
+#include "tests/rbps/body_helpers.hpp"
 
 using namespace rbps;
 using namespace m3d;
-
-static BodyCollection create_test_bodies(uint32_t n)
-{
-    BodyCollection bc;
-    for (uint32_t k = 0; k < n; ++k)
-    {
-        int32_t i = bc.index_of(bc.add());
-        bc.mass[i] = 1.0;
-        bc.inverse_mass[i] = 1.0;
-        bc.type[i] = BodyType::DYNAMIC;
-        bc.position[i] = vec3{0, 0, 0};
-        bc.linear_velocity[i] = vec3{0, 0, 0};
-        bc.orientation[i] = quat(1, 0, 0, 0);
-        bc.angular_velocity[i] = vec3{0, 0, 0};
-        bc.prev_orientation[i] = quat(1, 0, 0, 0);
-        bc.inertia_tensor[i] = smat3(1, 1, 1, 0, 0, 0);
-        bc.inverse_inertia_tensor[i] = smat3(1, 1, 1, 0, 0, 0);
-        bc.inertia_tensor_world[i] = smat3(1, 1, 1, 0, 0, 0);
-        bc.inverse_inertia_tensor_world[i] = smat3(1, 1, 1, 0, 0, 0);
-    }
-    return bc;
-}
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
 TEST(update_inertia_tensor_world_identity)
 {
-    BodyCollection bc = create_test_bodies(1);
+    BodyCollection bc; test::init_test_bodies(bc, 1);
     update_inertia_tensor_world(bc, 0);
     ASSERT_TRUE(bc.inertia_tensor_world[0].is_approx(bc.inertia_tensor[0], 0.001));
     ASSERT_TRUE(bc.inverse_inertia_tensor_world[0].is_approx(bc.inverse_inertia_tensor[0], 0.001));
@@ -38,7 +17,7 @@ TEST(update_inertia_tensor_world_identity)
 
 TEST(update_inertia_tensor_world_rotated)
 {
-    BodyCollection bc = create_test_bodies(1);
+    BodyCollection bc; test::init_test_bodies(bc, 1);
     bc.inertia_tensor[0] = smat3(2, 3, 4, 0, 0, 0);
     bc.inverse_inertia_tensor[0] = smat3(0.5, 1.0 / 3.0, 0.25, 0, 0, 0);
     bc.orientation[0] = quat::from_rpy(0, 0, M_PI / 2.0);
@@ -50,7 +29,7 @@ TEST(update_inertia_tensor_world_rotated)
 
 TEST(update_position_and_orientation_no_forces)
 {
-    BodyCollection bc = create_test_bodies(1);
+    BodyCollection bc; test::init_test_bodies(bc, 1);
     bc.position[0] = vec3{1, 2, 3};
     bc.linear_velocity[0] = vec3{0.5, 0.3, 0.1};
     scalar dt = 0.01;
@@ -64,7 +43,7 @@ TEST(update_position_and_orientation_no_forces)
 
 TEST(update_position_and_orientation_with_forces)
 {
-    BodyCollection bc = create_test_bodies(1);
+    BodyCollection bc; test::init_test_bodies(bc, 1);
     bc.force[0] = vec3{10, 0, 0};
     bc.mass[0] = 2.0;
     bc.inverse_mass[0] = 0.5;
@@ -75,7 +54,7 @@ TEST(update_position_and_orientation_with_forces)
 
 TEST(update_position_and_orientation_angular)
 {
-    BodyCollection bc = create_test_bodies(1);
+    BodyCollection bc; test::init_test_bodies(bc, 1);
     bc.angular_velocity[0] = vec3{0, 0, 1.0};
     scalar dt = 0.01;
     quat initial_orientation = bc.orientation[0];
@@ -90,7 +69,7 @@ TEST(update_position_and_orientation_angular)
 
 TEST(update_position_and_orientation_static_body)
 {
-    BodyCollection bc = create_test_bodies(1);
+    BodyCollection bc; test::init_test_bodies(bc, 1);
     bc.type[0] = BodyType::STATIC;
     bc.force[0] = vec3{100, 100, 100};
     bc.torque[0] = vec3{10, 10, 10};
@@ -103,7 +82,7 @@ TEST(update_position_and_orientation_static_body)
 
 TEST(update_velocities_from_position_change)
 {
-    BodyCollection bc = create_test_bodies(1);
+    BodyCollection bc; test::init_test_bodies(bc, 1);
     bc.prev_position[0] = vec3{0, 0, 0};
     bc.position[0] = vec3{1, 2, 3};
     scalar inv_dt = 1.0 / 0.1;
@@ -115,7 +94,7 @@ TEST(update_velocities_from_position_change)
 
 TEST(update_velocities_from_orientation_change)
 {
-    BodyCollection bc = create_test_bodies(1);
+    BodyCollection bc; test::init_test_bodies(bc, 1);
     bc.prev_orientation[0] = quat(1, 0, 0, 0);
     bc.orientation[0] = quat::from_rpy(0, 0, 0.1);
     update_velocities(bc, 1.0 / 0.1);
@@ -124,7 +103,7 @@ TEST(update_velocities_from_orientation_change)
 
 TEST(update_velocities_static_body)
 {
-    BodyCollection bc = create_test_bodies(1);
+    BodyCollection bc; test::init_test_bodies(bc, 1);
     bc.type[0] = BodyType::STATIC;
     bc.prev_position[0] = vec3{0, 0, 0};
     bc.position[0] = vec3{10, 10, 10};
@@ -136,7 +115,7 @@ TEST(update_velocities_static_body)
 
 TEST(apply_positional_constraint_impulse_linear)
 {
-    BodyCollection bc = create_test_bodies(1);
+    BodyCollection bc; test::init_test_bodies(bc, 1);
     bc.mass[0] = 2.0;
     bc.inverse_mass[0] = 0.5;
     bc.position[0] = vec3{0, 0, 0};
@@ -147,7 +126,7 @@ TEST(apply_positional_constraint_impulse_linear)
 
 TEST(apply_positional_constraint_impulse_with_lever)
 {
-    BodyCollection bc = create_test_bodies(1);
+    BodyCollection bc; test::init_test_bodies(bc, 1);
     bc.inverse_mass[0] = 1.0;
     bc.inverse_inertia_tensor[0] = smat3(1, 1, 1, 0, 0, 0);
     bc.inverse_inertia_tensor_world[0] = smat3(1, 1, 1, 0, 0, 0);
@@ -159,7 +138,7 @@ TEST(apply_positional_constraint_impulse_with_lever)
 
 TEST(apply_positional_constraint_impulse_static)
 {
-    BodyCollection bc = create_test_bodies(1);
+    BodyCollection bc; test::init_test_bodies(bc, 1);
     bc.type[0] = BodyType::STATIC;
     vec3 initial_pos = bc.position[0];
     quat initial_orient = bc.orientation[0];
@@ -170,7 +149,7 @@ TEST(apply_positional_constraint_impulse_static)
 
 TEST(apply_rotational_constraint_impulse_base)
 {
-    BodyCollection bc = create_test_bodies(1);
+    BodyCollection bc; test::init_test_bodies(bc, 1);
     bc.inverse_inertia_tensor_world[0] = smat3(1, 1, 1, 0, 0, 0);
     quat initial_orientation = bc.orientation[0];
     apply_rotational_constraint_impulse(bc, 0, vec3{0, 0, 1});
@@ -184,7 +163,7 @@ TEST(apply_rotational_constraint_impulse_base)
 
 TEST(apply_rotational_constraint_impulse_static)
 {
-    BodyCollection bc = create_test_bodies(1);
+    BodyCollection bc; test::init_test_bodies(bc, 1);
     bc.type[0] = BodyType::STATIC;
     quat initial_orient = bc.orientation[0];
     apply_rotational_constraint_impulse(bc, 0, vec3{10, 10, 10});
@@ -193,7 +172,7 @@ TEST(apply_rotational_constraint_impulse_static)
 
 TEST(apply_positional_velocity_constraint_impulse_base)
 {
-    BodyCollection bc = create_test_bodies(1);
+    BodyCollection bc; test::init_test_bodies(bc, 1);
     bc.inverse_mass[0] = 1.0;
     bc.inverse_inertia_tensor_world[0] = smat3(1, 1, 1, 0, 0, 0);
     apply_positional_velocity_constraint_impulse(bc, 0, vec3{5, 0, 0}, vec3{0, 1, 0});
@@ -203,7 +182,7 @@ TEST(apply_positional_velocity_constraint_impulse_base)
 
 TEST(apply_positional_velocity_constraint_impulse_static)
 {
-    BodyCollection bc = create_test_bodies(1);
+    BodyCollection bc; test::init_test_bodies(bc, 1);
     bc.type[0] = BodyType::STATIC;
     vec3 initial_lin_vel = bc.linear_velocity[0];
     vec3 initial_ang_vel = bc.angular_velocity[0];
@@ -214,7 +193,7 @@ TEST(apply_positional_velocity_constraint_impulse_static)
 
 TEST(get_positional_generalized_inverse_mass_center)
 {
-    BodyCollection bc = create_test_bodies(1);
+    BodyCollection bc; test::init_test_bodies(bc, 1);
     bc.inverse_mass[0] = 0.5;
     bc.inverse_inertia_tensor_world[0] = smat3(1, 1, 1, 0, 0, 0);
     scalar w = get_positional_generalized_inverse_mass(bc, 0, vec3{0, 0, 0}, vec3{1, 0, 0});
@@ -223,7 +202,7 @@ TEST(get_positional_generalized_inverse_mass_center)
 
 TEST(get_positional_generalized_inverse_mass_offset)
 {
-    BodyCollection bc = create_test_bodies(1);
+    BodyCollection bc; test::init_test_bodies(bc, 1);
     bc.inverse_mass[0] = 1.0;
     bc.inverse_inertia_tensor_world[0] = smat3(1, 1, 1, 0, 0, 0);
     scalar w = get_positional_generalized_inverse_mass(bc, 0, vec3{1, 0, 0}, vec3{0, 1, 0});
@@ -232,7 +211,7 @@ TEST(get_positional_generalized_inverse_mass_offset)
 
 TEST(get_positional_generalized_inverse_mass_static)
 {
-    BodyCollection bc = create_test_bodies(1);
+    BodyCollection bc; test::init_test_bodies(bc, 1);
     bc.type[0] = BodyType::STATIC;
     scalar w = get_positional_generalized_inverse_mass(bc, 0, vec3{1, 1, 1}, vec3{0, 1, 0});
     ASSERT_NEAR(w, 0.0, 0.001);
@@ -240,7 +219,7 @@ TEST(get_positional_generalized_inverse_mass_static)
 
 TEST(get_rotational_generalized_inverse_mass_base)
 {
-    BodyCollection bc = create_test_bodies(1);
+    BodyCollection bc; test::init_test_bodies(bc, 1);
     bc.inverse_inertia_tensor[0] = smat3(2, 3, 4, 0, 0, 0);
     scalar w = get_rotational_generalized_inverse_mass(bc, 0, vec3{1, 0, 0});
     ASSERT_NEAR(w, 2.0, 0.001);
@@ -248,7 +227,7 @@ TEST(get_rotational_generalized_inverse_mass_base)
 
 TEST(get_rotational_generalized_inverse_mass_static)
 {
-    BodyCollection bc = create_test_bodies(1);
+    BodyCollection bc; test::init_test_bodies(bc, 1);
     bc.type[0] = BodyType::STATIC;
     scalar w = get_rotational_generalized_inverse_mass(bc, 0, vec3{0, 0, 1});
     ASSERT_NEAR(w, 0.0, 0.001);
@@ -256,7 +235,7 @@ TEST(get_rotational_generalized_inverse_mass_static)
 
 TEST(multiple_bodies_integration)
 {
-    BodyCollection bc = create_test_bodies(3);
+    BodyCollection bc; test::init_test_bodies(bc, 3);
     bc.mass[0] = 1.0;
     bc.inverse_mass[0] = 1.0;
     bc.mass[1] = 2.0;

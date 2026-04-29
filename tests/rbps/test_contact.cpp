@@ -1,61 +1,10 @@
 #include "rbps/constraints/Contact.hpp"
 #include "tests/test_helper.hpp"
+#include "tests/rbps/body_helpers.hpp"
+#include "tests/rbps/constraint_helpers.hpp"
 
 using namespace rbps;
 using namespace m3d;
-
-// Helper function to create test bodies
-static BodyCollection create_test_bodies(uint32_t n)
-{
-    BodyCollection bc;
-    for (uint32_t k = 0; k < n; ++k)
-    {
-        int32_t i = bc.index_of(bc.add());
-        bc.mass[i] = 1.0;
-        bc.inverse_mass[i] = 1.0;
-        bc.type[i] = BodyType::DYNAMIC;
-        bc.position[i] = vec3{0, 0, 0};
-        bc.linear_velocity[i] = vec3{0, 0, 0};
-        bc.orientation[i] = quat(1, 0, 0, 0);
-        bc.angular_velocity[i] = vec3{0, 0, 0};
-        bc.prev_orientation[i] = quat(1, 0, 0, 0);
-        bc.inertia_tensor[i] = smat3(1, 1, 1, 0, 0, 0);
-        bc.inverse_inertia_tensor[i] = smat3(1, 1, 1, 0, 0, 0);
-        bc.inertia_tensor_world[i] = smat3(1, 1, 1, 0, 0, 0);
-        bc.inverse_inertia_tensor_world[i] = smat3(1, 1, 1, 0, 0, 0);
-    }
-    return bc;
-}
-
-
-// Helper to create a ContactList with n pre-populated contacts
-// body_a defaults to slot 0, body_b to slot 1
-static ContactList create_contact_list(size_t n)
-{
-    ContactList cl;
-    cl.n_contacts = static_cast<uint32_t>(n);
-    cl.body_a               .resize(n, 0);
-    cl.body_b               .resize(n, 1);
-    cl.collider_a           .resize(n, 0);
-    cl.collider_b           .resize(n, 1);
-    cl.r_a_local            .resize(n, vec3{0, 0, 0});
-    cl.r_b_local            .resize(n, vec3{0, 0, 0});
-    cl.normal               .resize(n, vec3{0, 1, 0});
-    cl.point_on_a           .resize(n, vec3{0, 0, 0});
-    cl.point_on_b           .resize(n, vec3{0, 0, 0});
-    cl.penetration_depth    .resize(n, 0.0);
-    cl.static_friction      .resize(n, 0.5);
-    cl.dynamic_friction     .resize(n, 0.3);
-    cl.restitution          .resize(n, 0.5);
-    cl.collision            .resize(n, false);
-    cl.relative_velocity    .resize(n, 0.0);
-    cl.normal_lambda        .resize(n, 0.0);
-    cl.tangent_lambda       .resize(n, 0.0);
-    cl.normal_force         .resize(n, vec3{0, 0, 0});
-    cl.tangent_force        .resize(n, vec3{0, 0, 0});
-    cl.use_dynamic_friction .resize(n, false);
-    return cl;
-}
 
 // ============================================================================
 // NORMAL CONSTRAINT TESTS
@@ -63,8 +12,8 @@ static ContactList create_contact_list(size_t n)
 
 TEST(solve_normal_constraint_no_penetration)
 {
-    BodyCollection bc = create_test_bodies(2);
-    ContactList cc = create_contact_list(1);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
+    ContactList cc = test::make_contact_list(1);
     
     // No penetration
     scalar magnitude = 0.0;
@@ -81,8 +30,8 @@ TEST(solve_normal_constraint_no_penetration)
 
 TEST(solve_normal_constraint_with_penetration)
 {
-    BodyCollection bc = create_test_bodies(2);
-    ContactList cc = create_contact_list(1);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
+    ContactList cc = test::make_contact_list(1);
     
     // Bodies penetrating 0.1 units
     cc.normal[0] = vec3{0, 1, 0};
@@ -109,8 +58,8 @@ TEST(solve_normal_constraint_with_penetration)
 
 TEST(solve_normal_constraint_with_lever_arm)
 {
-    BodyCollection bc = create_test_bodies(2);
-    ContactList cc = create_contact_list(1);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
+    ContactList cc = test::make_contact_list(1);
     
     // Contact point offset from center of mass
     cc.normal[0] = vec3{0, 1, 0};
@@ -129,12 +78,12 @@ TEST(solve_normal_constraint_with_lever_arm)
 
 TEST(solve_normal_constraint_static_body)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
     bc.type[1] = BodyType::STATIC;
     bc.inverse_mass[1] = 0.0;
     bc.inverse_inertia_tensor_world[1] = smat3(0, 0, 0, 0, 0, 0);
     
-    ContactList cc = create_contact_list(1);
+    ContactList cc = test::make_contact_list(1);
     
     cc.normal[0] = vec3{0, 1, 0};
     scalar magnitude = 0.1;
@@ -159,8 +108,8 @@ TEST(solve_normal_constraint_static_body)
 
 TEST(solve_tangent_constraint_no_slip)
 {
-    BodyCollection bc = create_test_bodies(2);
-    ContactList cc = create_contact_list(1);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
+    ContactList cc = test::make_contact_list(1);
     
     // No tangential slip
     cc.point_on_a[0] = vec3{0, 0, 0};
@@ -176,8 +125,8 @@ TEST(solve_tangent_constraint_no_slip)
 
 TEST(solve_tangent_constraint_with_slip)
 {
-    BodyCollection bc = create_test_bodies(2);
-    ContactList cc = create_contact_list(1);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
+    ContactList cc = test::make_contact_list(1);
     
     // Setup tangential slip
     cc.normal[0] = vec3{0, 1, 0};
@@ -200,8 +149,8 @@ TEST(solve_tangent_constraint_with_slip)
 
 TEST(solve_tangent_constraint_exceeds_static_friction)
 {
-    BodyCollection bc = create_test_bodies(2);
-    ContactList cc = create_contact_list(1);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
+    ContactList cc = test::make_contact_list(1);
     
     // Large tangential slip
     cc.normal[0] = vec3{0, 1, 0};
@@ -225,8 +174,8 @@ TEST(solve_tangent_constraint_exceeds_static_friction)
 
 TEST(solve_tangent_constraint_with_rotation)
 {
-    BodyCollection bc = create_test_bodies(2);
-    ContactList cc = create_contact_list(1);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
+    ContactList cc = test::make_contact_list(1);
     
     // Setup with previous orientation
     cc.normal[0] = vec3{0, 1, 0};
@@ -253,8 +202,8 @@ TEST(solve_tangent_constraint_with_rotation)
 
 TEST(apply_constraint_position_level_no_collision)
 {
-    BodyCollection bc = create_test_bodies(2);
-    ContactList cc = create_contact_list(1);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
+    ContactList cc = test::make_contact_list(1);
     
     // Bodies separated (negative penetration)
     cc.normal[0] = vec3{0, 1, 0};
@@ -271,8 +220,8 @@ TEST(apply_constraint_position_level_no_collision)
 
 TEST(apply_constraint_position_level_with_collision)
 {
-    BodyCollection bc = create_test_bodies(2);
-    ContactList cc = create_contact_list(1);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
+    ContactList cc = test::make_contact_list(1);
 
     cc.normal[0]    = vec3{0,  1, 0};
     cc.point_on_a[0] = vec3{0,  0.05, 0};
@@ -291,8 +240,8 @@ TEST(apply_constraint_position_level_with_collision)
 
 TEST(apply_constraint_position_level_with_velocity)
 {
-    BodyCollection bc = create_test_bodies(2);
-    ContactList cc = create_contact_list(1);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
+    ContactList cc = test::make_contact_list(1);
 
     cc.normal[0]    = vec3{0,  1, 0};
     cc.point_on_a[0] = vec3{0,  0.05, 0};
@@ -314,8 +263,8 @@ TEST(apply_constraint_position_level_with_velocity)
 
 TEST(apply_constraint_position_level_resolves_penetration)
 {
-    BodyCollection bc = create_test_bodies(2);
-    ContactList cc = create_contact_list(1);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
+    ContactList cc = test::make_contact_list(1);
 
     cc.normal[0]    = vec3{0,  1, 0};
     cc.point_on_a[0] = vec3{0,  0.1, 0};
@@ -338,8 +287,8 @@ TEST(apply_constraint_position_level_resolves_penetration)
 
 TEST(apply_constraint_velocity_level_no_collision)
 {
-    BodyCollection bc = create_test_bodies(2);
-    ContactList cc = create_contact_list(1);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
+    ContactList cc = test::make_contact_list(1);
     
     // No penetration
     cc.normal[0] = vec3{0, 1, 0};
@@ -357,8 +306,8 @@ TEST(apply_constraint_velocity_level_no_collision)
 
 TEST(apply_constraint_velocity_level_with_restitution)
 {
-    BodyCollection bc = create_test_bodies(2);
-    ContactList cc = create_contact_list(1);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
+    ContactList cc = test::make_contact_list(1);
     
     // Bodies in contact with approach velocity
     cc.normal[0] = vec3{0, 1, 0};
@@ -396,8 +345,8 @@ TEST(apply_constraint_velocity_level_no_restitution_slow_impact)
     //   Body 0: v_n = -0.1 →  -0.05  (gains +0.05)
     //   Body 1: v_n =  0.0 →  -0.05  (gains -0.05)
     //   Relative v_n after = -0.05 - (-0.05) = 0  ✓
-    BodyCollection bc = create_test_bodies(2);
-    ContactList cl = create_contact_list(1);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
+    ContactList cl = test::make_contact_list(1);
  
     cl.normal[0] = vec3{0, 1, 0};
     cl.point_on_a[0] = vec3{0,  0.05, 0};
@@ -428,8 +377,8 @@ TEST(apply_constraint_velocity_level_no_restitution_slow_impact)
 }
 TEST(apply_constraint_velocity_level_with_friction)
 {
-    BodyCollection bc = create_test_bodies(2);
-    ContactList cc = create_contact_list(1);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
+    ContactList cc = test::make_contact_list(1);
     
     // Bodies in contact with tangential velocity
     cc.normal[0] = vec3{0, 1, 0};
@@ -456,8 +405,8 @@ TEST(apply_constraint_velocity_level_with_friction)
 
 TEST(apply_constraint_velocity_level_zero_normal_force)
 {
-    BodyCollection bc = create_test_bodies(2);
-    ContactList cc = create_contact_list(1);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
+    ContactList cc = test::make_contact_list(1);
     
     // Contact but no normal force (shouldn't happen but test robustness)
     cc.normal[0] = vec3{0, 1, 0};
@@ -488,8 +437,8 @@ TEST(apply_constraint_velocity_level_zero_normal_force)
 
 TEST(solve_contacts_velocity_level_single_contact)
 {
-    BodyCollection bc = create_test_bodies(2);
-    ContactList cc = create_contact_list(1);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
+    ContactList cc = test::make_contact_list(1);
     
     cc.normal[0] = vec3{0, 1, 0};
     cc.point_on_a[0] = vec3{0, 0.05, 0};
@@ -511,8 +460,8 @@ TEST(solve_contacts_velocity_level_single_contact)
 
 TEST(solve_contacts_velocity_level_multiple_contacts)
 {
-    BodyCollection bc = create_test_bodies(3);
-    ContactList cc = create_contact_list(2);
+    BodyCollection bc; test::init_test_bodies(bc, 3);
+    ContactList cc = test::make_contact_list(2);
     
     // First contact: body 0 and 1
     cc.body_a[0] = 0;
@@ -554,7 +503,7 @@ TEST(solve_contacts_velocity_level_multiple_contacts)
 
 TEST(solve_contacts_velocity_level_no_contacts)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
     ContactList cc;
     cc.n_contacts = 0;
     
@@ -568,8 +517,8 @@ TEST(solve_contacts_velocity_level_no_contacts)
 
 TEST(contact_resolution_full_cycle)
 {
-    BodyCollection bc = create_test_bodies(2);
-    ContactList cc = create_contact_list(1);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
+    ContactList cc = test::make_contact_list(1);
     
     // Setup collision scenario
     cc.normal[0] = vec3{0, 1, 0};
@@ -602,8 +551,8 @@ TEST(contact_resolution_full_cycle)
 
 TEST(contact_with_angular_velocity)
 {
-    BodyCollection bc = create_test_bodies(2);
-    ContactList cc = create_contact_list(1);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
+    ContactList cc = test::make_contact_list(1);
 
     cc.normal[0]    = vec3{0,  1, 0};
     cc.point_on_a[0] = vec3{1,  0.05, 0};
@@ -623,13 +572,13 @@ TEST(contact_with_angular_velocity)
 
 TEST(contact_between_static_bodies)
 {
-    BodyCollection bc = create_test_bodies(2);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
     bc.type[0] = BodyType::STATIC;
     bc.type[1] = BodyType::STATIC;
     bc.inverse_mass[0] = 0.0;
     bc.inverse_mass[1] = 0.0;
     
-    ContactList cc = create_contact_list(1);
+    ContactList cc = test::make_contact_list(1);
     
     cc.normal[0] = vec3{0, 1, 0};
     cc.point_on_a[0] = vec3{0, 0.05, 0};
@@ -651,8 +600,8 @@ TEST(contact_between_static_bodies)
 
 TEST(contact_normal_force_accumulation)
 {
-    BodyCollection bc = create_test_bodies(2);
-    ContactList cc = create_contact_list(1);
+    BodyCollection bc; test::init_test_bodies(bc, 2);
+    ContactList cc = test::make_contact_list(1);
 
     cc.normal[0]    = vec3{0,  1, 0};
     cc.point_on_a[0] = vec3{0,  0.1, 0};

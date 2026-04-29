@@ -18,6 +18,12 @@ namespace test
     {
         return std::abs(static_cast<double>(a) - static_cast<double>(b)) < static_cast<double>(precision);
     }
+
+    // Cross-domain math constants — used by quaternion/rotation tests that
+    // hard-coded 1.57079632679 in 3+ files.
+    constexpr double kPi        = 3.14159265358979323846;
+    constexpr double kHalfPi    = kPi / 2.0;
+    constexpr double kQuarterPi = kPi / 4.0;
 }
 
 #define TEST(name) static void test_##name()
@@ -59,6 +65,49 @@ namespace test
         std::cerr << "  FAIL: " << a << " not near " << b << " at line " << __LINE__ << "\n"; \
         throw std::runtime_error("test failed");                                              \
     }
+
+// Component-wise vector-near. Captures __LINE__ at call site so failures
+// point at the test, not the macro body.
+#define ASSERT_VEC_NEAR(va, vb, ...)                                                                  \
+    do {                                                                                              \
+        const auto &_a = (va); const auto &_b = (vb);                                                 \
+        if (!test::near(_a.x, _b.x, ##__VA_ARGS__) ||                                                 \
+            !test::near(_a.y, _b.y, ##__VA_ARGS__) ||                                                 \
+            !test::near(_a.z, _b.z, ##__VA_ARGS__))                                                   \
+        {                                                                                             \
+            std::cerr << "  FAIL: vec " << #va << " not near " << #vb                                 \
+                      << " at line " << __LINE__ << "\n"                                              \
+                      << "        got    (" << _a.x << ", " << _a.y << ", " << _a.z << ")\n"          \
+                      << "        wanted (" << _b.x << ", " << _b.y << ", " << _b.z << ")\n";         \
+            throw std::runtime_error("test failed");                                                  \
+        }                                                                                             \
+    } while (0)
+
+// Component-wise quaternion-near (w, x, y, z).
+#define ASSERT_QUAT_NEAR(qa, qb, ...)                                                                 \
+    do {                                                                                              \
+        const auto &_a = (qa); const auto &_b = (qb);                                                 \
+        if (!test::near(_a.w, _b.w, ##__VA_ARGS__) ||                                                 \
+            !test::near(_a.x, _b.x, ##__VA_ARGS__) ||                                                 \
+            !test::near(_a.y, _b.y, ##__VA_ARGS__) ||                                                 \
+            !test::near(_a.z, _b.z, ##__VA_ARGS__))                                                   \
+        {                                                                                             \
+            std::cerr << "  FAIL: quat " << #qa << " not near " << #qb                                \
+                      << " at line " << __LINE__ << "\n";                                             \
+            throw std::runtime_error("test failed");                                                  \
+        }                                                                                             \
+    } while (0)
+
+// Asserts a vec3-shaped value is unit length within 0.001.
+#define ASSERT_NORMAL_UNIT(v)                                                                         \
+    do {                                                                                              \
+        const auto _len = m3d::length((v));                                                           \
+        if (!test::near(_len, 1.0, 0.001)) {                                                          \
+            std::cerr << "  FAIL: " << #v << " is not unit length (got " << _len                      \
+                      << ") at line " << __LINE__ << "\n";                                            \
+            throw std::runtime_error("test failed");                                                  \
+        }                                                                                             \
+    } while (0)
 
 #define TEST_SUITE(...)                                                                                                    \
     int main()                                                                                                             \

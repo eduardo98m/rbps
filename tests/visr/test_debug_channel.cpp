@@ -119,7 +119,7 @@ TEST(poll_dispatches_set_timestep)
 TEST(poll_dispatches_zero_velocity)
 {
     rbps::World w = make_world();
-    const uint32_t body_id = w.bodies._ids[0];
+    const uint32_t body_id = get_first_body_id(w);
     w.bodies.linear_velocity[0] = {10, 5, 3};
     DebugChannel<InProcessTransport> ch;
     ch.transport.push_command(CmdZeroVelocity{body_id});
@@ -144,7 +144,7 @@ TEST(track_series_ring_buffer_wraps)
 {
     rbps::World w = make_world();
     DebugChannel<NullTransport> ch;
-    const uint32_t body_id = w.bodies._ids[0];
+    const uint32_t body_id = get_first_body_id(w);
     ch.handle_track_command(CmdTrackQuantity{TrackTarget::BodyPositionY, body_id, true});
     ASSERT_EQ(ch.tracked_series().size(), 1u);
     for (size_t i = 0; i < TRACK_HISTORY_DEPTH + 10; ++i)
@@ -156,7 +156,7 @@ TEST(track_deregister_removes_series)
 {
     rbps::World w = make_world();
     DebugChannel<NullTransport> ch;
-    const uint32_t body_id = w.bodies._ids[0];
+    const uint32_t body_id = get_first_body_id(w);
     ch.handle_track_command(CmdTrackQuantity{TrackTarget::BodyLinearSpeed, body_id, true});
     ASSERT_EQ(ch.tracked_series().size(), 1u);
     ch.handle_track_command(CmdTrackQuantity{TrackTarget::BodyLinearSpeed, body_id, false});
@@ -167,7 +167,7 @@ TEST(track_no_duplicates)
 {
     rbps::World w = make_world();
     DebugChannel<NullTransport> ch;
-    const uint32_t body_id = w.bodies._ids[0];
+    const uint32_t body_id = get_first_body_id(w);
     ch.handle_track_command(CmdTrackQuantity{TrackTarget::BodyAngularSpeed, body_id, true});
     ch.handle_track_command(CmdTrackQuantity{TrackTarget::BodyAngularSpeed, body_id, true});
     ASSERT_EQ(ch.tracked_series().size(), 1u);
@@ -176,7 +176,7 @@ TEST(track_no_duplicates)
 TEST(track_position_y_correct_value)
 {
     rbps::World w = make_world();
-    const uint32_t body_id = w.bodies._ids[0];
+    const uint32_t body_id = get_first_body_id(w);
     DebugChannel<NullTransport> ch;
     ch.handle_track_command(CmdTrackQuantity{TrackTarget::BodyPositionY, body_id, true});
     w.bodies.position[0] = {0, 7.5, 0};

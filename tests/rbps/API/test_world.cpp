@@ -1,51 +1,12 @@
 #include "rbps/API/World.hpp"
 #include "tests/test_helper.hpp"
+#include "tests/rbps/pipeline_helpers.hpp"
 
 using namespace rbps;
 using namespace m3d;
 
-// ============================================================================
-//  Helpers
-// ============================================================================
-
-// A minimal dynamic sphere body at a given position
-static uint32_t add_dynamic_sphere(World &w,
-                                   vec3 pos,
-                                   scalar radius   = 0.5,
-                                   scalar mass     = 1.0,
-                                   vec3  vel       = vec3{0,0,0})
-{
-    BodyParams bp;
-    bp.position         = pos;
-    bp.linear_velocity  = vel;
-    bp.mass             = mass;
-    bp.type             = BodyType::DYNAMIC;
-    uint32_t bid = w.create_body(bp);
-
-    ColliderParams cp;
-    cp.body_id = bid;
-    cp.shape   = rbc::Sphere(radius);
-    w.create_collider(cp);
-    return bid;
-}
-
-// A static ground plane body (infinite mass, does not move)
-static uint32_t add_static_box(World &w,
-                                vec3  pos,
-                                vec3  half_extents = vec3{10, 2, 10})
-{
-    BodyParams bp;
-    bp.position = pos;
-    bp.mass     = 0.0;   // static
-    bp.type     = BodyType::STATIC;
-    uint32_t bid = w.create_body(bp);
-
-    ColliderParams cp;
-    cp.body_id = bid;
-    cp.shape   = rbc::Box(half_extents);
-    w.create_collider(cp);
-    return bid;
-}
+using test::add_dynamic_sphere;
+using test::add_static_box;
 
 // ============================================================================
 //  Construction tests

@@ -1,5 +1,6 @@
 #include "math3d/vec3.hpp"
 #include "math3d/quat.hpp"
+#include "tests/test_helper.hpp"
 #include <cassert>
 #include <iostream>
 
@@ -12,7 +13,7 @@ void test_vec3() {
 
 void test_quat_rpy() {
     // 90 degrees yaw (PI/2)
-    auto q = m3d::quat::from_rpy(0, 0, 1.57079632679);
+    auto q = m3d::quat::from_rpy(0, 0, test::kHalfPi);
     // Should be roughly w: 0.707, z: 0.707
     assert(std::abs(q.w - 0.70710678118) < 0.001);
     std::cout << "Quat RPY tests passed! " << q << std::endl;

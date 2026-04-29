@@ -1,5 +1,6 @@
 #include "math3d/mat3.hpp"
 #include "tests/test_helper.hpp"
+#include "tests/math3d_helpers.hpp"
 
 TEST(identity_and_indexing)
 {
@@ -73,7 +74,7 @@ TEST(mat3_transpose)
 TEST(mat3_inverse_complex)
 {
     // Rotation matrix (90 deg around Z)
-    m3d::quat q = m3d::quat::from_rpy(0, 0, 1.57079632679);
+    m3d::quat q = m3d::quat::from_rpy(0, 0, test::kHalfPi);
     m3d::mat3 R = m3d::mat3_cast(q);
 
     m3d::mat3 invR = R.inverse();
@@ -250,12 +251,7 @@ TEST(smat3_determinant_matches_mat3)
     m3d::smat3 s(2.0, 3.0, 4.0,
                  0.5, 0.7, 0.9);
 
-    // Expand to full mat3
-    m3d::mat3 full(
-        s.xx, s.xy, s.xz,
-        s.xy, s.yy, s.yz,
-        s.xz, s.yz, s.zz
-    );
+    m3d::mat3 full = test::smat3_to_mat3(s);
 
     ASSERT_NEAR(s.determinant(), full.determinant());
 }
@@ -265,11 +261,7 @@ TEST(smat3_inverse_matches_mat3)
     m3d::smat3 s(4.0, 5.0, 6.0,
                  0.5, 0.3, 0.2);
 
-    m3d::mat3 full(
-        s.xx, s.xy, s.xz,
-        s.xy, s.yy, s.yz,
-        s.xz, s.yz, s.zz
-    );
+    m3d::mat3 full = test::smat3_to_mat3(s);
 
     m3d::smat3 s_inv = s.inverse();
     m3d::mat3 full_inv = full.inverse();
@@ -291,18 +283,8 @@ TEST(smat3_inverse_identity_check)
 
     m3d::smat3 s_inv = s.inverse();
 
-    // Expand both to full mat3
-    m3d::mat3 A(
-        s.xx, s.xy, s.xz,
-        s.xy, s.yy, s.yz,
-        s.xz, s.yz, s.zz
-    );
-
-    m3d::mat3 Ainv(
-        s_inv.xx, s_inv.xy, s_inv.xz,
-        s_inv.xy, s_inv.yy, s_inv.yz,
-        s_inv.xz, s_inv.yz, s_inv.zz
-    );
+    m3d::mat3 A    = test::smat3_to_mat3(s);
+    m3d::mat3 Ainv = test::smat3_to_mat3(s_inv);
 
     m3d::mat3 identity = A * Ainv;
 
