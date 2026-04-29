@@ -28,6 +28,13 @@ to the design doc as the work progresses.
 | 9  | Rendering pipeline upgrade            | @subpage feature_rendering |
 | 10 | GPU camera + LiDAR sensors            | @subpage feature_sensors_gpu |
 | 11 | ROS 2 bridge                          | @subpage feature_ros2 |
+| 12 | Articulated bodies (XPBD)             | @subpage feature_articulated_bodies_xpbd |
+| 13 | World snapshot / restore              | @subpage feature_world_snapshot_restore |
+| 14 | Python bindings (pybind11)            | @subpage feature_python_bindings |
+| 15 | Benchmark harness                     | @subpage feature_benchmark_harness |
+| 16 | Actuator models                       | @subpage feature_actuator_models |
+| 17 | Sample-based MPC (CEM / MPPI)         | @subpage feature_sample_mpc |
+| 18 | Multi-world support                   | @subpage feature_multi_world |
 
 ## Doc template
 
