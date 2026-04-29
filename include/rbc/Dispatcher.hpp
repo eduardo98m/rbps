@@ -205,6 +205,8 @@ namespace rbc
      * compile-time dispatch table and forwards the call. This is the
      * runtime entry point used by `test_narrow_phase`.
      *
+     * @example test_dispatcher.cpp
+     *
      * @ingroup rbc
      */
     inline bool dispatch(const Shape     &a, const m3d::tf &tf_a,

@@ -62,6 +62,8 @@ namespace visr
      * calling `run()`. Custom panels can be appended to `extra_guis`;
      * each entry is invoked once per render frame inside `rlImGuiBegin / End`.
      *
+     * @example main.cpp
+     *
      * @ingroup visr
      */
     struct VisrApp

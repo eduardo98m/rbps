@@ -19,6 +19,13 @@ FILE_PATTERNS          = *.hpp *.h *.md
 USE_MDFILE_AS_MAINPAGE = @DOXYGEN_MAINPAGE@
 EXCLUDE_PATTERNS       = */build/* */tests/* */.git/*
 
+# ── Examples ─────────────────────────────────────────────────────────────────
+# Files referenced via @example are looked up in EXAMPLE_PATH and rendered
+# verbatim on a dedicated "Examples" sidebar page.
+EXAMPLE_PATH           = @CMAKE_SOURCE_DIR@/src @CMAKE_SOURCE_DIR@/tests
+EXAMPLE_PATTERNS       = *.cpp
+EXAMPLE_RECURSIVE      = YES
+
 # ── Extraction policy ────────────────────────────────────────────────────────
 # Public API by default; internals opt in via @ingroup internals.
 EXTRACT_ALL            = NO

@@ -66,6 +66,9 @@
  * uint32_t i = world.bodies.index_of(ball_id);
  * std::cout << world.bodies.position[i] << "\n";
  * @endcode
+ *
+ * @example test_world.cpp
+ * @example main.cpp
  */
 
 namespace rbps

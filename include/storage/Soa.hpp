@@ -611,6 +611,8 @@ private:
  *   for (uint32_t i = 0; i < pc.count(); ++i)
  *       pc.position[i] += pc.velocity[i] * dt;
  * @endcode
+ *
+ * @example test_soa.cpp
  */
 #define DEFINE_DYN_SOA(Name, IdType, GenBits, FIELDS_MACRO)               \
   struct Name : DynSoABase<Name, IdType, GenBits>                         \

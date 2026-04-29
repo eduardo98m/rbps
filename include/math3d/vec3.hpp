@@ -29,6 +29,8 @@ namespace m3d
      * vec3 n = normalize(cross(a, b)); // unit perpendicular
      * @endcode
      *
+     * @example test_vec3.cpp
+     *
      * @ingroup math3d
      */
     struct vec3

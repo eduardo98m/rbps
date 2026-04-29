@@ -106,6 +106,8 @@ struct Metadata {
  * @brief Dynamic bookkeeping tables (heap-allocated, unlimited capacity).
  *
  * Embed via the IVC_CORE macro.
+ *
+ * @example test_ivc.cpp
  */
 struct Core
 {

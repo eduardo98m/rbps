@@ -106,6 +106,8 @@ namespace rbps
      * for (uint32_t i = 0; i < bc.count(); ++i)
      *     bc.position[i] += bc.linear_velocity[i] * dt;
      * @endcode
+     *
+     * @example test_body.cpp
      */
     DEFINE_DYN_SOA(BodyCollection, uint32_t, /*GenerationBits=*/8, BODY_FIELDS)
 

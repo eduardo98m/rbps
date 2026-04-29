@@ -27,6 +27,8 @@ namespace m3d
      * vec3 r = rotate(q, {1, 0, 0});   // r ≈ (0, 0, -1)
      * @endcode
      *
+     * @example test_quat.cpp
+     *
      * @ingroup math3d
      */
     struct quat
