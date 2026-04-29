@@ -1,13 +1,14 @@
 #pragma once
-// rbps/API/BodyAPI.hpp
-//
-// Public API for adding and removing bodies from a BodyCollection.
-// Callers work with stable uint32_t IDs — these never change even when
-// other bodies are added or removed.
-//
-// Replaces the old IVC-based BodyAPI.  The bookkeeping that was previously
-// split across ivc::add / ivc::erase / push_back / pop_back is now handled
-// entirely inside BodyCollection (via DynSoABase).
+
+/**
+ * @file BodyAPI.hpp
+ * @brief Public helpers to add / remove bodies in a `BodyCollection`.
+ * @ingroup rbps
+ *
+ * Callers work with stable `uint32_t` IDs — these survive other bodies
+ * being added or removed. All bookkeeping (slot allocation, generation
+ * counter) is delegated to `BodyCollection` (`DynSoABase`).
+ */
 
 #include "rbps/Body.hpp"
 
@@ -15,7 +16,8 @@ namespace rbps
 {
 
     /**
-     * @brief Initial properties for a new body.  All fields have sensible defaults.
+     * @brief Initial properties for a new body. All fields have sensible defaults.
+     * @ingroup rbps
      */
     struct BodyParams
     {
@@ -45,6 +47,8 @@ namespace rbps
      *   uint32_t ball = create_body(bc, { .mass=2.0, .position={0,5,0} });
      *   uint32_t i    = bc.index_of(ball);    // packed index for direct array access
      * @endcode
+     *
+     * @ingroup rbps
      */
     inline uint32_t create_body(BodyCollection &bc, const BodyParams &params = {})
     {
@@ -86,6 +90,8 @@ namespace rbps
      *
      * @param bc  The BodyCollection.
      * @param id  Stable ID returned by create_body().
+     *
+     * @ingroup rbps
      */
     inline void remove_body(BodyCollection &bc, uint32_t id)
     {

@@ -1,8 +1,27 @@
 #pragma once
-// rbps/Body.hpp
 
 #include <storage/Soa.hpp>
 #include <math3d/math3d.hpp>
+
+/**
+ * @defgroup rbps rbps — Physics core
+ * @brief Bodies, constraints, joints, contacts, and the `World` step loop.
+ *
+ * The user-facing entry point is `World` in [API/World.hpp](API/World.hpp).
+ * Lower-level layers (Body / Constraint / Joint / Contact / Collider)
+ * are exposed for fine-grained control or for unit-tested data flow.
+ *
+ * @par Step loop summary
+ * Per frame: broad-phase update → narrow-phase contact detection → N substeps
+ * of `(integrate → position-level solve → velocity update → velocity-level
+ * solve)`. See [API/World.hpp](API/World.hpp) for the full diagram.
+ */
+
+/**
+ * @file Body.hpp
+ * @brief `BodyCollection` SoA + per-body integration / impulse helpers.
+ * @ingroup rbps
+ */
 
 using namespace m3d;
 
@@ -10,9 +29,14 @@ namespace rbps
 {
 
     /**
-     * @brief Enum for the motion type of a body.
-     * STATIC  — infinite mass, never moved by the solver.
-     * DYNAMIC — integrated each frame.
+     * @brief Motion type of a rigid body.
+     *
+     * - `STATIC`  — infinite mass; never moved by the solver. Used for level
+     *               geometry, anchors, and kinematic obstacles.
+     * - `DYNAMIC` — integrated each frame; affected by forces, torques, and
+     *               constraint impulses.
+     *
+     * @ingroup rbps
      */
     enum BodyType
     {
@@ -61,8 +85,27 @@ namespace rbps
     //        bc.position[i] += bc.linear_velocity[i] * dt;
     // ─────────────────────────────────────────────────────────────────────────────
     /**
-     * @brief SoA collection for rigid bodies.  All body data is stored in
-     * separate vectors, indexed by a packed data index.
+     * @ingroup rbps
+     * @brief Structure-of-Arrays collection for rigid bodies.
+     *
+     * Every body field listed in `BODY_FIELDS` becomes a `std::vector<T>`
+     * member; access is by packed data index.
+     *
+     * - `uint32_t` IDs with 8 generation bits — `2^24` slots, 256 reuse cycles.
+     * - All allocation / freeing goes through the `DynSoABase` API
+     *   (`bc.add()`, `bc.remove(id)`, `bc.index_of(id)`, `bc.count()`).
+     *
+     * @code
+     * // Allocate a dynamic body and write its starting state.
+     * uint32_t id = bc.add();
+     * uint32_t i  = bc.index_of(id);
+     * bc.position[i] = {0, 5, 0};
+     * bc.mass[i]     = 2.0;
+     *
+     * // Solver loop — direct array access, no per-body indirection.
+     * for (uint32_t i = 0; i < bc.count(); ++i)
+     *     bc.position[i] += bc.linear_velocity[i] * dt;
+     * @endcode
      */
     DEFINE_DYN_SOA(BodyCollection, uint32_t, /*GenerationBits=*/8, BODY_FIELDS)
 
@@ -79,6 +122,8 @@ namespace rbps
      *
      * @param bc  The BodyCollection.
      * @param i   Packed data index of the body to update.
+     *
+     * @ingroup rbps
      */
     void update_inertia_tensor_world(BodyCollection &bc, uint32_t i);
 
@@ -95,6 +140,8 @@ namespace rbps
      *
      * @param bc  The BodyCollection.
      * @param dt  Time step (Δt).
+     *
+     * @ingroup rbps
      */
     void update_position_and_orientation(BodyCollection &bc, scalar dt);
 
@@ -105,6 +152,8 @@ namespace rbps
      *
      * @param bc      The BodyCollection.
      * @param inv_dt  Inverse time step (1/Δt).
+     *
+     * @ingroup rbps
      */
     void update_velocities(BodyCollection &bc, scalar inv_dt);
 
@@ -118,6 +167,8 @@ namespace rbps
      * @param i       Packed data index.
      * @param impulse Impulse vector in world space.
      * @param r       Lever arm from centre of mass to application point (world space).
+     *
+     * @ingroup rbps
      */
     void apply_positional_constraint_impulse(BodyCollection &bc, uint32_t i, vec3 impulse, vec3 r);
 
@@ -127,6 +178,8 @@ namespace rbps
      * @param bc      The BodyCollection.
      * @param i       Packed data index.
      * @param impulse Rotational impulse (torque impulse) in world space.
+     *
+     * @ingroup rbps
      */
     void apply_rotational_constraint_impulse(BodyCollection &bc, uint32_t i, vec3 impulse);
 
@@ -141,6 +194,8 @@ namespace rbps
      * @param i       Packed data index.
      * @param impulse Impulse vector in world space.
      * @param r       Lever arm from centre of mass to application point (world space).
+     *
+     * @ingroup rbps
      */
     void apply_positional_velocity_constraint_impulse(BodyCollection &bc, uint32_t i, vec3 impulse, vec3 r);
 
@@ -155,6 +210,8 @@ namespace rbps
      * @param bc      The BodyCollection.
      * @param i       Packed data index.
      * @param impulse Impulse vector in world space.
+     *
+     * @ingroup rbps
      */
     void apply_rotational_velocity_constraint_impulse(BodyCollection &bc, uint32_t i, vec3 impulse);
 
@@ -169,6 +226,8 @@ namespace rbps
      * @param r   Vector from centre of mass to contact point.
      * @param n   Constraint direction (unit normal).
      * @return    Generalised inverse mass scalar.
+     *
+     * @ingroup rbps
      */
     scalar get_positional_generalized_inverse_mass(BodyCollection &bc, uint32_t i, vec3 r, vec3 n);
 
@@ -182,6 +241,8 @@ namespace rbps
      * @param i   Packed data index.
      * @param n   Rotation axis (unit direction).
      * @return    Generalised inverse mass scalar.
+     *
+     * @ingroup rbps
      */
     scalar get_rotational_generalized_inverse_mass(BodyCollection &bc, uint32_t i, vec3 n);
 

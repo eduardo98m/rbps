@@ -4,10 +4,30 @@
 #include <rbps/Body.hpp>
 #include <rbps/constraints/Constraint.hpp>
 
+/**
+ * @file Joint.hpp
+ * @brief Joints (prismatic, revolute, fixed) layered on top of `ConstraintCollection`.
+ * @ingroup rbps
+ *
+ * Each joint owns a small block of low-level rows in `ConstraintCollection`
+ * (alignment / attachment / limit / drive). Each frame the joint
+ * `compute_*_errors` functions write the current error values into those
+ * rows; the XPBD solver then drives them to zero.
+ */
+
 using namespace m3d;
 
 namespace rbps
 {
+    /**
+     * @brief Joint kinematic kind.
+     *
+     * - `PRISMATIC` — sliding along an axis, no relative rotation.
+     * - `REVOLUTE`  — rotation about an axis (hinge), no relative translation.
+     * - `FIXED`     — no relative motion at all.
+     *
+     * @ingroup rbps
+     */
     enum JointType
     {
         PRISMATIC,
@@ -15,6 +35,16 @@ namespace rbps
         FIXED
     };
 
+    /**
+     * @brief Joint actuation mode.
+     *
+     * - `FREE`     — no driver; the joint is purely passive.
+     * - `POSITION` — driver follows `target_position`.
+     * - `SPEED`    — driver follows `target_speed` (target_position is
+     *                advanced by `speed*dt` each frame).
+     *
+     * @ingroup rbps
+     */
     enum JointActuationType
     {
         FREE,
@@ -22,9 +52,24 @@ namespace rbps
         SPEED,
     };
 
-    // This can change later till 5 or 6, but for now we know that no joint will have more than 4 constraints (e.g. revolute has 4, prismatic has 3).
+    /**
+     * @brief Maximum number of low-level constraint rows owned by a single joint.
+     *
+     * Sized for the worst case (revolute has 4: alignment + attachment +
+     * limit + drive). Bump if a future joint type needs more.
+     *
+     * @ingroup rbps
+     */
     static constexpr uint32_t MAX_CONSTRAINTS_PER_JOINT = 4;
 
+    /**
+     * @brief Stable IDs of the low-level constraint rows that back a joint.
+     *
+     * Stored as part of each joint so the swap-and-pop in `JointCollection`
+     * carries the constraint row IDs along with the joint.
+     *
+     * @ingroup rbps
+     */
     struct ConstraintBlock
     {
         uint32_t ids[MAX_CONSTRAINTS_PER_JOINT] = {};
@@ -53,6 +98,11 @@ namespace rbps
     X(u_short, constraint_count)          \
     X(ConstraintBlock, constraints)
 
+    /**
+     * @ingroup rbps
+     * @brief SoA collection of joints; each row owns up to `MAX_CONSTRAINTS_PER_JOINT`
+     *        constraint rows in a `ConstraintCollection`.
+     */
     DEFINE_DYN_SOA(JointCollection, uint32_t, /*GenerationBits=*/8, JOINT_FIELDS)
 
     /**
@@ -76,6 +126,8 @@ namespace rbps
      * @param bc         The BodyCollection holding all body transforms.
      * @param cc         The global ConstraintCollection for low-level constraints.
      * @param time_step  The simulation time step Δt.
+     *
+     * @ingroup rbps
      */
     void compute_prismatic_joint_errors(JointCollection &jc,
                                         u_int32_t i,
@@ -101,6 +153,9 @@ namespace rbps
      * @param[in]     lower_limit Minimum allowed angle (radians).
      * @param[in]     upper_limit Maximum allowed angle (radians).
      * @return                    Correction vector δq to drive the axes into alignment.
+     *
+     * @ingroup rbps
+     * @ingroup internals
      */
     vec3 compute_angle_limit_correction(scalar &phi,
                                         vec3 n,
@@ -127,6 +182,8 @@ namespace rbps
      * @param bc         The BodyCollection holding all body transforms.
      * @param cc         The global ConstraintCollection for low-level constraints.
      * @param time_step  The simulation time step Δt.
+     *
+     * @ingroup rbps
      */
     void compute_revolute_joint_errors(JointCollection &jc,
                                        u_int32_t i,
@@ -149,6 +206,8 @@ namespace rbps
      * @param bc         The BodyCollection holding all body transforms.
      * @param cc         The global ConstraintCollection for low-level constraints.
      * @param time_step  The simulation time step Δt (unused for fixed joints).
+     *
+     * @ingroup rbps
      */
     void compute_fixed_joint_errors(
         JointCollection &jc,
@@ -179,6 +238,8 @@ namespace rbps
      * @param i          Index of the joint to apply damping for.
      * @param bc         The BodyCollection holding body velocities and inverses.
      * @param time_step  Simulation time step Δt.
+     *
+     * @ingroup rbps
      */
     void apply_prismatic_joint_damping(JointCollection &jc,
                                        u_int32_t i,
@@ -200,6 +261,8 @@ namespace rbps
      * @param i          Index of the revolute joint.
      * @param bc         The BodyCollection holding angular velocities.
      * @param time_step  Simulation timestep Δt.
+     *
+     * @ingroup rbps
      */
     void apply_revolute_joint_damping(JointCollection &jc,
                                       u_int32_t i,
@@ -217,6 +280,8 @@ namespace rbps
      * @param bc BodyCollection
      * @param cc ConstraintCollection
      * @param time_step timestep
+     *
+     * @ingroup rbps
      */
     void compute_joint_errors(JointCollection &jc,
                               BodyCollection &bc,
@@ -229,6 +294,8 @@ namespace rbps
      * @param jc JointCollection reference
      * @param bc BodyCollection reference
      * @param time_step timestep
+     *
+     * @ingroup rbps
      */
     void apply_joint_damping(JointCollection &jc,
                              BodyCollection &bc,

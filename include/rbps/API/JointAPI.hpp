@@ -1,5 +1,15 @@
 #pragma once
-// JointsAPI.hpp
+
+/**
+ * @file JointAPI.hpp
+ * @brief Public helpers to create / remove joints (prismatic, revolute, fixed).
+ * @ingroup rbps
+ *
+ * Each `create_*_joint` helper allocates the joint row plus its low-level
+ * constraint rows in `ConstraintCollection`, and stores the constraint
+ * IDs in the joint's `ConstraintBlock`. `remove_joint` reverses the
+ * process safely.
+ */
 
 #include "rbps/constraints/Joint.hpp"
 #include "rbps/API/ConstraintAPI.hpp"
@@ -7,8 +17,10 @@
 namespace rbps
 {
 
-    // ─── Parameter structs ────────────────────────────────────────────────────────
-
+    /**
+     * @brief Parameters for `create_prismatic_joint`.
+     * @ingroup rbps
+     */
     struct PrismaticJointParams
     {
         size_t body_1 = 0;
@@ -24,6 +36,10 @@ namespace rbps
         scalar upper_limit = 0.0;
     };
 
+    /**
+     * @brief Parameters for `create_revolute_joint`.
+     * @ingroup rbps
+     */
     struct RevoluteJointParams
     {
         size_t body_1 = 0;
@@ -40,6 +56,10 @@ namespace rbps
         scalar upper_limit = 0.0;
     };
 
+    /**
+     * @brief Parameters for `create_fixed_joint`.
+     * @ingroup rbps
+     */
     struct FixedJointParams
     {
         size_t body_1 = 0;
@@ -87,6 +107,8 @@ namespace rbps
      * @param jc  The JointCollection.
      * @param cc  The ConstraintCollection that owns the child constraints.
      * @param id  Stable ivc::ID of the joint to remove.
+     *
+     * @ingroup rbps
      */
     inline void remove_joint(JointCollection& jc, ConstraintCollection& cc, uint32_t id)
     {
@@ -103,11 +125,15 @@ namespace rbps
         jc.remove(id);
     }
 
-    // ─── Shared push helper ───────────────────────────────────────────────────────
-    //
-    // All three joint creators share the same 17 push_back calls.
-    // Factored here to avoid repetition — no namespace wrapping.
-
+    /**
+     * @brief Internal helper: write all joint fields for a freshly-allocated row.
+     *
+     * Factored out so the three `create_*_joint` helpers don't duplicate
+     * the 17 field assignments.
+     *
+     * @ingroup rbps
+     * @ingroup internals
+     */
     inline uint32_t push_joint(JointCollection &jc,
                                ConstraintBlock cb,
                                u_short c_count,
@@ -159,6 +185,8 @@ namespace rbps
      *   [start+2] POSITIONAL — drive / limit along the axis (carries compliance)
      *
      * @return Stable ivc::ID of the joint.
+     *
+     * @ingroup rbps
      */
     inline uint32_t create_prismatic_joint(JointCollection &jc,
                                            ConstraintCollection &cc,
@@ -189,6 +217,8 @@ namespace rbps
      *   [start+3] ROTATIONAL — drive (carries compliance)
      *
      * @return Stable ivc::ID of the joint.
+     *
+     * @ingroup rbps
      */
     inline uint32_t create_revolute_joint(JointCollection &jc,
                                           ConstraintCollection &cc,
@@ -217,6 +247,8 @@ namespace rbps
      *   [start+1] POSITIONAL — attachment-point lock
      *
      * @return Stable uint32_t (id) of the joint.
+     *
+     * @ingroup rbps
      */
     inline uint32_t create_fixed_joint(JointCollection &jc,
                                        ConstraintCollection &cc,

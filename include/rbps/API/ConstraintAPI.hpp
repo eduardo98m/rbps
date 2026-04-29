@@ -1,5 +1,10 @@
 #pragma once
-// ConstraintsAPI.hpp
+
+/**
+ * @file ConstraintAPI.hpp
+ * @brief Public helpers for adding / removing constraint rows.
+ * @ingroup rbps
+ */
 
 #include "rbps/constraints/Constraint.hpp"
 
@@ -7,7 +12,8 @@ namespace rbps
 {
 
     /**
-     * @brief Parameters for creating a constraint between two bodies.
+     * @brief Parameters for creating a constraint row between two bodies.
+     * @ingroup rbps
      */
     struct ConstraintParams
     {
@@ -25,6 +31,8 @@ namespace rbps
      * @param cc     The ConstraintCollection.
      * @param params Constraint properties.
      * @return       Stable uint32_t ID of the new constraint, which can be used to reference it later.
+     *
+     * @ingroup rbps
      */
     inline uint32_t create_constraint(ConstraintCollection &cc,
                                   const ConstraintParams &params = {})
@@ -63,6 +71,8 @@ namespace rbps
      *
      * @param cc  The ConstraintCollection.
      * @param id  Stable ID returned by create_constraint().
+     *
+     * @ingroup rbps
      */
     inline void remove_constraint(ConstraintCollection &cc, uint32_t id)
     {
