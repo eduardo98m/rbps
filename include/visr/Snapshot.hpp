@@ -40,6 +40,21 @@ namespace visr
                           m3d::scalar cell_size; };
     /** @brief POD: triangle mesh dimensions (vertex/face data is NOT snapshotted). @ingroup visr */
     struct MeshSnap     { uint32_t    vertex_count; uint32_t face_count; };
+    /**
+     * @brief POD: convex polytope — vertex + face data deep-copied per frame.
+     *
+     * Unlike `MeshSnap` (which carries only counts), `ConvexHullSnap`
+     * snapshots the full vertex array and CCW triangle indices so the
+     * renderer can draw real edges. Hulls are typically small (≤ 32
+     * vertices) which makes per-frame copy acceptable.
+     *
+     * @ingroup visr
+     */
+    struct ConvexHullSnap
+    {
+        std::vector<m3d::vec3> vertices;     ///< Local-space, copied at snapshot time.
+        std::vector<uint32_t>  face_indices; ///< CCW triangle indices; may be empty.
+    };
 
     /**
      * @brief Variant over all `*Snap` shape PODs.
@@ -58,7 +73,8 @@ namespace visr
         ConeSnap,
         EllipsoidSnap,
         HeightmapSnap,
-        MeshSnap
+        MeshSnap,
+        ConvexHullSnap
     >;
 
     /**

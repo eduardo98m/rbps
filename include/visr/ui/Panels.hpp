@@ -336,6 +336,7 @@ namespace visr::ui
             else if constexpr (std::is_same_v<T, EllipsoidSnap>) return "Ellipsoid";
             else if constexpr (std::is_same_v<T, HeightmapSnap>) return "Heightmap";
             else if constexpr (std::is_same_v<T, MeshSnap>)      return "Mesh";
+            else if constexpr (std::is_same_v<T, ConvexHullSnap>) return "ConvexHull";
             else return "Unknown";
         }, s);
     }
@@ -397,6 +398,9 @@ namespace visr::ui
                 ImGui::Text("grid %u × %u  cell=%.4f", sh.cols, sh.rows, sh.cell_size);
             else if constexpr (std::is_same_v<T, MeshSnap>)
                 ImGui::Text("verts=%u  faces=%u", sh.vertex_count, sh.face_count);
+            else if constexpr (std::is_same_v<T, ConvexHullSnap>)
+                ImGui::Text("verts=%zu  faces=%zu",
+                            sh.vertices.size(), sh.face_indices.size() / 3);
         }, found->shape);
         ImGui::End();
     }

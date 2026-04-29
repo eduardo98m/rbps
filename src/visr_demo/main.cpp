@@ -125,6 +125,48 @@ static void build_prismatic_joint_demo(rbps::World &w)
     w.create_prismatic_joint(pjp);
 }
 
+// Spawn a tetrahedron-shaped `ConvexHull` body so the new collider is
+// visible in the visualizer. Vertex / face arrays have static-storage
+// duration so they outlive the world (`ConvexHullData` is non-owning).
+static void build_convex_hull_demo(rbps::World &w)
+{
+    static const m3d::vec3 tet_verts[4] = {
+        m3d::vec3( 0.6,  0.6,  0.6),
+        m3d::vec3(-0.6, -0.6,  0.6),
+        m3d::vec3(-0.6,  0.6, -0.6),
+        m3d::vec3( 0.6, -0.6, -0.6),
+    };
+    static const uint32_t tet_faces[4 * 3] = {
+        0, 1, 2,
+        0, 3, 1,
+        0, 2, 3,
+        1, 3, 2,
+    };
+    static rbc::ConvexHullData *tet_hull =
+        rbc::convex_hull_data_create(tet_verts, 4, tet_faces, 4);
+
+    rbc::ConvexHull hull(tet_hull);
+
+    rbps::BodyParams bp{};
+    bp.type     = rbps::BodyType::DYNAMIC;
+    bp.position = m3d::vec3{0.5, 5.0, 0.0};
+    bp.mass     = 5.0;
+    // I_shape is computed at unit density; scale to actual mass / volume.
+    const m3d::scalar vol = rbc::compute_volume(hull);
+    bp.inertia_tensor = rbc::compute_inertia_tensor(hull) * (bp.mass / vol);
+    const uint32_t id = w.create_body(bp);
+
+    rbps::ColliderParams cp{};
+    cp.body_id          = id;
+    cp.local_pos        = m3d::vec3{0, 0, 0};
+    cp.local_rot        = m3d::quat{1, 0, 0, 0};
+    cp.shape            = rbc::Shape(hull);
+    cp.restitution      = 0.2;
+    cp.static_friction  = 0.5;
+    cp.dynamic_friction = 0.4;
+    w.create_collider(cp);
+}
+
 static void build_box_tower(rbps::World &w)
 {
     double y_pos = 0.00;
@@ -240,6 +282,7 @@ int main()
     build_revolute_joint_demo(app.world);
     build_prismatic_joint_demo(app.world);
     build_box_tower(app.world);
+    build_convex_hull_demo(app.world);
 
     // ── Extra demo panel ──────────────────────────────────────────────────
     app.extra_guis.push_back([&]()

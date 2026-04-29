@@ -18,22 +18,26 @@ size is driven by `std::variant_size_v<decltype(Shape::v)>` in
 
 ## Task list
 
-- [ ] **Task 0** — write this doc (you are here).
-- [ ] **Task 1** — `include/rbc/shapes/ConvexHull.hpp`: `ConvexHullData`,
+- [x] **Task 0** — write this doc.
+- [x] **Task 1** — `include/rbc/shapes/ConvexHull.hpp`: `ConvexHullData`,
       `ConvexHull`, `convex_hull_data_create`, `convex_hull_data_destroy`.
-- [ ] **Task 2** — per-shape free functions: `support`, `compute_aabb`,
+- [x] **Task 2** — per-shape free functions: `support`, `compute_aabb`,
       `is_gjk_convex`, `representative_radius`, `face_corners`,
-      `compute_volume`, `compute_inertia_tensor`.
-- [ ] **Task 3** — wire into `Shape` variant in
+      `compute_volume`, `compute_inertia_tensor` (with debug warning when
+      face data missing).
+- [x] **Task 3** — wired into `Shape` variant in
       [ShapeTypes.hpp](../../../include/rbc/shapes/ShapeTypes.hpp).
-- [ ] **Task 4** — add `RBC_PLANE_SPEC(ConvexHull)` in
+- [x] **Task 4** — `RBC_PLANE_SPEC(ConvexHull)` added in
       [PlaneCollision.hpp](../../../include/rbc/analytic/PlaneCollision.hpp).
-- [ ] **Task 5** — four analytic tests under
-      [tests/rbc/analytic/](../../../tests/rbc/analytic/).
-- [ ] **Task 6** — visr bindings: `ConvexHullSnap`, builder arm, draw arm, panel arms.
-- [ ] **Task 7** — demo: a tetrahedron body in
-      [src/visr_demo/main.cpp](../../../src/visr_demo/main.cpp).
-- [ ] **Task 8** — `make build`, `make test`, `make run`.
+- [x] **Task 5** — four analytic tests under
+      [tests/rbc/analytic/](../../../tests/rbc/analytic/), all passing.
+- [x] **Task 6** — visr bindings: `ConvexHullSnap`, builder arm, raylib
+      draw arm (real wireframe), panels label + properties.
+- [x] **Task 7** — demo: tetrahedron body in
+      [src/visr_demo/main.cpp](../../../src/visr_demo/main.cpp)
+      (`build_convex_hull_demo`).
+- [x] **Task 8** — `make build` clean; `make test` 36/36 passing;
+      visualizer is the user's smoke-run.
 
 ## File-by-file touch list
 

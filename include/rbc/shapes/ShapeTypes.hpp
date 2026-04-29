@@ -8,6 +8,7 @@
 #include "rbc/shapes/Plane.hpp"
 #include "rbc/shapes/Heightmap.hpp"
 #include "rbc/shapes/Mesh.hpp"
+#include "rbc/shapes/ConvexHull.hpp"
 
 /**
  * @defgroup rbc rbc — Rigid-Body Collision
@@ -64,26 +65,28 @@ namespace rbc
      */
     struct Shape
     {
-        std::variant<Sphere, Box, Ellipsoid, Capsule, Cone, Plane, Heightmap, Mesh> v;
+        std::variant<Sphere, Box, Ellipsoid, Capsule, Cone, Plane, Heightmap, Mesh, ConvexHull> v;
 
         /** @brief Default-construct holding a default `Sphere`. */
         Shape() = default;
         /** @brief Construct from a concrete shape. */
-        Shape(const Sphere    &s) : v(s) {}
+        Shape(const Sphere     &s) : v(s) {}
         /** @brief Construct from a concrete shape. */
-        Shape(const Box       &b) : v(b) {}
+        Shape(const Box        &b) : v(b) {}
         /** @brief Construct from a concrete shape. */
-        Shape(const Ellipsoid &e) : v(e) {}
+        Shape(const Ellipsoid  &e) : v(e) {}
         /** @brief Construct from a concrete shape. */
-        Shape(const Capsule   &c) : v(c) {}
+        Shape(const Capsule    &c) : v(c) {}
         /** @brief Construct from a concrete shape. */
-        Shape(const Cone      &c) : v(c) {}
+        Shape(const Cone       &c) : v(c) {}
         /** @brief Construct from a concrete shape. */
-        Shape(const Plane     &p) : v(p) {}
+        Shape(const Plane      &p) : v(p) {}
         /** @brief Construct from a concrete shape. */
-        Shape(const Heightmap &h) : v(h) {}
+        Shape(const Heightmap  &h) : v(h) {}
         /** @brief Construct from a concrete shape. */
-        Shape(const Mesh      &m) : v(m) {}
+        Shape(const Mesh       &m) : v(m) {}
+        /** @brief Construct from a concrete shape. */
+        Shape(const ConvexHull &h) : v(h) {}
 
         /** @brief Read the active alternative; throws `std::bad_variant_access` on mismatch. */
         template <class T> const T &get() const { return std::get<T>(v); }

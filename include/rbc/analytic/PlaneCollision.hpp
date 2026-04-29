@@ -24,6 +24,7 @@
 #include "rbc/shapes/Plane.hpp"
 #include "rbc/shapes/Heightmap.hpp"
 #include "rbc/shapes/Mesh.hpp"
+#include "rbc/shapes/ConvexHull.hpp"
 #include "rbc/shapes/Box.hpp"
 #include "rbc/shapes/Capsule.hpp"
 #include <algorithm>
@@ -82,6 +83,7 @@ namespace rbc
     RBC_PLANE_SPEC(Ellipsoid)
     RBC_PLANE_SPEC(Cone)
     RBC_PLANE_SPEC(Mesh)
+    RBC_PLANE_SPEC(ConvexHull)
 
 #undef RBC_PLANE_SPEC
 

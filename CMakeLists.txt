@@ -218,6 +218,22 @@ add_executable(test_heightmap_capsule tests/rbc/analytic/test_heightmap_capsule.
 target_link_libraries(test_heightmap_capsule PRIVATE rbc_lib)
 add_test(NAME test_heightmap_capsule COMMAND test_heightmap_capsule)
 
+add_executable(test_convex_hull_sphere tests/rbc/analytic/test_convex_hull_sphere.cpp)
+target_link_libraries(test_convex_hull_sphere PRIVATE rbc_lib)
+add_test(NAME test_convex_hull_sphere COMMAND test_convex_hull_sphere)
+
+add_executable(test_convex_hull_box tests/rbc/analytic/test_convex_hull_box.cpp)
+target_link_libraries(test_convex_hull_box PRIVATE rbc_lib)
+add_test(NAME test_convex_hull_box COMMAND test_convex_hull_box)
+
+add_executable(test_convex_hull_plane tests/rbc/analytic/test_convex_hull_plane.cpp)
+target_link_libraries(test_convex_hull_plane PRIVATE rbc_lib)
+add_test(NAME test_convex_hull_plane COMMAND test_convex_hull_plane)
+
+add_executable(test_convex_hull_self tests/rbc/analytic/test_convex_hull_self.cpp)
+target_link_libraries(test_convex_hull_self PRIVATE rbc_lib)
+add_test(NAME test_convex_hull_self COMMAND test_convex_hull_self)
+
 # The tests below have pre-existing semantic expectation mismatches with the
 # current analytic implementation (normal-sign convention, one capsule endpoint
 # corner case). The syntax has been migrated to ContactManifold so they

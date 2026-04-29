@@ -257,6 +257,36 @@ namespace visr::draw
             {
                 DrawSphereWires(pos, 0.2f, 4, 4, col);
             }
+            // ── ConvexHull ───────────────────────────────────────────────────
+            else if constexpr (std::is_same_v<T, ConvexHullSnap>)
+            {
+                Vector3 axis; float deg;
+                quat_to_axis_angle(c.world_rot, axis, deg);
+                rlPushMatrix();
+                rlTranslatef(pos.x, pos.y, pos.z);
+                rlRotatef(deg, axis.x, axis.y, axis.z);
+
+                if (!shape.face_indices.empty())
+                {
+                    // Draw each triangle edge once (no dedup — small hulls).
+                    for (std::size_t f = 0; f + 2 < shape.face_indices.size(); f += 3)
+                    {
+                        const auto &v0 = shape.vertices[shape.face_indices[f + 0]];
+                        const auto &v1 = shape.vertices[shape.face_indices[f + 1]];
+                        const auto &v2 = shape.vertices[shape.face_indices[f + 2]];
+                        DrawLine3D(to_rl(v0), to_rl(v1), col);
+                        DrawLine3D(to_rl(v1), to_rl(v2), col);
+                        DrawLine3D(to_rl(v2), to_rl(v0), col);
+                    }
+                }
+                else
+                {
+                    // Vertex-only fallback: tiny markers at each vertex.
+                    for (const auto &v : shape.vertices)
+                        DrawSphereWires(to_rl(v), 0.02f, 4, 4, col);
+                }
+                rlPopMatrix();
+            }
         }, c.shape);
     }
 

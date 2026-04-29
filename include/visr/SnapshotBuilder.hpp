@@ -66,6 +66,22 @@ namespace visr
                     m.data ? m.data->vert_count : 0u,
                     m.data ? m.data->face_count : 0u};
             }
+            ShapeSnap operator()(const rbc::ConvexHull &h) const
+            {
+                ConvexHullSnap s;
+                if (h.data)
+                {
+                    s.vertices.assign(h.data->vertices,
+                                      h.data->vertices + h.data->vert_count);
+                    if (h.data->face_indices && h.data->face_count > 0)
+                    {
+                        const uint32_t n = h.data->face_count * 3u;
+                        s.face_indices.assign(h.data->face_indices,
+                                              h.data->face_indices + n);
+                    }
+                }
+                return s;
+            }
         };
 
         /**
