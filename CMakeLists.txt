@@ -36,6 +36,15 @@ target_link_libraries(rbps_lib PUBLIC rbc_lib)
 
 #----------------------------------------------------------
 
+# ── Documentation (opt-in) ───────────────────────────────────────────────────
+#  Usage: cmake -DRBPS_BUILD_DOCS=ON .. && cmake --build . --target docs
+option(RBPS_BUILD_DOCS "Build API documentation with Doxygen" OFF)
+if(RBPS_BUILD_DOCS)
+    include(${CMAKE_SOURCE_DIR}/cmake/Doxygen.cmake)
+endif()
+
+#----------------------------------------------------------
+
 # ============================================================================
 #  Visualizer optional block — append to your existing CMakeLists.txt
 #

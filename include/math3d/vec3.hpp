@@ -1,32 +1,64 @@
 #pragma once
 #include "math3d/core.hpp"
 
+/**
+ * @file vec3.hpp
+ * @brief 3-component floating-point vector and inline operators.
+ * @ingroup math3d
+ */
+
 namespace m3d
 {
 
+    /**
+     * @brief 3-component vector of `scalar` (cartesian x, y, z).
+     *
+     * The workhorse vector type. Used for positions, velocities, forces,
+     * torques, axes, normals — anywhere a 3D direction or magnitude is
+     * needed.
+     *
+     * Supports the usual arithmetic operators (`+ - * /`), in-place forms
+     * (`+= -= *=`), unary negation, equality, indexed access, and a
+     * tolerance-based `is_approx` for physics comparisons. Free functions
+     * provide `dot`, `cross`, `length`, `length_sq`, `normalize`.
+     *
+     * @code
+     * vec3 a{1, 2, 3};
+     * vec3 b{0, 1, 0};
+     * scalar c = dot(a, b);            // 2
+     * vec3 n = normalize(cross(a, b)); // unit perpendicular
+     * @endcode
+     *
+     * @ingroup math3d
+     */
     struct vec3
     {
         scalar x, y, z;
 
-        // Constructors
+        /** @brief Zero vector. */
         vec3() : x(0), y(0), z(0) {}
+        /** @brief Component-wise constructor. */
         vec3(scalar _x, scalar _y, scalar _z) : x(_x), y(_y), z(_z) {}
+        /** @brief Splat constructor: all three components set to `_d`. */
         vec3(scalar _d) : x(_d), y(_d), z(_d) {}
 
-        // Operator Overloading for clean syntax
+        /** @brief Component-wise addition. */
         vec3 operator+(const vec3 &rhs) const { return {x + rhs.x, y + rhs.y, z + rhs.z}; }
+        /** @brief Component-wise subtraction. */
         vec3 operator-(const vec3 &rhs) const { return {x - rhs.x, y - rhs.y, z - rhs.z}; }
+        /** @brief Scalar multiplication. */
         vec3 operator*(scalar s) const { return {x * s, y * s, z * s}; }
+        /** @brief Scalar division (multiplies by reciprocal once). */
         vec3 operator/(scalar s) const
         {
             scalar inv = 1.0 / s;
             return {x * inv, y * inv, z * inv};
         }
 
-        // Unary negation
+        /** @brief Unary negation. */
         vec3 operator-() const { return {-x, -y, -z}; }
 
-        // In-place operators (important for performance)
+        /** @brief In-place addition. */
         vec3 &operator+=(const vec3 &rhs)
         {
             x += rhs.x;
@@ -35,6 +67,7 @@ namespace m3d
             return *this;
         }
 
+        /** @brief In-place subtraction. */
         vec3 &operator-=(const vec3 &rhs)
         {
             x -= rhs.x;
@@ -43,6 +76,7 @@ namespace m3d
             return *this;
         }
 
+        /** @brief In-place scalar multiplication. */
         vec3 &operator*=(scalar s)
         {
             x *= s;
@@ -51,17 +85,26 @@ namespace m3d
             return *this;
         }
 
+        /** @brief Bitwise-exact equality. Use `is_approx` for physics comparisons. */
         bool operator==(const vec3 &other) const
         {
             return x == other.x && y == other.y && z == other.z;
         }
 
+        /** @brief Bitwise-exact inequality. */
         bool operator!=(const vec3 &other) const
         {
             return !(*this == other);
         }
 
-        // For physics-safe comparison
+        /**
+         * @brief Tolerance-based equality, suitable for physics state.
+         *
+         * Returns true iff every component differs by less than `precision`.
+         *
+         * @param other     Vector to compare against.
+         * @param precision Absolute per-component tolerance (default `EPSILON`).
+         */
         bool is_approx(const vec3 &other, scalar precision = EPSILON) const
         {
             return m3d::abs(x - other.x) < precision &&
@@ -69,35 +112,45 @@ namespace m3d
                    m3d::abs(z - other.z) < precision;
         }
 
-        // Meber acces via indices
+        /** @brief Indexed mutable access (0=x, 1=y, 2=z). */
         scalar &operator[](int i)
         {
             return (i == 0) ? x : (i == 1) ? y
                                            : z;
         }
 
+        /** @brief Indexed const access (0=x, 1=y, 2=z). */
         const scalar &operator[](int i) const
         {
             return (i == 0) ? x : (i == 1) ? y
                                            : z;
         }
 
+        /** @brief Stream insertion as `vec3(x, y, z)`. */
         friend std::ostream &operator<<(std::ostream &os, const vec3 &v)
         {
             return os << "vec3(" << v.x << ", " << v.y << ", " << v.z << ")";
         }
     };
 
-    // Left-side scalar multiplication (s * v)
+    /** @brief Left-side scalar multiplication (`s * v`). @ingroup math3d */
     inline vec3 operator*(scalar s, const vec3 &v) { return {v.x * s, v.y * s, v.z * s}; }
 
-    // --- Vector Functions ---
-
+    /**
+     * @brief Dot (inner) product of two vectors.
+     * @return `a.x*b.x + a.y*b.y + a.z*b.z`.
+     * @ingroup math3d
+     */
     inline scalar dot(const vec3 &a, const vec3 &b)
     {
         return a.x * b.x + a.y * b.y + a.z * b.z;
     }
 
+    /**
+     * @brief Cross product (`a × b`), right-handed.
+     * @return Vector perpendicular to both `a` and `b`.
+     * @ingroup math3d
+     */
     inline vec3 cross(const vec3 &a, const vec3 &b)
     {
         return {
@@ -106,22 +159,39 @@ namespace m3d
             a.x * b.y - a.y * b.x};
     }
 
+    /**
+     * @brief Squared length of `v`. Cheaper than `length` (no `sqrt`).
+     *
+     * Prefer this for length comparisons (`length_sq(a) < r*r`).
+     *
+     * @ingroup math3d
+     */
     inline scalar length_sq(const vec3 &v)
     {
         return v.x * v.x + v.y * v.y + v.z * v.z;
     }
 
+    /** @brief Euclidean length of `v`. @ingroup math3d */
     inline scalar length(const vec3 &v)
     {
         return m3d::sqrt(length_sq(v));
     }
 
-    // Alias for magnitude (Its intuitive to call it like that in some contexts)
+    /** @brief Alias of `length`, more natural in some physics contexts. @ingroup math3d */
     inline scalar magnitude(const vec3 &v)
     {
         return length(v);
     }
 
+    /**
+     * @brief Return `v / length(v)`, or the zero vector if `v` is near zero.
+     *
+     * The zero-length fallback prevents division by zero; callers that need
+     * to detect a degenerate input should test `length_sq(v) < EPSILON`
+     * themselves before calling.
+     *
+     * @ingroup math3d
+     */
     inline vec3 normalize(const vec3 &v)
     {
         scalar len_sq = length_sq(v);

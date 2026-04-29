@@ -24,8 +24,8 @@ jobs:
           cmake: true
           ninja: true
 
-      - name: Install LCOV
-        run: sudo apt-get update && sudo apt-get install -y lcov
+      - name: Install LCOV, Doxygen, Graphviz
+        run: sudo apt-get update && sudo apt-get install -y lcov doxygen graphviz
 
       - name: Configure CMake
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON
@@ -71,14 +71,58 @@ jobs:
           color: ${{ env.BADGE_COLOR }}
           namedLogo: c++
 
-      # --- REPORT DEPLOYMENT ---
-      # This pushes the HTML report to a 'gh-pages' branch so you can view it in browser
-      - name: Deploy Report to GitHub Pages
-        if: github.ref == 'refs/heads/master' # Only deploy on master push
+      # --- DOCS GENERATION ---
+      - name: Build API Documentation
+        if: github.ref == 'refs/heads/master'
+        run: |
+          cmake -S . -B build_docs -DRBPS_BUILD_DOCS=ON -DCMAKE_BUILD_TYPE=Release
+          cmake --build build_docs --target docs
+
+      # --- COMBINED gh-pages PAYLOAD ---
+      # Assemble coverage + docs + a landing page into a single directory so
+      # we deploy in one shot. Avoids race-y multi-step gh-pages publishes.
+      - name: Assemble gh-pages content
+        if: github.ref == 'refs/heads/master'
+        run: |
+          mkdir -p gh-pages-out/coverage gh-pages-out/docs
+          cp -r coverage_html/. gh-pages-out/coverage/
+          cp -r build_docs/docs/html/. gh-pages-out/docs/
+          cat > gh-pages-out/index.html <<'HTML'
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8">
+              <title>RBPS</title>
+              <style>
+                body { font-family: system-ui, -apple-system, sans-serif; max-width: 640px; margin: 4em auto; padding: 0 1em; color: #222; }
+                h1 { margin-bottom: 1em; }
+                a.card { display: block; padding: 1em; margin: .75em 0; border: 1px solid #ddd; border-radius: .5em; text-decoration: none; color: inherit; }
+                a.card:hover { background: #f6f8fa; }
+                .title { font-weight: 600; font-size: 1.1em; }
+                .desc { color: #666; font-size: .9em; margin-top: .25em; }
+              </style>
+            </head>
+            <body>
+              <h1>RBPS &mdash; Rigid Body Physics Simulator</h1>
+              <a class="card" href="docs/">
+                <div class="title">API Documentation</div>
+                <div class="desc">Doxygen-generated reference for all public modules.</div>
+              </a>
+              <a class="card" href="coverage/">
+                <div class="title">Coverage Report</div>
+                <div class="desc">LCOV HTML report from the latest CI run.</div>
+              </a>
+            </body>
+          </html>
+          HTML
+
+      # --- gh-pages DEPLOY ---
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/master'
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./coverage_html
+          publish_dir: ./gh-pages-out
       
       - name: Run Tests
         id: run_tests

@@ -1,0 +1,97 @@
+# =============================================================================
+#  Doxyfile.in — RBPS API documentation configuration
+#
+#  This is a template file: CMake substitutes @VAR@ placeholders via
+#  configure_file() to produce build/Doxyfile, which is then fed to doxygen.
+#  Only non-default settings are listed; everything else uses Doxygen defaults.
+# =============================================================================
+
+# ── Project ──────────────────────────────────────────────────────────────────
+PROJECT_NAME           = "RBPS"
+PROJECT_BRIEF          = "Rigid Body Physics Simulator"
+PROJECT_NUMBER         = @RBPS_VERSION@
+OUTPUT_DIRECTORY       = @DOXYGEN_OUTPUT_DIR@
+
+# ── Input ────────────────────────────────────────────────────────────────────
+INPUT                  = @DOXYGEN_INPUT_DIRS@
+RECURSIVE              = YES
+FILE_PATTERNS          = *.hpp *.h *.md
+USE_MDFILE_AS_MAINPAGE = @DOXYGEN_MAINPAGE@
+EXCLUDE_PATTERNS       = */build/* */tests/* */.git/*
+
+# ── Extraction policy ────────────────────────────────────────────────────────
+# Public API by default; internals opt in via @ingroup internals.
+EXTRACT_ALL            = NO
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = NO
+EXTRACT_LOCAL_CLASSES  = NO
+EXTRACT_ANON_NSPACES   = NO
+HIDE_UNDOC_MEMBERS     = YES
+HIDE_UNDOC_CLASSES     = YES
+
+# ── Source browsing ──────────────────────────────────────────────────────────
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+REFERENCED_BY_RELATION = YES
+REFERENCES_RELATION    = YES
+
+# ── Warnings ─────────────────────────────────────────────────────────────────
+QUIET                  = NO
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = YES
+WARN_AS_ERROR          = NO
+
+# ── HTML output ──────────────────────────────────────────────────────────────
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+HTML_FILE_EXTENSION    = .html
+GENERATE_TREEVIEW      = YES
+DISABLE_INDEX          = NO
+FULL_SIDEBAR           = NO
+HTML_COLORSTYLE        = LIGHT
+
+# Doxygen Awesome theme — fetched via FetchContent and exposed as @DOXYGEN_AWESOME_DIR@.
+HTML_EXTRA_STYLESHEET  = @DOXYGEN_AWESOME_CSS@
+HTML_EXTRA_FILES       = @DOXYGEN_AWESOME_EXTRA_FILES@
+
+# ── Disabled outputs ─────────────────────────────────────────────────────────
+GENERATE_LATEX         = NO
+GENERATE_XML           = NO
+GENERATE_RTF           = NO
+GENERATE_MAN           = NO
+
+# ── C++ parsing ──────────────────────────────────────────────────────────────
+JAVADOC_AUTOBRIEF      = YES
+QT_AUTOBRIEF           = NO
+BUILTIN_STL_SUPPORT    = YES
+EXTENSION_MAPPING      = hpp=C++
+
+# Macros that synthesise types — expand them so generated SoA classes are visible.
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = NO
+SKIP_FUNCTION_MACROS   = NO
+
+# Predefined macros for headers that would otherwise fail to parse.
+# Visualizer headers transitively include raylib.h / imgui.h; mock them out
+# so Doxygen can parse visr/* without those libraries being installed.
+PREDEFINED             = DOXYGEN_RUNNING
+
+# ── Diagrams ─────────────────────────────────────────────────────────────────
+HAVE_DOT               = NO
+CLASS_DIAGRAMS         = YES
+COLLABORATION_GRAPH    = NO
+INCLUDED_BY_GRAPH      = NO
+INCLUDE_GRAPH          = NO
+
+# ── Misc ─────────────────────────────────────────────────────────────────────
+ALPHABETICAL_INDEX     = YES
+SORT_MEMBER_DOCS       = NO
+SORT_BRIEF_DOCS        = NO
+GENERATE_TODOLIST      = YES
+SHOW_USED_FILES        = YES
+MARKDOWN_SUPPORT       = YES
+AUTOLINK_SUPPORT       = YES
+TAB_SIZE               = 4
