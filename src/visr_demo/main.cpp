@@ -127,16 +127,16 @@ static void build_prismatic_joint_demo(rbps::World &w)
 
 static void build_box_tower(rbps::World &w)
 {
-    double y_pos = 0.5;
-    int num_boxes = 10;
+    double y_pos = 0.00;
+    int num_boxes = 40;
     double k = 60.0;
     for (int i = 0; i < num_boxes; ++i)
     {
-        rbc::Box box{{0.5 + 60.0 / k, 0.5, 0.5 + 60.0 / k}};
+        rbc::Box box{{0.5, 0.5, 0.5}};
         rbps::BodyParams box_body_p{};
         box_body_p.type = rbps::BodyType::DYNAMIC;
         box_body_p.position = m3d::vec3{2.0, y_pos, 4.0};
-        box_body_p.mass = 10.0 / k; // make each box lighter than the last so they fall at different rates
+        box_body_p.mass = 1000.0/ k ; // make each box lighter than the last so they fall at different rates
         // I_shape is computed at unit density; scale to actual mass / volume.
         const m3d::scalar vol_box = rbc::compute_volume(box);
         box_body_p.inertia_tensor = rbc::compute_inertia_tensor(box) * (box_body_p.mass / vol_box);
@@ -232,8 +232,8 @@ int main()
     app.screen_w = 1440;
     app.screen_h = 900;
 
-    app.world.timestep = 1.0 / 60.0;
-    app.world.substeps = 20;
+    app.world.timestep = 1.0 / 48.0;
+    app.world.substeps = 25;
 
     build_ground(app.world);
     build_fixed_joint_demo(app.world);
