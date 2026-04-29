@@ -103,4 +103,12 @@ namespace rbc
                       hd.max_height,
                       hd.origin.z + static_cast<m3d::scalar>(hd.rows - 1) * hd.scale.z)};
     }
+
+    // Marker for the dispatcher: Heightmap is non-convex (terrain field).
+    // Pairs go through analytic specialisations; these stubs only exist so
+    // the variant-level visit/table compiles for every shape kind.
+    constexpr bool is_gjk_convex(const Heightmap *) { return false; }
+    inline m3d::scalar representative_radius(const Heightmap &) { return 0.0; }
+    inline int face_corners(const Heightmap &, const m3d::tf &,
+                            const m3d::vec3 &, m3d::vec3[4]) { return 0; }
 } // namespace rbc

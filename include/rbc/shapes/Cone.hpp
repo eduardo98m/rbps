@@ -1,6 +1,7 @@
 #pragma once
 #include <math3d/math3d.hpp>
 #include "rbc/AABB.hpp"
+#include "rbc/shapes/FaceHelpers.hpp"
 
 namespace rbc
 {
@@ -93,5 +94,21 @@ namespace rbc
             mx = m3d::vec3(m3d::max(mx.x, world_sup.x), m3d::max(mx.y, world_sup.y), m3d::max(mx.z, world_sup.z));
         }
         return {mn, mx};
+    }
+
+    // Marker for the dispatcher: Cone is a convex bounded shape.
+    constexpr bool is_gjk_convex(const Cone *) { return true; }
+
+    inline m3d::scalar representative_radius(const Cone &c)
+    {
+        return m3d::max(c.base_radius, c.half_height);
+    }
+
+    inline int face_corners(const Cone &c, const m3d::tf &tf,
+                            const m3d::vec3 &dir, m3d::vec3 out[4])
+    {
+        const m3d::vec3 local_dir = tf.inverse_rotate_vector(dir);
+        const m3d::vec3 sup_world = tf.transform_point(support(c, local_dir));
+        return get_generic_face_corners(sup_world, dir, representative_radius(c), out);
     }
 } // namespace rbc

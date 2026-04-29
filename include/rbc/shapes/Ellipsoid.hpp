@@ -1,6 +1,7 @@
 #pragma once
 #include <math3d/math3d.hpp>
 #include "rbc/AABB.hpp"
+#include "rbc/shapes/FaceHelpers.hpp"
 
 namespace rbc
 {
@@ -66,5 +67,21 @@ namespace rbc
             m3d::sqrt(R[0][1] * R[0][1] * a.x * a.x + R[1][1] * R[1][1] * a.y * a.y + R[2][1] * R[2][1] * a.z * a.z),
             m3d::sqrt(R[0][2] * R[0][2] * a.x * a.x + R[1][2] * R[1][2] * a.y * a.y + R[2][2] * R[2][2] * a.z * a.z));
         return {tf.pos - extent, tf.pos + extent};
+    }
+
+    // Marker for the dispatcher: Ellipsoid is a convex bounded shape.
+    constexpr bool is_gjk_convex(const Ellipsoid *) { return true; }
+
+    inline m3d::scalar representative_radius(const Ellipsoid &e)
+    {
+        return m3d::max(m3d::max(e.half_extents.x, e.half_extents.y), e.half_extents.z);
+    }
+
+    inline int face_corners(const Ellipsoid &e, const m3d::tf &tf,
+                            const m3d::vec3 &dir, m3d::vec3 out[4])
+    {
+        const m3d::vec3 local_dir = tf.inverse_rotate_vector(dir);
+        const m3d::vec3 sup_world = tf.transform_point(support(e, local_dir));
+        return get_generic_face_corners(sup_world, dir, representative_radius(e), out);
     }
 } // namespace rbc

@@ -25,7 +25,7 @@ TEST(sphere_plane_above_no_hit)
     rbc::Shape pB  = make_plane_y();
     m3d::tf tfA; tfA.pos = m3d::vec3(0, 2.0, 0);
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     bool hit = rbc::CollisionAlgorithm<rbc::Sphere, rbc::Plane>::test(
         sA.get<rbc::Sphere>(), tfA, pB.get<rbc::Plane>(), plane_tf(), c);
     ASSERT_FALSE(hit);
@@ -38,7 +38,7 @@ TEST(sphere_plane_just_touching_no_hit)
     rbc::Shape pB = make_plane_y();
     m3d::tf tfA; tfA.pos = m3d::vec3(0, 1.0, 0);
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     bool hit = rbc::CollisionAlgorithm<rbc::Sphere, rbc::Plane>::test(
         sA.get<rbc::Sphere>(), tfA, pB.get<rbc::Plane>(), plane_tf(), c);
     ASSERT_FALSE(hit);
@@ -51,12 +51,12 @@ TEST(sphere_plane_penetrating)
     rbc::Shape pB = make_plane_y();
     m3d::tf tfA; tfA.pos = m3d::vec3(0, 0.7, 0);
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     bool hit = rbc::CollisionAlgorithm<rbc::Sphere, rbc::Plane>::test(
         sA.get<rbc::Sphere>(), tfA, pB.get<rbc::Plane>(), plane_tf(), c);
 
     ASSERT_TRUE(hit);
-    ASSERT_NEAR(c.penetration_depth, 0.3, 0.001);
+    ASSERT_NEAR(c.points[0].penetration_depth, 0.3, 0.001);
     // Normal should push sphere in the +Y direction (out of plane)
     ASSERT_NEAR(c.normal.y, 1.0, 0.001);
     ASSERT_NEAR(m3d::length(c.normal), 1.0, 0.001);
@@ -69,12 +69,12 @@ TEST(sphere_plane_centre_on_plane)
     rbc::Shape pB = make_plane_y();
     m3d::tf tfA; tfA.pos = m3d::vec3(0, 0, 0);
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     bool hit = rbc::CollisionAlgorithm<rbc::Sphere, rbc::Plane>::test(
         sA.get<rbc::Sphere>(), tfA, pB.get<rbc::Plane>(), plane_tf(), c);
 
     ASSERT_TRUE(hit);
-    ASSERT_NEAR(c.penetration_depth, 1.0, 0.001);
+    ASSERT_NEAR(c.points[0].penetration_depth, 1.0, 0.001);
     ASSERT_NEAR(c.normal.y, 1.0, 0.001);
 }
 
@@ -85,12 +85,12 @@ TEST(sphere_plane_deep_below)
     rbc::Shape pB = make_plane_y();
     m3d::tf tfA; tfA.pos = m3d::vec3(0, -5.0, 0);
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     bool hit = rbc::CollisionAlgorithm<rbc::Sphere, rbc::Plane>::test(
         sA.get<rbc::Sphere>(), tfA, pB.get<rbc::Plane>(), plane_tf(), c);
 
     ASSERT_TRUE(hit);
-    ASSERT_NEAR(c.penetration_depth, 6.0, 0.001);
+    ASSERT_NEAR(c.points[0].penetration_depth, 6.0, 0.001);
     ASSERT_NEAR(c.normal.y, 1.0, 0.001);
 }
 
@@ -104,7 +104,7 @@ TEST(sphere_plane_diagonal_plane)
     rbc::Shape pB = rbc::Plane(n, 0.0);
     m3d::tf tfA; tfA.pos = m3d::vec3(1, 1, 0);
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     bool hit = rbc::CollisionAlgorithm<rbc::Sphere, rbc::Plane>::test(
         sA.get<rbc::Sphere>(), tfA, pB.get<rbc::Plane>(), plane_tf(), c);
     ASSERT_FALSE(hit);
@@ -117,13 +117,13 @@ TEST(sphere_plane_symmetry_plane_sphere)
     rbc::Shape pB = make_plane_y();
     m3d::tf tfA; tfA.pos = m3d::vec3(0, 0.7, 0);
 
-    rbc::Contact c_sp, c_ps;
+    rbc::ContactManifold c_sp, c_ps;
     rbc::CollisionAlgorithm<rbc::Sphere, rbc::Plane>::test(
         sA.get<rbc::Sphere>(), tfA, pB.get<rbc::Plane>(), plane_tf(), c_sp);
     rbc::CollisionAlgorithm<rbc::Plane, rbc::Sphere>::test(
         pB.get<rbc::Plane>(), plane_tf(), sA.get<rbc::Sphere>(), tfA, c_ps);
 
-    ASSERT_NEAR(c_sp.penetration_depth, c_ps.penetration_depth, 0.001);
+    ASSERT_NEAR(c_sp.points[0].penetration_depth, c_ps.points[0].penetration_depth, 0.001);
     ASSERT_NEAR(c_sp.normal.x, -c_ps.normal.x, 0.001);
     ASSERT_NEAR(c_sp.normal.y, -c_ps.normal.y, 0.001);
     ASSERT_NEAR(c_sp.normal.z, -c_ps.normal.z, 0.001);

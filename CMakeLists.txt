@@ -197,10 +197,22 @@ add_executable(test_sphere_box tests/rbc/analytic/test_sphere_box.cpp)
 target_link_libraries(test_sphere_box PRIVATE rbc_lib)
 add_test(NAME test_sphere_box COMMAND test_sphere_box)
 
-# add_executable(test_sphere_capsule tests/rbc/analytic/test_sphere_capsule.cpp)
-# target_link_libraries(test_sphere_capsule PRIVATE rbc_lib)
-# add_test(NAME test_sphere_capsule COMMAND test_sphere_capsule)
+add_executable(test_sphere_capsule tests/rbc/analytic/test_sphere_capsule.cpp)
+target_link_libraries(test_sphere_capsule PRIVATE rbc_lib)
+add_test(NAME test_sphere_capsule COMMAND test_sphere_capsule)
 
+add_executable(test_heightmap_sphere tests/rbc/analytic/test_heightmap_sphere.cpp)
+target_link_libraries(test_heightmap_sphere PRIVATE rbc_lib)
+add_test(NAME test_heightmap_sphere COMMAND test_heightmap_sphere)
+
+add_executable(test_heightmap_capsule tests/rbc/analytic/test_heightmap_capsule.cpp)
+target_link_libraries(test_heightmap_capsule PRIVATE rbc_lib)
+add_test(NAME test_heightmap_capsule COMMAND test_heightmap_capsule)
+
+# The tests below have pre-existing semantic expectation mismatches with the
+# current analytic implementation (normal-sign convention, one capsule endpoint
+# corner case). The syntax has been migrated to ContactManifold so they
+# compile; re-enable once the expectations are reconciled with the impl.
 # add_executable(test_capsule_capsule tests/rbc/analytic/test_capsule_capsule.cpp)
 # target_link_libraries(test_capsule_capsule PRIVATE rbc_lib)
 # add_test(NAME test_capsule_capsule COMMAND test_capsule_capsule)
@@ -216,14 +228,6 @@ add_test(NAME test_sphere_box COMMAND test_sphere_box)
 # add_executable(test_plane_capsule tests/rbc/analytic/test_plane_capsule.cpp)
 # target_link_libraries(test_plane_capsule PRIVATE rbc_lib)
 # add_test(NAME test_plane_capsule COMMAND test_plane_capsule)
-
-# add_executable(test_heightmap_sphere tests/rbc/analytic/test_heightmap_sphere.cpp)
-# target_link_libraries(test_heightmap_sphere PRIVATE rbc_lib)
-# add_test(NAME test_heightmap_sphere COMMAND test_heightmap_sphere)
-
-# add_executable(test_heightmap_capsule tests/rbc/analytic/test_heightmap_capsule.cpp)
-# target_link_libraries(test_heightmap_capsule PRIVATE rbc_lib)
-# add_test(NAME test_heightmap_capsule COMMAND test_heightmap_capsule)
 
 
 add_executable(test_dispatcher tests/rbc/test_dispatcher.cpp)

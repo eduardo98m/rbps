@@ -121,4 +121,12 @@ namespace rbc
             m3d::abs(R[0][2]) * half.x + m3d::abs(R[1][2]) * half.y + m3d::abs(R[2][2]) * half.z);
         return {world_centre - extent, world_centre + extent};
     }
+
+    // Marker for the dispatcher: Mesh is treated as non-convex (triangle soup).
+    // Convex meshes work too, but the analytic specialisation in
+    // MeshCollision.hpp is the supported path.
+    constexpr bool is_gjk_convex(const Mesh *) { return false; }
+    inline m3d::scalar representative_radius(const Mesh &) { return 0.0; }
+    inline int face_corners(const Mesh &, const m3d::tf &,
+                            const m3d::vec3 &, m3d::vec3[4]) { return 0; }
 } // namespace rbc

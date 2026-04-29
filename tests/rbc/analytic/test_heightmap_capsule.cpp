@@ -20,7 +20,7 @@ TEST(capsule_heightmap_upright_above_no_hit)
     m3d::tf tfA; tfA.pos = m3d::vec3(1, 2, 1);
     m3d::tf tfB;
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     bool hit = rbc::CollisionAlgorithm<rbc::Capsule, rbc::Heightmap>::test(
         cA.get<rbc::Capsule>(), tfA, hmB.get<rbc::Heightmap>(), tfB, c);
     ASSERT_FALSE(hit);
@@ -37,12 +37,12 @@ TEST(capsule_heightmap_upright_penetrating)
     m3d::tf tfA; tfA.pos = m3d::vec3(1, 1.0, 1);
     m3d::tf tfB;
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     bool hit = rbc::CollisionAlgorithm<rbc::Capsule, rbc::Heightmap>::test(
         cA.get<rbc::Capsule>(), tfA, hmB.get<rbc::Heightmap>(), tfB, c);
 
     ASSERT_TRUE(hit);
-    ASSERT_NEAR(c.penetration_depth, 0.5, 0.05);
+    ASSERT_NEAR(c.points[0].penetration_depth, 0.5, 0.05);
     ASSERT_NEAR(c.normal.y, 1.0, 0.05);
     ASSERT_NEAR(m3d::length(c.normal), 1.0, 0.001);
 
@@ -60,12 +60,12 @@ TEST(capsule_heightmap_horizontal_penetrating)
     tfA.rot = m3d::quat::from_axis_angle(m3d::vec3(0, 0, 1), m3d::PI / 2.0);
     m3d::tf tfB;
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     bool hit = rbc::CollisionAlgorithm<rbc::Capsule, rbc::Heightmap>::test(
         cA.get<rbc::Capsule>(), tfA, hmB.get<rbc::Heightmap>(), tfB, c);
 
     ASSERT_TRUE(hit);
-    ASSERT_NEAR(c.penetration_depth, 0.2, 0.03);
+    ASSERT_NEAR(c.points[0].penetration_depth, 0.2, 0.03);
     ASSERT_NEAR(c.normal.y, 1.0, 0.05);
 
     rbc::heightmap_data_destroy(hd);
@@ -79,7 +79,7 @@ TEST(capsule_heightmap_outside_grid_no_hit)
     m3d::tf tfA; tfA.pos = m3d::vec3(10, 0.3, 1); // outside XZ footprint
     m3d::tf tfB;
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     bool hit = rbc::CollisionAlgorithm<rbc::Capsule, rbc::Heightmap>::test(
         cA.get<rbc::Capsule>(), tfA, hmB.get<rbc::Heightmap>(), tfB, c);
     ASSERT_FALSE(hit);

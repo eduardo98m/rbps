@@ -37,7 +37,7 @@ TEST(sphere_heightmap_flat_above_no_hit)
     m3d::tf tfA; tfA.pos = m3d::vec3(1, 1.0, 1);
     m3d::tf tfB; // heightmap ignores tf
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     bool hit = rbc::CollisionAlgorithm<rbc::Sphere, rbc::Heightmap>::test(
         sA.get<rbc::Sphere>(), tfA, hmB.get<rbc::Heightmap>(), tfB, c);
     ASSERT_FALSE(hit);
@@ -54,12 +54,12 @@ TEST(sphere_heightmap_flat_penetrating)
     m3d::tf tfA; tfA.pos = m3d::vec3(1, 0.3, 1);
     m3d::tf tfB;
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     bool hit = rbc::CollisionAlgorithm<rbc::Sphere, rbc::Heightmap>::test(
         sA.get<rbc::Sphere>(), tfA, hmB.get<rbc::Heightmap>(), tfB, c);
 
     ASSERT_TRUE(hit);
-    ASSERT_NEAR(c.penetration_depth, 0.2, 0.02);
+    ASSERT_NEAR(c.points[0].penetration_depth, 0.2, 0.02);
     ASSERT_NEAR(c.normal.y, 1.0, 0.05);
     ASSERT_NEAR(m3d::length(c.normal), 1.0, 0.001);
 
@@ -75,7 +75,7 @@ TEST(sphere_heightmap_elevated_flat_above_no_hit)
     m3d::tf tfA; tfA.pos = m3d::vec3(1, 3.0, 1);
     m3d::tf tfB;
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     bool hit = rbc::CollisionAlgorithm<rbc::Sphere, rbc::Heightmap>::test(
         sA.get<rbc::Sphere>(), tfA, hmB.get<rbc::Heightmap>(), tfB, c);
     ASSERT_FALSE(hit);
@@ -92,12 +92,12 @@ TEST(sphere_heightmap_elevated_flat_penetrating)
     m3d::tf tfA; tfA.pos = m3d::vec3(1, 2.3, 1);
     m3d::tf tfB;
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     bool hit = rbc::CollisionAlgorithm<rbc::Sphere, rbc::Heightmap>::test(
         sA.get<rbc::Sphere>(), tfA, hmB.get<rbc::Heightmap>(), tfB, c);
 
     ASSERT_TRUE(hit);
-    ASSERT_NEAR(c.penetration_depth, 0.2, 0.02);
+    ASSERT_NEAR(c.points[0].penetration_depth, 0.2, 0.02);
 
     rbc::heightmap_data_destroy(hd);
 }
@@ -111,7 +111,7 @@ TEST(sphere_heightmap_outside_grid_no_hit)
     m3d::tf tfA; tfA.pos = m3d::vec3(10, 0.3, 1);
     m3d::tf tfB;
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     bool hit = rbc::CollisionAlgorithm<rbc::Sphere, rbc::Heightmap>::test(
         sA.get<rbc::Sphere>(), tfA, hmB.get<rbc::Heightmap>(), tfB, c);
     ASSERT_FALSE(hit);

@@ -6,11 +6,9 @@
 // ============================================================================
 //  visr/SnapshotBuilder.hpp  (C++17 compatible)
 //
-//  rbc::Shape fix
-//  ──────────────
-//  rbc::Shape is a tagged struct, not a std::variant — std::visit won't work.
-//  Switch on shape.tag and pull fields from the union.
-//  Adapt the case labels and member names below to match ShapeTypes.hpp.
+//  rbc::Shape is a thin std::variant wrapper; we use std::visit with a
+//  visitor struct that has one operator() per concrete shape. Each line
+//  stands on its own — no decltype, no if constexpr, no switch.
 //
 //  SoA id fix
 //  ──────────
@@ -22,50 +20,54 @@ namespace visr
 {
     namespace detail
     {
-        // ── Shape → ShapeSnap ─────────────────────────────────────────────────
-        //  ADAPT: change ShapeTag::* and member field names to match your rbc::Shape.
+        struct ShapeToSnap
+        {
+            ShapeSnap operator()(const rbc::Sphere &s) const
+            {
+                return SpherSnap{s.radius};
+            }
+            ShapeSnap operator()(const rbc::Box &b) const
+            {
+                return BoxSnap{b.half_extents};
+            }
+            ShapeSnap operator()(const rbc::Capsule &c) const
+            {
+                return CapsuleSnap{c.radius, c.half_height};
+            }
+            ShapeSnap operator()(const rbc::Plane &p) const
+            {
+                // PlaneSnap::normal   → local-space unit normal
+                // PlaneSnap::distance → the d offset (plane equation: n·x = d)
+                return PlaneSnap{p.normal, p.d};
+            }
+            ShapeSnap operator()(const rbc::Cone &c) const
+            {
+                return ConeSnap{c.base_radius, c.half_height};
+            }
+            ShapeSnap operator()(const rbc::Ellipsoid &e) const
+            {
+                return EllipsoidSnap{e.half_extents};
+            }
+            ShapeSnap operator()(const rbc::Heightmap &h) const
+            {
+                if (h.data)
+                    return HeightmapSnap{
+                        h.data->cols,
+                        h.data->rows,
+                        static_cast<m3d::scalar>(h.data->scale.x)};
+                return HeightmapSnap{0u, 0u, 1.0};
+            }
+            ShapeSnap operator()(const rbc::Mesh &m) const
+            {
+                return MeshSnap{
+                    m.data ? m.data->vert_count : 0u,
+                    m.data ? m.data->face_count : 0u};
+            }
+        };
+
         inline ShapeSnap to_shape_snap(const rbc::Shape &s)
         {
-            switch (s.type)
-            {
-            case rbc::ShapeType::Sphere:
-                return SpherSnap{s.sphere.radius};
-
-            case rbc::ShapeType::Box:
-                return BoxSnap{s.box.half_extents};
-
-            case rbc::ShapeType::Capsule:
-                return CapsuleSnap{s.capsule.radius, s.capsule.half_height};
-
-            case rbc::ShapeType::Plane:
-                // PlaneSnap::normal  → local-space unit normal
-                // PlaneSnap::distance → the d offset (plane equation: n·x = d)
-                // The visualizer rotates the normal by world_rot at draw time.
-                return PlaneSnap{s.plane.normal, s.plane.d};
-
-            case rbc::ShapeType::Cone:
-                return ConeSnap{s.cone.base_radius, s.cone.half_height};
-
-            case rbc::ShapeType::Ellipsoid:
-                return EllipsoidSnap{s.ellipsoid.half_extents};
-
-            case rbc::ShapeType::Heightmap:
-                if (s.heightmap.data)
-                    return HeightmapSnap{
-                        s.heightmap.data->cols,
-                        s.heightmap.data->rows,
-                        static_cast<m3d::scalar>(s.heightmap.data->scale.x)};
-                return HeightmapSnap{0u, 0u, 1.0};
-
-                // case rbc::ShapeType::Mesh:
-                //     return MeshSnap{
-                //         s.mesh.data ? s.mesh.data->vert_count : 0u,
-                //         s.mesh.data ? s.mesh.data->face_count : 0u
-                //     };
-
-            default:
-                return SpherSnap{0.1};
-            }
+            return std::visit(ShapeToSnap{}, s.v);
         }
 
     } // namespace detail

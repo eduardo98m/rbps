@@ -6,7 +6,7 @@
 
 static bool gjk_reference(const rbc::Shape &sa, const m3d::tf &tfa,
                            const rbc::Shape &sb, const m3d::tf &tfb,
-                           rbc::Contact &out)
+                           rbc::ContactManifold &out)
 {
     rbc::MinkowskiDiff md(&sa, &sb, tfa, tfb);
     m3d::vec3 guess = tfb.pos - tfa.pos;
@@ -15,9 +15,10 @@ static bool gjk_reference(const rbc::Shape &sa, const m3d::tf &tfa,
     if (gjk.evaluate(md, guess) != rbc::GJK::Inside) return false;
     rbc::EPA epa;
     if (epa.evaluate(gjk, md) != rbc::EPA::Valid) return false;
-    out.normal            = epa.normal;
-    out.penetration_depth = epa.depth;
-    out.pos               = epa.contact_point;
+    out.normal                       = epa.normal;
+    out.num_points                   = 1;
+    out.points[0].penetration_depth  = epa.depth;
+    out.points[0].position           = epa.contact_point;
     return true;
 }
 
@@ -32,7 +33,7 @@ TEST(sphere_capsule_separated)
     m3d::tf tfA; tfA.pos = m3d::vec3(0, 4, 0);
     m3d::tf tfB; tfB.pos = m3d::vec3(0, 0, 0);
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     bool hit = rbc::CollisionAlgorithm<rbc::Sphere, rbc::Capsule>::test(
         sA.get<rbc::Sphere>(), tfA, cB.get<rbc::Capsule>(), tfB, c);
     ASSERT_FALSE(hit);
@@ -47,15 +48,15 @@ TEST(sphere_capsule_overlap_shaft)
     m3d::tf tfA; tfA.pos = m3d::vec3(1.2, 0, 0);
     m3d::tf tfB; tfB.pos = m3d::vec3(0,   0, 0);
 
-    rbc::Contact analytic, reference;
+    rbc::ContactManifold analytic, reference;
     bool hit_a = rbc::CollisionAlgorithm<rbc::Sphere, rbc::Capsule>::test(
         sA.get<rbc::Sphere>(), tfA, cB.get<rbc::Capsule>(), tfB, analytic);
     bool hit_r = gjk_reference(sA, tfA, cB, tfB, reference);
 
     ASSERT_TRUE(hit_a);
     ASSERT_TRUE(hit_r);
-    ASSERT_NEAR(analytic.penetration_depth, 0.3, 0.02);
-    ASSERT_NEAR(analytic.penetration_depth, reference.penetration_depth, 0.05);
+    ASSERT_NEAR(analytic.points[0].penetration_depth, 0.3, 0.02);
+    ASSERT_NEAR(analytic.points[0].penetration_depth, reference.points[0].penetration_depth, 0.05);
     ASSERT_NEAR(m3d::length(analytic.normal), 1.0, 0.001);
     // Normal must be roughly along X
     ASSERT_NEAR(std::abs(analytic.normal.x), 1.0, 0.05);
@@ -72,15 +73,15 @@ TEST(sphere_capsule_overlap_endpoint)
     m3d::tf tfA; tfA.pos = m3d::vec3(0, 2.0, 0);
     m3d::tf tfB; tfB.pos = m3d::vec3(0, 0,   0);
 
-    rbc::Contact analytic, reference;
+    rbc::ContactManifold analytic, reference;
     bool hit_a = rbc::CollisionAlgorithm<rbc::Sphere, rbc::Capsule>::test(
         sA.get<rbc::Sphere>(), tfA, cB.get<rbc::Capsule>(), tfB, analytic);
     bool hit_r = gjk_reference(sA, tfA, cB, tfB, reference);
 
     ASSERT_TRUE(hit_a);
     ASSERT_TRUE(hit_r);
-    ASSERT_NEAR(analytic.penetration_depth, 0.5, 0.02);
-    ASSERT_NEAR(analytic.penetration_depth, reference.penetration_depth, 0.05);
+    ASSERT_NEAR(analytic.points[0].penetration_depth, 0.5, 0.02);
+    ASSERT_NEAR(analytic.points[0].penetration_depth, reference.points[0].penetration_depth, 0.05);
     ASSERT_NEAR(m3d::length(analytic.normal), 1.0, 0.001);
 }
 
@@ -91,7 +92,7 @@ TEST(sphere_capsule_no_hit_endpoint)
     m3d::tf tfA; tfA.pos = m3d::vec3(0, 3.0, 0); // dist = 2.0 > rsum 1.5
     m3d::tf tfB; tfB.pos = m3d::vec3(0, 0,   0);
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     bool hit = rbc::CollisionAlgorithm<rbc::Sphere, rbc::Capsule>::test(
         sA.get<rbc::Sphere>(), tfA, cB.get<rbc::Capsule>(), tfB, c);
     ASSERT_FALSE(hit);
@@ -105,13 +106,13 @@ TEST(sphere_capsule_symmetry)
     m3d::tf tfA; tfA.pos = m3d::vec3(1.2, 0, 0);
     m3d::tf tfB; tfB.pos = m3d::vec3(0,   0, 0);
 
-    rbc::Contact c_sc, c_cs;
+    rbc::ContactManifold c_sc, c_cs;
     rbc::CollisionAlgorithm<rbc::Sphere, rbc::Capsule>::test(
         sA.get<rbc::Sphere>(), tfA, cB.get<rbc::Capsule>(), tfB, c_sc);
     rbc::CollisionAlgorithm<rbc::Capsule, rbc::Sphere>::test(
         cB.get<rbc::Capsule>(), tfB, sA.get<rbc::Sphere>(), tfA, c_cs);
 
-    ASSERT_NEAR(c_sc.penetration_depth, c_cs.penetration_depth, 0.001);
+    ASSERT_NEAR(c_sc.points[0].penetration_depth, c_cs.points[0].penetration_depth, 0.001);
     ASSERT_NEAR(c_sc.normal.x, -c_cs.normal.x, 0.001);
     ASSERT_NEAR(c_sc.normal.y, -c_cs.normal.y, 0.001);
     ASSERT_NEAR(c_sc.normal.z, -c_cs.normal.z, 0.001);

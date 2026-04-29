@@ -155,7 +155,7 @@ namespace rbps
         for (uint32_t pi = 0; pi < cc.count(); ++pi)
         {
             // Only process plane colliders in this loop.
-            if (cc.shape[pi].type != rbc::ShapeType::Plane)
+            if (!cc.shape[pi].is<rbc::Plane>())
                 continue;
 
             const uint32_t bp_body = cc.body_id[pi];
@@ -167,7 +167,7 @@ namespace rbps
                 // Don't test the plane against itself or another plane.
                 if (di == pi)
                     continue;
-                if (cc.shape[di].type == rbc::ShapeType::Plane)
+                if (cc.shape[di].is<rbc::Plane>())
                     continue;
 
                 const uint32_t d_body = cc.body_id[di];

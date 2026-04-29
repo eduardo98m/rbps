@@ -1,6 +1,7 @@
 #pragma once
 #include <math3d/math3d.hpp>
 #include "rbc/AABB.hpp"
+#include "rbc/shapes/FaceHelpers.hpp"
 
 namespace rbc
 {
@@ -52,6 +53,21 @@ namespace rbc
     {
         const m3d::vec3 r(s.radius, s.radius, s.radius);
         return {tf.pos - r, tf.pos + r};
+    }
+
+    // Marker for the dispatcher: Sphere is a convex bounded shape.
+    // Tag-dispatched (pointer arg, never dereferenced) so callers can query
+    // convexity by type without constructing a Sphere.
+    constexpr bool is_gjk_convex(const Sphere *) { return true; }
+
+    inline m3d::scalar representative_radius(const Sphere &s) { return s.radius; }
+
+    inline int face_corners(const Sphere &s, const m3d::tf &tf,
+                            const m3d::vec3 &dir, m3d::vec3 out[4])
+    {
+        const m3d::vec3 local_dir = tf.inverse_rotate_vector(dir);
+        const m3d::vec3 sup_world = tf.transform_point(support(s, local_dir));
+        return get_generic_face_corners(sup_world, dir, representative_radius(s), out);
     }
 
 }

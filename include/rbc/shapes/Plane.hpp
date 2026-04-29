@@ -40,18 +40,11 @@ namespace rbc
     }
 
     // ── Support function ──────────────────────────────────────────────────────
-    // A half-space is unbounded in the normal direction — support returns
-    // a very large (but finite) value so we can still call it safely.
-    // DO NOT feed Plane to GJK; use analytic specialisations instead.
-    inline m3d::vec3 support(const Plane &p, const m3d::vec3 &dir)
-    {
-        // If dir points into the half-space, support is "at infinity" — clamp to large value.
-        constexpr m3d::scalar BIG = 1.0e15;
-        if (m3d::dot(dir, p.normal) > 0.0)
-            return p.normal * BIG;
-        // Otherwise, any point on the plane surface; use origin projected onto plane.
-        return p.normal * p.d;
-    }
+    // Plane is non-convex (an infinite half-space) and is_gjk_convex<Plane>
+    // returns false, so the dispatcher's compile-time guard ensures GJK never
+    // calls this. The stub exists only because the variant-level shape_support
+    // dispatch needs an overload for every alternative.
+    inline m3d::vec3 support(const Plane &, const m3d::vec3 &) { return m3d::vec3(); }
 
     // ── AABB: infinite in all directions ─────────────────────────────────────
     inline AABB compute_aabb(const Plane & /*p*/, const m3d::tf & /*tf*/)
@@ -59,4 +52,12 @@ namespace rbc
         constexpr m3d::scalar INF = std::numeric_limits<m3d::scalar>::infinity();
         return {m3d::vec3(-INF, -INF, -INF), m3d::vec3(INF, INF, INF)};
     }
+
+    // Marker for the dispatcher: Plane is non-convex (infinite half-space).
+    // Plane pairs are handled by analytic specialisations exclusively;
+    // these stubs exist only so the variant-level visit/table compiles.
+    constexpr bool is_gjk_convex(const Plane *) { return false; }
+    inline m3d::scalar representative_radius(const Plane &) { return 0.0; }
+    inline int face_corners(const Plane &, const m3d::tf &,
+                            const m3d::vec3 &, m3d::vec3[4]) { return 0; }
 } // namespace rbc

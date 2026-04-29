@@ -32,9 +32,11 @@ namespace rbc
         }
 
         // Iterate relevant triangles, call per_tri callback, keep deepest contact.
+        // The callback fills a single-point ContactManifold (num_points=1) per
+        // triangle; we keep the deepest one as the output manifold.
         template <typename PerTriFn>
         inline bool heightmap_test(const Heightmap &hm, const AABB &query_aabb,
-                                   PerTriFn per_tri, Contact &out)
+                                   PerTriFn per_tri, ContactManifold &out)
         {
             if (!hm.data)
                 return false;
@@ -45,7 +47,7 @@ namespace rbc
 
             bool hit = false;
             m3d::scalar best_depth = 0.0;
-            Contact candidate;
+            ContactManifold candidate;
 
             for (int r = r0; r <= r1; ++r)
             {
@@ -57,7 +59,6 @@ namespace rbc
                     const m3d::vec3 V11 = heightmap_vertex(hd, r + 1, c + 1);
 
                     // Two triangles per cell
-                    //const m3d::vec3 tris[2][3] = {{V00, V01, V10}, {V01, V11, V10}};
                     const m3d::vec3 tris[2][3] = { {V00, V10, V01}, {V10, V11, V01} };
                     for (const auto &tri : tris)
                     {
@@ -65,9 +66,10 @@ namespace rbc
                             m3d::cross(tri[1] - tri[0], tri[2] - tri[0]));
                         if (per_tri(tri[0], tri[1], tri[2], n, candidate))
                         {
-                            if (candidate.penetration_depth > best_depth)
+                            const m3d::scalar d = candidate.points[0].penetration_depth;
+                            if (d > best_depth)
                             {
-                                best_depth = candidate.penetration_depth;
+                                best_depth = d;
                                 out = candidate;
                                 hit = true;
                             }
@@ -84,12 +86,16 @@ namespace rbc
     struct CollisionAlgorithm<Sphere, Heightmap>
     {
         static bool test(const Sphere &sphere, const m3d::tf &tf_sphere,
-                         const Heightmap &hm, const m3d::tf &tf_hm,
-                         Contact &out)
+                         const Heightmap &hm, const m3d::tf & /*tf_hm*/,
+                         ContactManifold &out)
         {
             const AABB query = compute_aabb(sphere, tf_sphere);
-            return detail::heightmap_test(hm, query, [&](const m3d::vec3 &A, const m3d::vec3 &B, const m3d::vec3 &C, const m3d::vec3 &n, Contact &c)
-                                          { return tri::sphere_vs_triangle(tf_sphere.pos, sphere.radius, A, B, C, n, c); }, out);
+            return detail::heightmap_test(hm, query,
+                [&](const m3d::vec3 &A, const m3d::vec3 &B, const m3d::vec3 &C,
+                    const m3d::vec3 &n, ContactManifold &c) {
+                    return tri::sphere_vs_triangle(tf_sphere.pos, sphere.radius,
+                                                   A, B, C, n, c);
+                }, out);
         }
     };
     template <>
@@ -102,15 +108,18 @@ namespace rbc
     struct CollisionAlgorithm<Capsule, Heightmap>
     {
         static bool test(const Capsule &cap, const m3d::tf &tf_cap,
-                         const Heightmap &hm, const m3d::tf &tf_hm,
-                         Contact &out)
+                         const Heightmap &hm, const m3d::tf & /*tf_hm*/,
+                         ContactManifold &out)
         {
             m3d::vec3 p1, p2;
             capsule_endpoints(cap, tf_cap, p1, p2);
             const AABB query = compute_aabb(cap, tf_cap);
 
-            return detail::heightmap_test(hm, query, [&](const m3d::vec3 &A, const m3d::vec3 &B, const m3d::vec3 &C, const m3d::vec3 &n, Contact &c)
-                                          { return tri::capsule_vs_triangle(p1, p2, cap.radius, A, B, C, n, c); }, out);
+            return detail::heightmap_test(hm, query,
+                [&](const m3d::vec3 &A, const m3d::vec3 &B, const m3d::vec3 &C,
+                    const m3d::vec3 &n, ContactManifold &c) {
+                    return tri::capsule_vs_triangle(p1, p2, cap.radius, A, B, C, n, c);
+                }, out);
         }
     };
     template <>
@@ -123,12 +132,13 @@ namespace rbc
     struct CollisionAlgorithm<Box, Heightmap>
     {
         static bool test(const Box &box, const m3d::tf &tf_box,
-                         const Heightmap &hm, const m3d::tf &tf_hm,
-                         Contact &out)
+                         const Heightmap &hm, const m3d::tf & /*tf_hm*/,
+                         ContactManifold &out)
         {
             const AABB query = compute_aabb(box, tf_box);
-            return detail::heightmap_test(hm, query, [&](const m3d::vec3 &A, const m3d::vec3 &B, const m3d::vec3 &C, const m3d::vec3 &wn, Contact &c) -> bool
-                                          {
+            return detail::heightmap_test(hm, query,
+                [&](const m3d::vec3 &A, const m3d::vec3 &B, const m3d::vec3 &C,
+                    const m3d::vec3 &wn, ContactManifold &c) -> bool {
                     const m3d::scalar centre_dist = m3d::dot(tf_box.pos - A, wn);
                     const m3d::vec3   local_n     = tf_box.inverse_rotate_vector(wn);
                     const m3d::scalar box_r =
@@ -142,10 +152,15 @@ namespace rbc
                     const m3d::scalar edge_d = m3d::length(proj - closest);
                     if (edge_d > box_r) return false;
 
-                    c.normal            = wn;
-                    c.penetration_depth = box_r - centre_dist;
-                    c.pos               = closest;
-                    return c.penetration_depth > 0.0; }, out);
+                    const m3d::scalar depth = box_r - centre_dist;
+                    if (depth <= 0.0) return false;
+
+                    c.normal                          = wn;
+                    c.num_points                      = 1;
+                    c.points[0].position              = closest;
+                    c.points[0].penetration_depth     = depth;
+                    return true;
+                }, out);
         }
     };
     template <>

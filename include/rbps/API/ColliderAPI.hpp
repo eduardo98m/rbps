@@ -27,7 +27,7 @@ namespace rbps
     // -----------------------------------------------------------------------
     inline bool shape_bypasses_broadphase(const rbc::Shape &s)
     {
-        return s.type == rbc::ShapeType::Plane;
+        return s.is<rbc::Plane>();
         // Heightmap will be added here in Phase 2.
     }
 

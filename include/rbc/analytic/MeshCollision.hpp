@@ -41,7 +41,7 @@ namespace rbc
 
             bool hit = false;
             m3d::scalar best_depth = 0.0;
-            Contact candidate;
+            ContactManifold candidate;
 
             for (uint32_t f = 0; f < md.face_count; ++f)
             {
@@ -50,9 +50,10 @@ namespace rbc
 
                 if (per_tri(A, B, C, wn, candidate))
                 {
-                    if (candidate.penetration_depth > best_depth)
+                    const m3d::scalar d = candidate.points[0].penetration_depth;
+                    if (d > best_depth)
                     {
-                        best_depth = candidate.penetration_depth;
+                        best_depth = d;
                         out = candidate;
                         hit = true;
                     }

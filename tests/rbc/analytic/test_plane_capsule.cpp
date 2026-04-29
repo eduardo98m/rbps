@@ -13,7 +13,7 @@ TEST(capsule_plane_above_no_hit)
     rbc::Shape pB = make_plane_y();
     m3d::tf tfA; tfA.pos = m3d::vec3(0, 2, 0);
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     bool hit = rbc::CollisionAlgorithm<rbc::Capsule, rbc::Plane>::test(
         cA.get<rbc::Capsule>(), tfA, pB.get<rbc::Plane>(), plane_tf(), c);
     ASSERT_FALSE(hit);
@@ -26,12 +26,12 @@ TEST(capsule_plane_upright_penetrating)
     rbc::Shape pB = make_plane_y();
     m3d::tf tfA; tfA.pos = m3d::vec3(0, 1.0, 0);
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     bool hit = rbc::CollisionAlgorithm<rbc::Capsule, rbc::Plane>::test(
         cA.get<rbc::Capsule>(), tfA, pB.get<rbc::Plane>(), plane_tf(), c);
 
     ASSERT_TRUE(hit);
-    ASSERT_NEAR(c.penetration_depth, 0.5, 0.001);
+    ASSERT_NEAR(c.points[0].penetration_depth, 0.5, 0.001);
     ASSERT_NEAR(c.normal.y, 1.0, 0.001);
     ASSERT_NEAR(m3d::length(c.normal), 1.0, 0.001);
 }
@@ -46,12 +46,12 @@ TEST(capsule_plane_horizontal_penetrating)
     tfA.pos = m3d::vec3(0, 0.3, 0);
     tfA.rot = m3d::quat::from_axis_angle(m3d::vec3(0, 0, 1), m3d::PI / 2.0); // axis → X
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     bool hit = rbc::CollisionAlgorithm<rbc::Capsule, rbc::Plane>::test(
         cA.get<rbc::Capsule>(), tfA, pB.get<rbc::Plane>(), plane_tf(), c);
 
     ASSERT_TRUE(hit);
-    ASSERT_NEAR(c.penetration_depth, 0.2, 0.01);
+    ASSERT_NEAR(c.points[0].penetration_depth, 0.2, 0.01);
     ASSERT_NEAR(c.normal.y, 1.0, 0.001);
 }
 
@@ -68,13 +68,13 @@ TEST(capsule_plane_tilted_45_penetrating)
     tfA.pos = m3d::vec3(0, 1.0, 0);
     tfA.rot = m3d::quat::from_axis_angle(m3d::vec3(0, 0, 1), m3d::PI / 4.0);
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     bool hit = rbc::CollisionAlgorithm<rbc::Capsule, rbc::Plane>::test(
         cA.get<rbc::Capsule>(), tfA, pB.get<rbc::Plane>(), plane_tf(), c);
 
     ASSERT_TRUE(hit);
     m3d::scalar expected_pen = 1.0 * m3d::sin(m3d::PI / 4.0) + 0.5 - 1.0;
-    ASSERT_NEAR(c.penetration_depth, expected_pen, 0.01);
+    ASSERT_NEAR(c.points[0].penetration_depth, expected_pen, 0.01);
     ASSERT_NEAR(c.normal.y, 1.0, 0.001);
 }
 

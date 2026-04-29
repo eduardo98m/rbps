@@ -72,4 +72,48 @@ namespace rbc
 
         return {tf.pos - extent, tf.pos + extent};
     }
+
+    // Marker for the dispatcher: Box is a convex bounded shape.
+    constexpr bool is_gjk_convex(const Box *) { return true; }
+
+    inline m3d::scalar representative_radius(const Box &b)
+    {
+        return m3d::max(m3d::max(b.half_extents.x, b.half_extents.y), b.half_extents.z);
+    }
+
+    // Returns the 4 corners of the box face whose outward normal is most
+    // aligned with `dir`. Used as the reference / incident face polygon
+    // by the GJK/EPA manifold generator.
+    inline int face_corners(const Box &b, const m3d::tf &tf,
+                            const m3d::vec3 &dir, m3d::vec3 corners[4])
+    {
+        const m3d::vec3 axes[3] = {
+            tf.rotate_vector(m3d::vec3(1, 0, 0)),
+            tf.rotate_vector(m3d::vec3(0, 1, 0)),
+            tf.rotate_vector(m3d::vec3(0, 0, 1)),
+        };
+        const m3d::scalar half[3] = {b.half_extents.x, b.half_extents.y, b.half_extents.z};
+
+        int best = 0;
+        m3d::scalar best_d = m3d::abs(m3d::dot(axes[0], dir));
+        for (int i = 1; i < 3; ++i)
+        {
+            const m3d::scalar d = m3d::abs(m3d::dot(axes[i], dir));
+            if (d > best_d)
+            {
+                best_d = d;
+                best = i;
+            }
+        }
+
+        const m3d::scalar sign = (m3d::dot(axes[best], dir) >= 0.0) ? 1.0 : -1.0;
+        const m3d::vec3 centre = tf.pos + axes[best] * (sign * half[best]);
+        const int u = (best + 1) % 3, v = (best + 2) % 3;
+
+        corners[0] = centre + axes[u] * half[u] + axes[v] * half[v];
+        corners[1] = centre - axes[u] * half[u] + axes[v] * half[v];
+        corners[2] = centre - axes[u] * half[u] - axes[v] * half[v];
+        corners[3] = centre + axes[u] * half[u] - axes[v] * half[v];
+        return 4;
+    }
 }

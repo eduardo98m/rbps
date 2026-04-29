@@ -79,8 +79,8 @@ TEST(add_stores_shape_correctly)
     u_int32_t id = rbps::create_collider(cc, bp, p, identity_tf());
     size_t  idx = cc.index_of(id);
 
-    ASSERT_EQ(cc.shape[idx].type, rbc::ShapeType::Sphere);
-    ASSERT_NEAR(cc.shape[idx].sphere.radius, 2.5, 1e-6);
+    ASSERT_TRUE(cc.shape[idx].is<rbc::Sphere>());
+    ASSERT_NEAR(cc.shape[idx].get<rbc::Sphere>().radius, 2.5, 1e-6);
 }
 
 TEST(add_stores_material_properties)
@@ -232,8 +232,8 @@ TEST(remove_middle_leaves_others_intact)
     size_t idx_a = cc.index_of(id_a);
     size_t idx_c = cc.index_of(id_c);
 
-    ASSERT_EQ(cc.shape[idx_a].type, rbc::ShapeType::Sphere);
-    ASSERT_EQ(cc.shape[idx_c].type, rbc::ShapeType::Sphere);
+    ASSERT_TRUE(cc.shape[idx_a].is<rbc::Sphere>());
+    ASSERT_TRUE(cc.shape[idx_c].is<rbc::Sphere>());
 }
 
 TEST(remove_then_add_reuses_bp_slot)

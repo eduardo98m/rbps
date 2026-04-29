@@ -6,7 +6,7 @@
 
 static bool gjk_reference(const rbc::Shape &sa, const m3d::tf &tfa,
                            const rbc::Shape &sb, const m3d::tf &tfb,
-                           rbc::Contact &out)
+                           rbc::ContactManifold &out)
 {
     rbc::MinkowskiDiff md(&sa, &sb, tfa, tfb);
     m3d::vec3 guess = tfb.pos - tfa.pos;
@@ -15,9 +15,10 @@ static bool gjk_reference(const rbc::Shape &sa, const m3d::tf &tfa,
     if (gjk.evaluate(md, guess) != rbc::GJK::Inside) return false;
     rbc::EPA epa;
     if (epa.evaluate(gjk, md) != rbc::EPA::Valid) return false;
-    out.normal            = epa.normal;
-    out.penetration_depth = epa.depth;
-    out.pos               = epa.contact_point;
+    out.normal                       = epa.normal;
+    out.num_points                   = 1;
+    out.points[0].penetration_depth  = epa.depth;
+    out.points[0].position           = epa.contact_point;
     return true;
 }
 
@@ -32,7 +33,7 @@ TEST(capsule_capsule_separated_parallel)
     m3d::tf tfA; tfA.pos = m3d::vec3(0, 0, 0);
     m3d::tf tfB; tfB.pos = m3d::vec3(3, 0, 0);
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     bool hit = rbc::CollisionAlgorithm<rbc::Capsule, rbc::Capsule>::test(
         cA.get<rbc::Capsule>(), tfA, cB.get<rbc::Capsule>(), tfB, c);
     ASSERT_FALSE(hit);
@@ -46,15 +47,15 @@ TEST(capsule_capsule_overlap_parallel)
     m3d::tf tfA; tfA.pos = m3d::vec3(0,   0, 0);
     m3d::tf tfB; tfB.pos = m3d::vec3(0.8, 0, 0);
 
-    rbc::Contact analytic, reference;
+    rbc::ContactManifold analytic, reference;
     bool hit_a = rbc::CollisionAlgorithm<rbc::Capsule, rbc::Capsule>::test(
         cA.get<rbc::Capsule>(), tfA, cB.get<rbc::Capsule>(), tfB, analytic);
     bool hit_r = gjk_reference(cA, tfA, cB, tfB, reference);
 
     ASSERT_TRUE(hit_a);
     ASSERT_TRUE(hit_r);
-    ASSERT_NEAR(analytic.penetration_depth, 0.2, 0.02);
-    ASSERT_NEAR(analytic.penetration_depth, reference.penetration_depth, 0.05);
+    ASSERT_NEAR(analytic.points[0].penetration_depth, 0.2, 0.02);
+    ASSERT_NEAR(analytic.points[0].penetration_depth, reference.points[0].penetration_depth, 0.05);
     ASSERT_NEAR(m3d::length(analytic.normal), 1.0, 0.001);
     ASSERT_NEAR(std::abs(analytic.normal.x), 1.0, 0.05);
 }
@@ -71,7 +72,7 @@ TEST(capsule_capsule_overlap_perpendicular)
     tfB.pos = m3d::vec3(0, 0, 0);
     tfB.rot = m3d::quat::from_axis_angle(m3d::vec3(0, 0, 1), m3d::PI / 2.0);
 
-    rbc::Contact analytic, reference;
+    rbc::ContactManifold analytic, reference;
     bool hit_a = rbc::CollisionAlgorithm<rbc::Capsule, rbc::Capsule>::test(
         cA.get<rbc::Capsule>(), tfA, cB.get<rbc::Capsule>(), tfB, analytic);
     bool hit_r = gjk_reference(cA, tfA, cB, tfB, reference);
@@ -79,8 +80,8 @@ TEST(capsule_capsule_overlap_perpendicular)
     ASSERT_TRUE(hit_a);
     ASSERT_TRUE(hit_r);
     // Overlap should equal sum of radii (axes cross at origin)
-    ASSERT_NEAR(analytic.penetration_depth, 1.0, 0.05);
-    ASSERT_NEAR(analytic.penetration_depth, reference.penetration_depth, 0.05);
+    ASSERT_NEAR(analytic.points[0].penetration_depth, 1.0, 0.05);
+    ASSERT_NEAR(analytic.points[0].penetration_depth, reference.points[0].penetration_depth, 0.05);
     ASSERT_NEAR(m3d::length(analytic.normal), 1.0, 0.001);
 }
 
@@ -95,15 +96,15 @@ TEST(capsule_capsule_overlap_crossing_offset)
     tfB.pos = m3d::vec3(0, 0, 0.6);
     tfB.rot = m3d::quat::from_axis_angle(m3d::vec3(0, 0, 1), m3d::PI / 2.0);
 
-    rbc::Contact analytic, reference;
+    rbc::ContactManifold analytic, reference;
     bool hit_a = rbc::CollisionAlgorithm<rbc::Capsule, rbc::Capsule>::test(
         cA.get<rbc::Capsule>(), tfA, cB.get<rbc::Capsule>(), tfB, analytic);
     bool hit_r = gjk_reference(cA, tfA, cB, tfB, reference);
 
     ASSERT_TRUE(hit_a);
     ASSERT_TRUE(hit_r);
-    ASSERT_NEAR(analytic.penetration_depth, 0.4, 0.02);
-    ASSERT_NEAR(analytic.penetration_depth, reference.penetration_depth, 0.05);
+    ASSERT_NEAR(analytic.points[0].penetration_depth, 0.4, 0.02);
+    ASSERT_NEAR(analytic.points[0].penetration_depth, reference.points[0].penetration_depth, 0.05);
 }
 
 TEST(capsule_capsule_endpoint_to_endpoint)
@@ -117,14 +118,14 @@ TEST(capsule_capsule_endpoint_to_endpoint)
     m3d::tf tfA; tfA.pos = m3d::vec3(0,   0,   0);
     m3d::tf tfB; tfB.pos = m3d::vec3(0, 2.4, 0);
 
-    rbc::Contact analytic, reference;
+    rbc::ContactManifold analytic, reference;
     bool hit_a = rbc::CollisionAlgorithm<rbc::Capsule, rbc::Capsule>::test(
         cA.get<rbc::Capsule>(), tfA, cB.get<rbc::Capsule>(), tfB, analytic);
     bool hit_r = gjk_reference(cA, tfA, cB, tfB, reference);
 
     ASSERT_TRUE(hit_a);
     ASSERT_TRUE(hit_r);
-    ASSERT_NEAR(analytic.penetration_depth, reference.penetration_depth, 0.05);
+    ASSERT_NEAR(analytic.points[0].penetration_depth, reference.points[0].penetration_depth, 0.05);
     ASSERT_NEAR(m3d::length(analytic.normal), 1.0, 0.001);
     // Normal should be roughly along Y
     ASSERT_NEAR(std::abs(analytic.normal.y), 1.0, 0.05);
@@ -139,7 +140,7 @@ TEST(capsule_capsule_separated_endpoint_gap)
     m3d::tf tfA; tfA.pos = m3d::vec3(0,   0, 0);
     m3d::tf tfB; tfB.pos = m3d::vec3(0, 3.5, 0);
 
-    rbc::Contact c;
+    rbc::ContactManifold c;
     bool hit = rbc::CollisionAlgorithm<rbc::Capsule, rbc::Capsule>::test(
         cA.get<rbc::Capsule>(), tfA, cB.get<rbc::Capsule>(), tfB, c);
     ASSERT_FALSE(hit);

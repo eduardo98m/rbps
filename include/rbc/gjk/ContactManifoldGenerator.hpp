@@ -171,78 +171,6 @@ namespace rbc
             return (i2 >= 0) ? 3 : 2;
         }
 
-        // ---------------------------------------------------------------------------
-        //  Support-based polygon extraction for a generic shape.
-        //
-        //  For convex shapes (Box, Capsule endpoints, Ellipsoid…) we approximate the
-        //  reference / incident "face" by sampling support points in a small disc
-        //  perpendicular to the contact normal and centered on the EPA support point.
-        //
-        //  For BOX shapes we use exact face corners (identical to the BoxBox path).
-        //  Other shapes get a 4-point disc approximation — good enough for sphere
-        //  caps, cylinder ends, and ellipsoid poles.
-        // ---------------------------------------------------------------------------
-
-        // Return the 4 corners of the best face of a BOX.
-        inline int get_box_face_corners(const Box &box,
-                                        const m3d::tf &tf,
-                                        const m3d::vec3 &dir,
-                                        m3d::vec3 corners[4])
-        {
-            const m3d::vec3 axes[3] = {
-                tf.rotate_vector(m3d::vec3(1, 0, 0)),
-                tf.rotate_vector(m3d::vec3(0, 1, 0)),
-                tf.rotate_vector(m3d::vec3(0, 0, 1)),
-            };
-            const m3d::scalar half[3] = {box.half_extents.x, box.half_extents.y, box.half_extents.z};
-
-            int best = 0;
-            m3d::scalar best_d = m3d::abs(m3d::dot(axes[0], dir));
-            for (int i = 1; i < 3; ++i)
-            {
-                m3d::scalar d = m3d::abs(m3d::dot(axes[i], dir));
-                if (d > best_d)
-                {
-                    best_d = d;
-                    best = i;
-                }
-            }
-
-            const m3d::scalar sign = (m3d::dot(axes[best], dir) >= 0.0) ? 1.0 : -1.0;
-            const m3d::vec3 centre = tf.pos + axes[best] * (sign * half[best]);
-            const int u = (best + 1) % 3, v = (best + 2) % 3;
-
-            corners[0] = centre + axes[u] * half[u] + axes[v] * half[v];
-            corners[1] = centre - axes[u] * half[u] + axes[v] * half[v];
-            corners[2] = centre - axes[u] * half[u] - axes[v] * half[v];
-            corners[3] = centre + axes[u] * half[u] - axes[v] * half[v];
-            return 4;
-        }
-
-        // Generic fallback: a small disc of 4 points around the support point.
-        // `support_pt` is the EPA support point on the shape surface.
-        // `radius`     is a representative "face radius" (half-extent, capsule radius…).
-        inline int get_generic_face_corners(const m3d::vec3 &support_pt,
-                                            const m3d::vec3 &normal,
-                                            m3d::scalar radius,
-                                            m3d::vec3 corners[4])
-        {
-            // Build a tangent frame
-            m3d::vec3 t1, t2;
-            if (m3d::abs(normal.x) < 0.9)
-                t1 = m3d::normalize(m3d::cross(normal, m3d::vec3(1, 0, 0)));
-            else
-                t1 = m3d::normalize(m3d::cross(normal, m3d::vec3(0, 1, 0)));
-            t2 = m3d::cross(normal, t1);
-
-            const m3d::scalar r = radius * 0.5; // conservative
-            corners[0] = support_pt + (t1 + t2) * r;
-            corners[1] = support_pt + (-t1 + t2) * r;
-            corners[2] = support_pt + (-t1 - t2) * r;
-            corners[3] = support_pt + (t1 - t2) * r;
-            return 4;
-        }
-
     } // namespace manifold_detail
 
     // ---------------------------------------------------------------------------
@@ -270,65 +198,12 @@ namespace rbc
         manifold.num_points = 0;
 
         // ── Determine reference and incident "face polygons" ──────────────────
-        // We branch on shape type to get the best polygon representation.
-
+        // Each shape supplies its own face_corners() — Box gives exact
+        // corners, others fall back to a disc approximation. Variant-level
+        // dispatch lives in shape_face_corners (ShapeTypes.hpp).
         m3d::vec3 ref_corners[4], inc_corners[4];
-        int ref_n = 0, inc_n = 0;
-
-        // --- Reference face (shape A, in direction of normal) ---
-        if (shape_a.type == ShapeType::Box)
-        {
-            ref_n = manifold_detail::get_box_face_corners(
-                shape_a.box, tf_a, epa_normal, ref_corners);
-        }
-        else
-        {
-            // Generic: find the support point of A in the normal direction,
-            // then build a disc around it.
-            const m3d::vec3 local_dir = tf_a.inverse_rotate_vector(epa_normal);
-            const m3d::vec3 sup_local = shape_support(shape_a, local_dir);
-            const m3d::vec3 sup_world = tf_a.transform_point(sup_local);
-
-            // Representative radius: largest half-extent or capsule radius
-            m3d::scalar r = 0.1; // fallback
-            if (shape_a.type == ShapeType::Sphere)
-                r = shape_a.sphere.radius;
-            if (shape_a.type == ShapeType::Capsule)
-                r = shape_a.capsule.radius;
-            if (shape_a.type == ShapeType::Ellipsoid)
-                r = m3d::max(shape_a.ellipsoid.half_extents.x,
-                             m3d::max(shape_a.ellipsoid.half_extents.y,
-                                      shape_a.ellipsoid.half_extents.z));
-
-            ref_n = manifold_detail::get_generic_face_corners(
-                sup_world, epa_normal, r, ref_corners);
-        }
-
-        // --- Incident face (shape B, in direction of -normal) ---
-        if (shape_b.type == ShapeType::Box)
-        {
-            inc_n = manifold_detail::get_box_face_corners(
-                shape_b.box, tf_b, -epa_normal, inc_corners);
-        }
-        else
-        {
-            const m3d::vec3 local_dir = tf_b.inverse_rotate_vector(-epa_normal);
-            const m3d::vec3 sup_local = shape_support(shape_b, local_dir);
-            const m3d::vec3 sup_world = tf_b.transform_point(sup_local);
-
-            m3d::scalar r = 0.1;
-            if (shape_b.type == ShapeType::Sphere)
-                r = shape_b.sphere.radius;
-            if (shape_b.type == ShapeType::Capsule)
-                r = shape_b.capsule.radius;
-            if (shape_b.type == ShapeType::Ellipsoid)
-                r = m3d::max(shape_b.ellipsoid.half_extents.x,
-                             m3d::max(shape_b.ellipsoid.half_extents.y,
-                                      shape_b.ellipsoid.half_extents.z));
-
-            inc_n = manifold_detail::get_generic_face_corners(
-                sup_world, -epa_normal, r, inc_corners);
-        }
+        const int ref_n = shape_face_corners(shape_a, tf_a,  epa_normal, ref_corners);
+        const int inc_n = shape_face_corners(shape_b, tf_b, -epa_normal, inc_corners);
 
         // ── Sutherland-Hodgman: clip incident polygon against reference face ──
         // Build the reference face normal (outward = epa_normal direction)
