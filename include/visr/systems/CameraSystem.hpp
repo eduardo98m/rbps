@@ -2,33 +2,38 @@
 #include <raylib.h>
 #include <imgui.h>
 
-// ============================================================================
-//  visr/systems/CameraSystem.hpp
-//
-//  Free-look camera with WASD + Q/E vertical + RMB drag.
-//  Call update() every render frame before BeginMode3D.
-//  Call draw_panel() inside rlImGuiBegin/End to expose speed sliders.
-//
-//  Controls:
-//    W / S            — forward / back
-//    A / D            — strafe left / right
-//    Q / LShift       — up
-//    E / LCtrl        — down
-//    RMB drag         — look (yaw + pitch)
-//    Scroll wheel     — zoom (FOV)
-//    Space            — pause / resume  (handled in VisrApp)
-//    ESC              — deselect all    (handled in SelectionSystem)
-// ============================================================================
+/**
+ * @file CameraSystem.hpp
+ * @brief Free-look fly-camera (WASD + Q/E + RMB drag) for the visualizer.
+ * @ingroup visr
+ *
+ * Call `update()` every render frame before `BeginMode3D`. Call
+ * `draw_panel()` between `rlImGuiBegin` / `rlImGuiEnd` to expose
+ * sensitivity sliders.
+ *
+ * @par Controls
+ * - `W` / `S` — forward / back
+ * - `A` / `D` — strafe left / right
+ * - `Q` / `LShift` — up
+ * - `E` / `LCtrl`  — down
+ * - RMB drag — look (yaw + pitch)
+ * - Scroll wheel — zoom (FOV)
+ * - `Space` — pause / resume (handled in `VisrApp`)
+ * - `ESC`   — deselect all   (handled in `SelectionSystem`)
+ */
 
 namespace visr
 {
+    /**
+     * @brief Free-look camera with adjustable move speed and look sensitivity.
+     * @ingroup visr
+     */
     struct CameraSystem
     {
-        float move_speed  = 10.0f;
-        float sensitivity = 0.10f;
+        float move_speed  = 10.0f; ///< Translation speed in world units / second.
+        float sensitivity = 0.10f; ///< Look sensitivity, degrees per pixel of mouse delta.
 
-        // update() is no longer const so the speed slider can mutate move_speed
-        // directly through a pointer without const_cast.
+        /** @brief Read input and apply movement / rotation / FOV change to `camera`. */
         void update(Camera3D &camera)
         {
             Vector3 movement = {0, 0, 0};
@@ -61,7 +66,7 @@ namespace visr
             UpdateCameraPro(&camera, movement, rotation, 0.0f);
         }
 
-        // ── ImGui panel (call between rlImGuiBegin / rlImGuiEnd) ─────────────
+        /** @brief ImGui panel exposing move-speed and sensitivity sliders. */
         void draw_panel()
         {
             ImGui::SetNextWindowSize({280, 130}, ImGuiCond_FirstUseEver);
@@ -86,7 +91,7 @@ namespace visr
             ImGui::End();
         }
 
-        // Resets camera to a sensible default for a physics scene.
+        /** @brief Build a camera with sensible defaults for an indoor physics scene. */
         static Camera3D make_default()
         {
             Camera3D cam{};

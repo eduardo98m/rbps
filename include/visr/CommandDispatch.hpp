@@ -2,20 +2,31 @@
 #include "visr/Command.hpp"
 #include "rbps/API/World.hpp"
 
-// ============================================================================
-//  visr/CommandDispatch.hpp
-//
-//  Single entry point: dispatch_command(World&, Command) applies whatever
-//  mutation the command requests.  Uses std::visit so adding a new Cmd*
-//  type is one extra lambda arm — no switch, no virtual dispatch.
-//
-//  NOTE: CmdSetGravity is left as a comment hook.  Gravity lives in the
-//  integrator (Body.cpp), not in World directly.  Wire it up to wherever
-//  you store your gravity vector (e.g. World::gravity or a global in Body.cpp).
-// ============================================================================
+/**
+ * @file CommandDispatch.hpp
+ * @brief Single entry point that applies any `Command` to a `World`.
+ * @ingroup visr
+ *
+ * Uses `std::visit` so adding a new `Cmd*` is one extra `if constexpr`
+ * arm — no switch, no virtual dispatch.
+ *
+ * @note `CmdSetGravity` is intentionally left as a stub: gravity lives in
+ *       the integrator (`Body.cpp`), not in `World`. Wire it up to
+ *       wherever the gravity vector is stored when the field is added.
+ */
 
 namespace visr
 {
+    /**
+     * @brief Apply `cmd` to `world` (visit-based dispatch).
+     *
+     * Channel-level commands (`CmdPause`, `CmdResume`, `CmdTrackQuantity`)
+     * are intentional no-ops here — they're handled in
+     * `DebugChannel::poll` so the world isn't touched when the user just
+     * pauses or starts plotting a value.
+     *
+     * @ingroup visr
+     */
     inline void dispatch_command(rbps::World &world, const Command &cmd)
     {
         std::visit([&world](auto &&c)

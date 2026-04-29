@@ -5,54 +5,61 @@
 #include <deque>
 #include "visr/Transport.hpp"
 
-// ============================================================================
-//  visr/InProcessTransport.hpp
-//
-//  Same-process, two-thread transport (Option B from the design doc).
-//
-//  ┌──────────────────┐  atomic slot swap  ┌──────────────────────┐
-//  │  Physics thread  │ ─────────────────► │  Render thread       │
-//  │  push_snapshot() │   slots[0/1]       │  latest_snapshot()   │
-//  │                  │ ◄───────────────── │  push_command()      │
-//  └──────────────────┘  mutex+deque       └──────────────────────┘
-//
-//  Snapshot side (physics → render):
-//    - Two FrameSnapshot slots (ping-pong buffer).
-//    - Physics writes to the "back" slot, then atomically publishes it.
-//    - Render reads from whichever slot is marked "ready" — never blocks.
-//    - The render thread gets the LATEST complete frame, not every frame.
-//      Missed frames are fine; we're a debugger, not a replay recorder.
-//
-//  Command side (render → physics):
-//    - std::deque guarded by a std::mutex.
-//    - Render thread pushes; physics thread pops once per frame.
-//    - Command queue is small (user interactions) so mutex cost is negligible.
-//    - For higher throughput, swap for a lock-free SPSC ring.
-//
-//  Thread safety contract:
-//    push_snapshot()  — call from physics thread only
-//    latest_snapshot() — call from render thread only
-//    push_command()  — call from render thread only
-//    poll_command()  — call from physics thread only
-// ============================================================================
+/**
+ * @file InProcessTransport.hpp
+ * @brief Same-process, two-thread transport between physics and render.
+ * @ingroup visr
+ *
+ * @par Architecture
+ * @code
+ * ┌──────────────────┐  atomic slot swap  ┌──────────────────────┐
+ * │  Physics thread  │ ─────────────────► │  Render thread       │
+ * │  push_snapshot() │   slots[0/1]       │  latest_snapshot()   │
+ * │                  │ ◄───────────────── │  push_command()      │
+ * └──────────────────┘  mutex+deque       └──────────────────────┘
+ * @endcode
+ *
+ * - **Snapshot** (physics → render): ping-pong buffer of two
+ *   `FrameSnapshot` slots. Physics writes to the back slot then
+ *   atomically publishes it. Render reads from whichever slot is marked
+ *   "ready" — never blocks. The render thread gets the LATEST complete
+ *   frame, not every frame; missed frames are fine — this is a debugger,
+ *   not a replay recorder.
+ * - **Command** (render → physics): `std::deque` guarded by a mutex.
+ *   Render pushes, physics drains once per tick. Queue is small enough
+ *   (user interactions) that mutex cost is negligible; swap for a
+ *   lock-free SPSC ring if throughput becomes a problem.
+ *
+ * @par Thread-safety contract
+ * - `push_snapshot()`   — physics thread only.
+ * - `latest_snapshot()` — render thread only.
+ * - `push_command()`    — render thread only.
+ * - `poll_command()`    — physics thread only.
+ */
 
 namespace visr
 {
+    /**
+     * @brief Lock-free snapshot publish + mutex-guarded command queue.
+     * @ingroup visr
+     */
     struct InProcessTransport
     {
-        // Snapshot double-buffer
-        std::array<FrameSnapshot, 2> slots_{};
-        std::atomic<int> ready_slot_{-1}; // -1 = nothing yet
-        int write_slot_{0};
+        std::array<FrameSnapshot, 2> slots_{}; ///< Ping-pong snapshot buffer.
+        std::atomic<int> ready_slot_{-1};      ///< Index of the readable slot, or `-1` before the first publish.
+        int write_slot_{0};                    ///< Slot the physics thread is currently writing to.
 
-        // Command queue
-        mutable std::mutex cmd_mutex_;
-        std::deque<Command> cmd_queue_;
+        mutable std::mutex cmd_mutex_;         ///< Guards `cmd_queue_`.
+        std::deque<Command> cmd_queue_;        ///< Pending commands (FIFO).
 
         // ── Physics-thread API ────────────────────────────────────────────
 
-        /// Publish a new frame.  Swaps the write slot and makes it visible
-        /// to the render thread in one atomic store.
+        /**
+         * @brief Publish a new frame.
+         *
+         * Copies into the back slot, atomically advertises it, then flips
+         * `write_slot_` so the next call writes to the other slot.
+         */
         void push_snapshot(const FrameSnapshot &snap)
         {
             slots_[write_slot_] = snap;
@@ -60,7 +67,10 @@ namespace visr
             write_slot_ ^= 1; // flip: 0→1, 1→0
         }
 
-        /// Drain one command from the queue.  Returns false when empty.
+        /**
+         * @brief Drain one command from the queue.
+         * @return `false` when the queue is empty; otherwise fills `out` and returns `true`.
+         */
         bool poll_command(Command &out)
         {
             std::lock_guard<std::mutex> lk(cmd_mutex_);
@@ -73,8 +83,11 @@ namespace visr
 
         // ── Render-thread API ─────────────────────────────────────────────
 
-        /// Read the latest published snapshot.  Never blocks.
-        /// Returns nullptr if no frame has been pushed yet.
+        /**
+         * @brief Read the latest published snapshot. Never blocks.
+         * @return Pointer to the readable slot, or `nullptr` if no frame
+         *         has been published yet.
+         */
         const FrameSnapshot *latest_snapshot() const
         {
             int r = ready_slot_.load(std::memory_order_acquire);
@@ -83,14 +96,14 @@ namespace visr
             return &slots_[r];
         }
 
-        /// Push a command from the render thread toward the physics thread.
+        /** @brief Push a command from the render thread toward the physics thread. */
         void push_command(Command cmd)
         {
             std::lock_guard<std::mutex> lk(cmd_mutex_);
             cmd_queue_.push_back(std::move(cmd));
         }
 
-        /// How many commands are queued (informational, render thread only).
+        /** @brief Informational: how many commands are queued. Safe from any thread. */
         size_t pending_command_count() const
         {
             std::lock_guard<std::mutex> lk(cmd_mutex_);

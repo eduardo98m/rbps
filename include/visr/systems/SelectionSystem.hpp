@@ -7,23 +7,28 @@
 #include "visr/InProcessTransport.hpp"
 #include "visr/ui/Panels.hpp"
 
-// ============================================================================
-//  visr/systems/SelectionSystem.hpp
-//
-//  Left-click picking against collider bounding volumes.
-//  Works entirely off the FrameSnapshot — no physics types needed.
-//
-//  Keyboard shortcuts handled here (both need raylib.h so they live here):
-//    ESC   — deselect everything (body, collider, joint, contact)
-//    Space — pause / resume  (calls channel.toggle_pause() via a callback)
-//
-//  NOTE: Space/pause is wired in VisrApp::run() directly (channel is not
-//  accessible here).  ESC only needs SelectionState so it lives here.
-// ============================================================================
+/**
+ * @file SelectionSystem.hpp
+ * @brief Left-click ray-pick selection driven entirely from the snapshot.
+ * @ingroup visr
+ *
+ * Picking iterates the snapshot's colliders, builds a conservative
+ * per-shape AABB, and runs a ray-AABB test. No physics types are touched.
+ *
+ * @par Keyboard shortcuts handled here
+ * - `ESC` — deselect everything (body, collider, joint, contact).
+ *
+ * Space/pause is wired in `VisrApp::run()` because the channel isn't
+ * accessible from this file.
+ */
 
 namespace visr
 {
-    // ── Per-shape conservative AABB ──────────────────────────────────────────
+    /**
+     * @brief Plain float AABB used by the ray-pick fast path.
+     * @ingroup visr
+     * @ingroup internals
+     */
     struct AABB3 { float min_x, min_y, min_z, max_x, max_y, max_z; };
 
     static inline AABB3 snap_aabb(const ColliderSnap &c)
@@ -105,12 +110,19 @@ namespace visr
         transport.push_command(CmdClearSelection{});
     }
 
-    // ── SelectionSystem ───────────────────────────────────────────────────────
-
+    /**
+     * @brief Mouse-pick selection over the latest snapshot.
+     * @ingroup visr
+     */
     struct SelectionSystem
     {
-        // Call once per render frame from the render thread.
-        // Must NOT be called while ImGui wants the mouse (checked in VisrApp).
+        /**
+         * @brief Run one tick of selection input.
+         *
+         * @warning Must NOT be called while ImGui wants the mouse —
+         *          `VisrApp::run` gates the call with a check on
+         *          `ImGui::GetIO().WantCaptureMouse`.
+         */
         void update(const FrameSnapshot   &snap,
                     const Camera3D        &camera,
                     ui::SelectionState    &sel,

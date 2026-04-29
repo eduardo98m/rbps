@@ -3,23 +3,26 @@
 #include "rbps/API/World.hpp"
 #include "rbc/shapes/ShapeTypes.hpp"
 
-// ============================================================================
-//  visr/SnapshotBuilder.hpp  (C++17 compatible)
-//
-//  rbc::Shape is a thin std::variant wrapper; we use std::visit with a
-//  visitor struct that has one operator() per concrete shape. Each line
-//  stands on its own — no decltype, no if constexpr, no switch.
-//
-//  SoA id fix
-//  ──────────
-//  DynSoABase has no public id_of() method.
-//  The stable ID for packed data index i is simply _ids[i] (public member).
-// ============================================================================
+/**
+ * @file SnapshotBuilder.hpp
+ * @brief Convert a `rbps::World` into a `FrameSnapshot` POD copy.
+ * @ingroup visr
+ *
+ * `rbc::Shape` is a thin `std::variant` wrapper; the builder uses
+ * `std::visit` with a visitor struct that has one `operator()` per
+ * concrete shape. Each arm stands on its own — no `decltype`, no
+ * `if constexpr`, no `switch`.
+ */
 
 namespace visr
 {
     namespace detail
     {
+        /**
+         * @brief Visitor that maps each `rbc::Shape` alternative to its `*Snap` POD.
+         * @ingroup visr
+         * @ingroup internals
+         */
         struct ShapeToSnap
         {
             ShapeSnap operator()(const rbc::Sphere &s) const
@@ -65,6 +68,10 @@ namespace visr
             }
         };
 
+        /**
+         * @brief Variant-level helper: dispatch a shape into its `ShapeSnap`.
+         * @ingroup internals
+         */
         inline ShapeSnap to_shape_snap(const rbc::Shape &s)
         {
             return std::visit(ShapeToSnap{}, s.v);
@@ -72,9 +79,22 @@ namespace visr
 
     } // namespace detail
 
-    // -------------------------------------------------------------------------
-    //  build_snapshot
-    // -------------------------------------------------------------------------
+    /**
+     * @brief Build a `FrameSnapshot` from the current state of `world`.
+     *
+     * Iterates every body / collider / contact / joint / constraint row
+     * and copies the data into POD `*Snap` structs. Stable IDs (not
+     * packed slot indices) are written, so the visualizer can keep its
+     * selection state consistent across frames where a body has been
+     * swap-popped.
+     *
+     * @param world       The physics world to snapshot.
+     * @param frame_index Caller-managed frame counter (for the
+     *                    `FrameSnapshot::frame_index` field).
+     * @param sim_time    Caller-managed simulation time in seconds.
+     *
+     * @ingroup visr
+     */
     inline FrameSnapshot build_snapshot(const rbps::World &world,
                                         uint64_t frame_index,
                                         double sim_time)

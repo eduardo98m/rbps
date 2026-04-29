@@ -12,24 +12,26 @@
 #include <cmath>
 #include "visr/Snapshot.hpp"    // pulls in math3d — must come AFTER the undef
 
-// ============================================================================
-//  visr/ui/RaylibDraw.hpp
-//
-//  Stateless draw functions for every visr snapshot type.
-//
-//  Colour scheme:
-//    Dynamic wireframe    — SKYBLUE
-//    Static  wireframe    — GRAY
-//    Selected body        — GREEN
-//    Contact point A      — BLUE  sphere  (surface of body A)
-//    Contact point B      — RED   sphere  (surface of body B)
-//    Contact normal       — gradient arrow  (depth-coded green→red)
-//    Contact separation   — line between p_a and p_b (MAGENTA)
-//    Joint anchor         — YELLOW sphere + connector line
-//    Joint axis           — PURPLE arrow
-//    Velocity vector      — LIME arrow
-//    Angular velocity     — ORANGE arc (approximated as arrow)
-// ============================================================================
+/**
+ * @file RaylibDraw.hpp
+ * @brief Stateless draw helpers — convert every `*Snap` to raylib draw calls.
+ * @ingroup visr
+ *
+ * @par Colour scheme
+ * - Dynamic wireframe — `SKYBLUE`
+ * - Static  wireframe — `GRAY`
+ * - Selected body     — `GREEN`
+ * - Contact point A   — `BLUE` sphere on the surface of body A
+ * - Contact point B   — `RED`  sphere on the surface of body B
+ * - Contact normal    — gradient arrow (depth-coded green → red)
+ * - Contact separation — `MAGENTA` line between `p_a` and `p_b`
+ * - Joint anchor      — `YELLOW` sphere + connector line
+ * - Joint axis        — `PURPLE` arrow
+ * - Velocity vector   — `LIME` arrow
+ * - Angular velocity  — `ORANGE` arc (approximated as arrow)
+ *
+ * Top-level entry point is `draw_scene` (defined further down).
+ */
 
 namespace visr::draw
 {
@@ -476,25 +478,32 @@ namespace visr::draw
         }
     }
 
-    // =========================================================================
-    //  DrawFlags — configure what draw_scene renders
-    // =========================================================================
+    /**
+     * @brief Toggles for which overlays `draw_scene` renders.
+     * @ingroup visr
+     */
     struct DrawFlags
     {
-        bool colliders          = true;
-        bool contacts           = true;
-        bool joints             = true;
-        bool velocities         = false;
-        bool body_axes          = true;   // local-frame axes on selected body
-        bool inactive_contacts  = false;
-        bool lambda_tint        = false;  // tint normal arrows by lambda
+        bool colliders          = true;  ///< Wireframes for every collider.
+        bool contacts           = true;  ///< Contact points + normal arrows.
+        bool joints             = true;  ///< Joint anchors and axes.
+        bool velocities         = false; ///< LIME linear / ORANGE angular arrows.
+        bool body_axes          = true;  ///< Local-frame axes on the selected body.
+        bool inactive_contacts  = false; ///< Show separated contacts (`active == false`).
+        bool lambda_tint        = false; ///< Tint normal arrows by accumulated impulse.
 
-        ContactDrawConfig contact_cfg{};  // fine-grained contact options
+        ContactDrawConfig contact_cfg{}; ///< Fine-grained contact-overlay options.
     };
 
-    // =========================================================================
-    //  draw_scene — full scene in one call
-    // =========================================================================
+    /**
+     * @brief Render the full scene from a snapshot in one call.
+     *
+     * Iterates colliders, contacts, joints, and (when selected) the
+     * highlighted body's axes. Highlight IDs default to `UINT32_MAX` —
+     * pass an actual stable ID to draw the body in `GREEN`.
+     *
+     * @ingroup visr
+     */
     inline void draw_scene(const FrameSnapshot &snap,
                            const DrawFlags     &flags    = {},
                            uint32_t             sel_body = UINT32_MAX,

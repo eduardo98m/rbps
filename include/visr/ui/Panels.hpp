@@ -11,26 +11,36 @@
 #include "visr/InProcessTransport.hpp"
 #include "visr/DebugChannel.hpp"
 
-// ============================================================================
-//  visr/ui/Panels.hpp
-//
-//  Graph panel v4 changes:
-//    - x-axis uses sim_time (seconds) instead of raw frame index.
-//    - No samples are recorded while paused (DebugChannel fix).
-//    - Export button opens a modal with filename input, upscale selector,
-//      and output-size preview.  On confirm, RenderSystem takes a post-frame
-//      screenshot, crops to the plot rect, and writes the PNG.
-//    - CSV clipboard copies frame, sim_time, and all series values.
-//
-//  Global state (inline, C++17 — one definition across all TUs):
-//    g_plot_export_request  — written by the modal; read + cleared by RenderSystem
-//    g_export_status        — result string shown as a toast
-//    g_export_status_time   — GetTime() of last export (for 4-second toast)
-// ============================================================================
+/**
+ * @file Panels.hpp
+ * @brief ImGui + ImPlot panels (sim controls, body inspector, contact graphs, …).
+ * @ingroup visr
+ *
+ * Top-level entry point is `ui::draw_all` (defined further down) which
+ * dispatches to the individual panel functions.
+ *
+ * @par Plot export
+ * The Export button writes a `PlotExportRequest` to `g_plot_export_request`;
+ * `RenderSystem::_process_export` consumes it AFTER `EndDrawing()` so the
+ * framebuffer capture includes the composited ImGui overlay.
+ *
+ * @par Inline globals
+ * `g_plot_export_request`, `g_export_status`, `g_export_status_time`,
+ * `g_last_plot_pos / g_last_plot_size`, `g_export_modal_open`, and
+ * `g_auto_fit` are inline (C++17) — one definition shared across every
+ * translation unit that includes this header.
+ */
 
 namespace visr::ui
 {
-    // ── Export request: written by modal, consumed by RenderSystem ────────────
+    /**
+     * @brief Plot-export rendezvous between the panel and `RenderSystem`.
+     *
+     * Filled by the Export modal in this header; read and cleared by
+     * `RenderSystem::_process_export` after `EndDrawing`.
+     *
+     * @ingroup visr
+     */
     struct PlotExportRequest
     {
         bool    pending  = false;
@@ -58,9 +68,14 @@ namespace visr::ui
     // When OFF the user can freely pan/zoom; hit "Fit" to snap back to data.
     inline bool g_auto_fit = true;
 
-    // -------------------------------------------------------------------------
-    //  Shared selection state
-    // -------------------------------------------------------------------------
+    /**
+     * @brief Currently-selected body / collider / joint / contact, sentinel = `UINT32_MAX`.
+     *
+     * Owned by `VisrApp::run`, written by `SelectionSystem::update`, read
+     * by every inspector panel in this file.
+     *
+     * @ingroup visr
+     */
     struct SelectionState
     {
         uint32_t body_id     = UINT32_MAX;
@@ -954,6 +969,15 @@ namespace visr::ui
     // =========================================================================
     //  Master draw
     // =========================================================================
+    /**
+     * @brief Draw every panel for one frame.
+     *
+     * Called once per frame from `RenderSystem::update` between
+     * `rlImGuiBegin` and `rlImGuiEnd`. Internally dispatches to the
+     * sim-control / body / collider / contact / joint / graph panels.
+     *
+     * @ingroup visr
+     */
     template<typename T>
     inline void draw_all(DebugChannel<T>     &channel,
                          InProcessTransport  &transport,

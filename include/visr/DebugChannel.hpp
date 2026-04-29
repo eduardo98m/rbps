@@ -8,40 +8,41 @@
 #include "visr/SnapshotBuilder.hpp"
 #include "visr/CommandDispatch.hpp"
 
-// ============================================================================
-//  visr/DebugChannel.hpp
-//
-//  ─── Fixes in this version ───────────────────────────────────────────────
-//
-//  1. poll() bug (v2): CmdTrackQuantity was forwarded to dispatch_command()
-//     whose arm is intentionally empty → handle_track_command() never ran →
-//     graphs accumulated no data.  Fixed: channel-level commands (Track,
-//     Pause, Resume) are now intercepted before dispatch_command().
-//
-//  2. Sim-time x-axis (v3): Sample now stores sim_time (seconds) in addition
-//     to frame index.  The graph panel uses sim_time for the x-axis so the
-//     time scale is physically meaningful and consistent with the simulation.
-//
-//  3. Pause-while-sampling (v3): push() now takes a did_step flag.
-//     When did_step=false (simulation paused) the render snapshot is still
-//     published (so the 3-D view stays live) but sample_tracked() and the
-//     sim_time / frame_index counters are NOT advanced.  This means the
-//     x-axis of every graph flatlines correctly while paused instead of
-//     recording identical values over and over against wall-clock time.
-//
-//  VisrApp usage pattern (see VisrApp.hpp):
-//    const bool stepped = channel.should_step();
-//    if (stepped) world.step();
-//    channel.push(world, stepped);          ← stepped flag propagated here
-// ============================================================================
+/**
+ * @file DebugChannel.hpp
+ * @brief Per-channel state — frame counter, pause control, tracked-series storage.
+ * @ingroup visr
+ *
+ * `DebugChannel<Transport>` glues the `Transport` (physics ↔ render) to
+ * the simulation: it owns the simulation-time counter, the pause /
+ * step-once controls, and a small set of `TrackedSeries` ring buffers
+ * for live plotting.
+ *
+ * @par VisrApp usage
+ * @code
+ * const bool stepped = channel.should_step();
+ * if (stepped) world.step();
+ * channel.push(world, stepped);   // stepped flag propagated here
+ * @endcode
+ *
+ * The `stepped` flag is required because `should_step()` consumes a
+ * pending step-once token (must be called once per tick) and `push()`
+ * uses it to decide whether to advance the graph x-axis.
+ */
 
 namespace visr
 {
+    /** @brief Ring-buffer depth for `TrackedSeries`. @ingroup visr */
     static constexpr size_t TRACK_HISTORY_DEPTH = 512;
 
-    // -------------------------------------------------------------------------
-    //  TrackedSeries — ring buffer of (sim_time, value) samples
-    // -------------------------------------------------------------------------
+    /**
+     * @brief Ring buffer of `(frame, sim_time, value)` samples for one tracked quantity.
+     *
+     * Capacity is fixed at `TRACK_HISTORY_DEPTH`; once full, oldest samples
+     * are overwritten.
+     *
+     * @ingroup visr
+     */
     struct TrackedSeries
     {
         TrackTarget target;
@@ -87,9 +88,17 @@ namespace visr
         }
     };
 
-    // -------------------------------------------------------------------------
-    //  DebugChannel<Transport>
-    // -------------------------------------------------------------------------
+    /**
+     * @brief Owns transport + per-channel state (frame counter, pause, tracked series).
+     *
+     * Templated on the transport type so the channel works equally well
+     * with `NullTransport` (headless tests), `InProcessTransport` (default
+     * in-process visualizer), or a custom network/IPC transport.
+     *
+     * @tparam Transport Any type satisfying `is_debug_transport`.
+     *
+     * @ingroup visr
+     */
     template<typename Transport = NullTransport>
     struct DebugChannel
     {
@@ -137,8 +146,13 @@ namespace visr
             }
         }
 
-        /// Drain the command queue. Channel-level commands are handled here;
-        /// world-mutation commands are forwarded to dispatch_command().
+        /**
+         * @brief Drain the command queue.
+         *
+         * Channel-level commands (`CmdPause`, `CmdResume`,
+         * `CmdTrackQuantity`) are handled here; world-mutation commands
+         * are forwarded to `dispatch_command(world, cmd)`.
+         */
         void poll(rbps::World &world)
         {
             bool do_step_once = step_once_requested_.exchange(
@@ -162,8 +176,12 @@ namespace visr
             }
         }
 
-        /// Returns true when physics should step this tick.
-        /// Has the side effect of consuming a pending step-once token.
+        /**
+         * @brief Should the physics thread step on this tick?
+         *
+         * @warning Has the side effect of consuming a pending step-once
+         *          token. Call exactly once per physics tick.
+         */
         bool should_step()
         {
             if (!paused_) return true;

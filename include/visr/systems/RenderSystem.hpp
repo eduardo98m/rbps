@@ -14,49 +14,61 @@
 #include "visr/InProcessTransport.hpp"
 #include "visr/DebugChannel.hpp"
 
-// ============================================================================
-//  visr/systems/RenderSystem.hpp
-//
-//  Frame flow:
-//    BeginDrawing()
-//      ClearBackground
-//      BeginMode3D  →  draw_scene
-//      EndMode3D
-//      rlImGuiBegin
-//        camera_sys.draw_panel()
-//        ui::draw_all(...)   ← may set ui::g_plot_export_request.pending
-//      rlImGuiEnd
-//    EndDrawing()            ← framebuffer is complete
-//
-//    [if export pending]
-//      LoadImageFromScreen() ← reads complete framebuffer
-//      ImageCrop()           ← crop to saved plot screen-rect
-//      ImageResize()         ← optional upscale
-//      ExportImage()         ← write PNG
-//      ui::g_export_status   ← set result string for next-frame toast
-//
-//  Why crop after EndDrawing()?
-//    LoadImageFromScreen() reads the OpenGL read buffer.  This buffer is
-//    only fully composited after EndDrawing() (which calls SwapBuffers on
-//    most platforms).  Calling it earlier would capture a partial frame
-//    missing the ImGui overlay.  Calling it at the start of the next
-//    BeginDrawing() also works, but requires carrying the request across
-//    two frames.  Same-frame post-EndDrawing is the cleanest window.
-// ============================================================================
+/**
+ * @file RenderSystem.hpp
+ * @brief Per-frame raylib + ImGui + ImPlot pass.
+ * @ingroup visr
+ *
+ * @par Frame flow
+ * @code
+ *  BeginDrawing()
+ *    ClearBackground
+ *    BeginMode3D  →  draw_scene
+ *    EndMode3D
+ *    rlImGuiBegin
+ *      camera_sys.draw_panel()
+ *      ui::draw_all(...)   ← may set ui::g_plot_export_request.pending
+ *    rlImGuiEnd
+ *  EndDrawing()            ← framebuffer is complete
+ *
+ *  [if export pending]
+ *    LoadImageFromScreen() ← reads complete framebuffer
+ *    ImageCrop()           ← crop to saved plot screen-rect
+ *    ImageResize()         ← optional upscale
+ *    ExportImage()         ← write PNG
+ *    ui::g_export_status   ← set result string for next-frame toast
+ * @endcode
+ *
+ * @par Why crop after EndDrawing()?
+ * `LoadImageFromScreen` reads the GL read buffer, which is only fully
+ * composited after `EndDrawing` (which calls `SwapBuffers` on most
+ * platforms). Reading earlier captures a partial frame missing the
+ * ImGui overlay. Same-frame, post-`EndDrawing` is the cleanest window.
+ */
 
 namespace visr
 {
+    /**
+     * @brief Owns the per-frame render pass and the post-frame plot-export hook.
+     * @ingroup visr
+     */
     struct RenderSystem
     {
-        draw::DrawFlags flags{};
-        Color bg_color = { 30, 30, 35, 255 };
+        draw::DrawFlags flags{};                     ///< Flags controlling which overlays the scene draws.
+        Color bg_color = { 30, 30, 35, 255 };        ///< Background clear colour.
 
+        /** @brief Set up rlImGui + ImPlot contexts. Call after `InitWindow`. */
         void init()
         {
             rlImGuiSetup(true);
             ImPlot::CreateContext();   // must follow rlImGuiSetup (needs ImGui context)
         }
 
+        /**
+         * @brief Render one frame: 3-D scene → ImGui overlay → optional plot export.
+         *
+         * @tparam Transport Any type satisfying `is_debug_transport`.
+         */
         template<typename Transport>
         void update(DebugChannel<Transport> &channel,
                     InProcessTransport      &transport,
@@ -94,6 +106,7 @@ namespace visr
             _process_export();
         }
 
+        /** @brief Tear down rlImGui + ImPlot contexts. Call before `CloseWindow`. */
         void shutdown()
         {
             ImPlot::DestroyContext();

@@ -2,25 +2,24 @@
 #include "visr/Snapshot.hpp"
 #include "visr/Command.hpp"
 #include <type_traits>
- 
-// ============================================================================
-//  visr/Transport.hpp  (C++17 compatible — no C++20 concepts)
-//
-//  A "DebugTransport" is any struct that provides:
-//    void push_snapshot(const FrameSnapshot&)
-//    bool poll_command(Command&)
-//
-//  We enforce this contract with a trait + static_assert rather than a C++20
-//  concept.  The macro ASSERT_DEBUG_TRANSPORT(T) can be placed anywhere you
-//  want a clear compile error if a transport type is wrong.
-//
-// ============================================================================
- 
+
+/**
+ * @file Transport.hpp
+ * @brief Transport contract (`push_snapshot` + `poll_command`) and detection trait.
+ * @ingroup visr
+ *
+ * Any struct that provides
+ * - `void push_snapshot(const FrameSnapshot&)` — physics → render direction.
+ * - `bool poll_command(Command&)`              — render → physics direction.
+ *
+ * is a valid transport. Enforced with a C++17 detection-idiom trait
+ * (`is_debug_transport<T>`) instead of a C++20 concept. The
+ * `ASSERT_DEBUG_TRANSPORT(T)` macro lets call-sites surface the contract
+ * mismatch as a clear compile error.
+ */
+
 namespace visr
 {
-    // -------------------------------------------------------------------------
-    //  Transport trait  (detection idiom, C++17)
-    // -------------------------------------------------------------------------
     namespace detail
     {
         template<typename T, typename = void>
@@ -43,25 +42,45 @@ namespace visr
  
     } // namespace detail
  
+    /**
+     * @brief Compile-time predicate: does `T` satisfy the `DebugTransport` contract?
+     * @ingroup visr
+     */
     template<typename T>
     struct is_debug_transport
         : std::bool_constant<
             detail::has_push_snapshot<T>::value &&
             detail::has_poll_command<T>::value>
     {};
- 
-    // Convenience macro — drop at the top of any function template that takes
-    // a transport so the error points at the call site.
+
+    /**
+     * @def ASSERT_DEBUG_TRANSPORT
+     * @brief Static-assert that `T` is a valid transport.
+     *
+     * Drop at the top of any function template that takes a transport so
+     * the contract violation reports at the call site instead of deep
+     * inside the implementation.
+     *
+     * @ingroup visr
+     */
     #define ASSERT_DEBUG_TRANSPORT(T) \
         static_assert(::visr::is_debug_transport<T>::value, \
                       #T " must implement push_snapshot() and poll_command()")
- 
-    // -------------------------------------------------------------------------
-    //  NullTransport — zero-overhead default
-    // -------------------------------------------------------------------------
+
+    /**
+     * @brief Zero-overhead transport that drops everything.
+     *
+     * Default template parameter for `DebugChannel`. Useful when the
+     * visualizer code is compiled in but no physical channel is needed
+     * (e.g. headless tests).
+     *
+     * @ingroup visr
+     */
     struct NullTransport
     {
+        /** @brief Drops the snapshot. */
         void push_snapshot(const FrameSnapshot &) noexcept {}
+        /** @brief Always returns `false` — no commands ever delivered. */
         bool poll_command(Command &)              noexcept { return false; }
     };
  

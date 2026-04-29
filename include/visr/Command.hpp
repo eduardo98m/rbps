@@ -3,47 +3,45 @@
 #include <variant>
 #include <math3d/math3d.hpp>
 
-// ============================================================================
-//  visr/Command.hpp
-//
-//  All commands the visualizer can send back to the physics engine.
-//  Each Cmd* is a plain struct with zero virtual functions.
-//  Command = std::variant<all of them> — dispatched with std::visit.
-//
-//  Paused / step-once are handled by DebugChannel directly (they don't
-//  mutate World state), so they're NOT in the Command variant.
-// ============================================================================
+/**
+ * @file Command.hpp
+ * @brief Command types the visualizer can send back to the physics engine.
+ * @ingroup visr
+ *
+ * Each `Cmd*` is a plain struct (no virtual dispatch). `Command =
+ * std::variant<...>` is dispatched by `std::visit` in
+ * [CommandDispatch.hpp](CommandDispatch.hpp).
+ *
+ * @note Pause / step-once are handled by `DebugChannel` directly (they
+ *       don't mutate `World` state), so they intentionally do NOT mutate
+ *       state in `dispatch_command`.
+ */
 
 namespace visr
 {
-    // ── Simulation control ───────────────────────────────────────────────────
-
-    /// Change the simulation timestep and/or substep count live.
+    /** @brief Change the simulation timestep and/or substep count live. @ingroup visr */
     struct CmdSetTimestep
     {
         double   timestep;
         int      substeps;
     };
 
-    // ── Selection ────────────────────────────────────────────────────────────
-
-    /// Tell the engine which body the user has selected (optional: engine can
-    /// highlight it, freeze it, expose extra debug data, etc.).
+    /** @brief Select a body by stable ID. @ingroup visr */
     struct CmdSelectBody     { uint32_t id; };
+    /** @brief Select a collider by stable ID. @ingroup visr */
     struct CmdSelectCollider { uint32_t id; };
+    /** @brief Clear all selection state. @ingroup visr */
     struct CmdClearSelection {};
 
-    // ── Scene mutation ───────────────────────────────────────────────────────
-
-    /// Apply an instantaneous linear impulse to a body at a world-space point.
+    /** @brief Apply an instantaneous linear impulse at a world-space point. @ingroup visr */
     struct CmdApplyImpulse
     {
         uint32_t    body_id;
-        m3d::vec3   impulse;        // world space
-        m3d::vec3   world_point;    // application point
+        m3d::vec3   impulse;     ///< Impulse vector (world space).
+        m3d::vec3   world_point; ///< World-space application point.
     };
 
-    /// Teleport a body (position + orientation) — zeroes velocities.
+    /** @brief Teleport a body (position + orientation) and zero its velocities. @ingroup visr */
     struct CmdTeleportBody
     {
         uint32_t    body_id;
@@ -51,31 +49,39 @@ namespace visr
         m3d::quat   orientation;
     };
 
-    /// Zero a body's linear and angular velocities.
+    /** @brief Zero a body's linear and angular velocities. @ingroup visr */
     struct CmdZeroVelocity { uint32_t body_id; };
 
-    // ── Joint control ────────────────────────────────────────────────────────
-
+    /** @brief Set the position target for an actuated joint. @ingroup visr */
     struct CmdSetJointTarget
     {
         uint32_t    joint_id;
-        m3d::scalar target;         // position (rad or m) depending on joint type
+        m3d::scalar target; ///< Position target — radians for revolute, metres for prismatic.
     };
 
+    /** @brief Set the speed target for an actuated joint. @ingroup visr */
     struct CmdSetJointSpeed
     {
         uint32_t    joint_id;
         m3d::scalar speed;
     };
 
+    /** @brief Update a joint's damping coefficient live. @ingroup visr */
     struct CmdSetJointDamping
     {
         uint32_t    joint_id;
         m3d::scalar damping;
     };
 
-    // ── Quantity tracking (for live graphs) ─────────────────────────────────
-
+    /**
+     * @brief Quantities the visualizer can plot live.
+     *
+     * The render thread sends `CmdTrackQuantity` to subscribe / unsubscribe;
+     * the physics thread samples these values into a `TrackedSeries` ring
+     * buffer in `DebugChannel`.
+     *
+     * @ingroup visr
+     */
     enum class TrackTarget : uint8_t
     {
         BodyLinearSpeed,
@@ -89,26 +95,31 @@ namespace visr
         ConstraintLambda,
     };
 
+    /** @brief Subscribe / unsubscribe a tracked quantity for the live plots. @ingroup visr */
     struct CmdTrackQuantity
     {
         TrackTarget target;
-        uint32_t    id;         // body/contact/joint/constraint id
-        bool        enabled;    // false = stop tracking this series
+        uint32_t    id;      ///< Body / contact / joint / constraint stable ID.
+        bool        enabled; ///< `false` to stop tracking the series.
     };
 
-    // ── Gravity ─────────────────────────────────────────────────────────────
-
+    /** @brief Set the global gravity vector. @ingroup visr */
     struct CmdSetGravity { m3d::vec3 gravity; };
 
-    // ── Simulation pause / resume ────────────────────────────────────────────
-
-    /// Pause the simulation (physics thread stops calling world.step()).
+    /** @brief Pause the simulation — physics thread stops calling `world.step()`. @ingroup visr */
     struct CmdPause  {};
-    /// Resume a previously paused simulation.
+    /** @brief Resume a previously paused simulation. @ingroup visr */
     struct CmdResume {};
 
-    // ── Variant ─────────────────────────────────────────────────────────────
-
+    /**
+     * @brief Variant over every command type.
+     *
+     * Dispatched in [CommandDispatch.hpp](CommandDispatch.hpp) via
+     * `std::visit`. Add a new command by extending this variant and
+     * adding an `else if constexpr` arm there.
+     *
+     * @ingroup visr
+     */
     using Command = std::variant<
         CmdPause,
         CmdResume,

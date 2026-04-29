@@ -18,45 +18,81 @@
 #include "visr/systems/SelectionSystem.hpp"
 #include "visr/systems/RenderSystem.hpp"
 
-// ============================================================================
-//  visr/VisrApp.hpp
-//
-//  Wires the three systems together into a runnable app.
-//
-//  Physics loop (v3 change):
-//    The result of channel.should_step() is stored in a local bool `stepped`
-//    and forwarded to channel.push(world, stepped).
-//
-//    This is required for two reasons:
-//      1. should_step() has a side effect — it consumes a pending step-once
-//         token (sets step_once_pending_=false).  Calling it twice would lose
-//         the token.
-//      2. push() uses the flag to decide whether to call sample_tracked().
-//         When stepped=false (paused) the render snapshot is still published
-//         but graph samples are not appended, so the x-axis stays still.
-//
-//  Keyboard shortcuts:
-//    Space — pause / resume
-//    ESC   — deselect all  (handled in SelectionSystem)
-// ============================================================================
+/**
+ * @defgroup visr visr — Visualizer
+ * @brief Optional raylib + ImGui visualizer for the RBPS engine.
+ *
+ * Built only when CMake is configured with `-DRBPS_BUILD_VISR=ON`. The
+ * visualizer runs a producer/consumer split:
+ * - **Physics thread** owns the `World`, runs `step()`, and publishes a
+ *   `FrameSnapshot` (POD copy of the simulation state) to the transport.
+ * - **Render thread** consumes the latest snapshot, runs the camera /
+ *   selection / render systems, and pushes user-input `Command`s back
+ *   through the transport for the physics thread to apply.
+ *
+ * The transport is templated so the visualizer can be wired to a network
+ * link or shared-memory channel just as easily as the default
+ * `InProcessTransport`. `VisrApp` ties everything together — most users
+ * just instantiate it, call `run()`, and never touch the lower layers.
+ */
+
+/**
+ * @file VisrApp.hpp
+ * @brief Top-level visualizer app: owns the World, thread, and render systems.
+ * @ingroup visr
+ *
+ * @par Physics loop note
+ * `channel.should_step()` has a side effect — it consumes a pending
+ * step-once token. Cache the result before calling
+ * `channel.push(world, stepped)`, which uses the flag to decide whether
+ * to advance the graph x-axis.
+ *
+ * @par Keyboard shortcuts
+ * - `Space` — pause / resume.
+ * - `ESC`   — deselect all (handled in `SelectionSystem`).
+ */
 
 namespace visr
 {
+    /**
+     * @brief Runnable visualizer app — owns a `World`, the systems, and the threads.
+     *
+     * The default constructor produces an empty world. Populate it the
+     * normal way (`world.create_body`, `world.create_collider`, …) before
+     * calling `run()`. Custom panels can be appended to `extra_guis`;
+     * each entry is invoked once per render frame inside `rlImGuiBegin / End`.
+     *
+     * @ingroup visr
+     */
     struct VisrApp
     {
-        rbps::World world;
-        DebugChannel<InProcessTransport> channel;
+        rbps::World world;                          ///< Physics world the user populates before `run()`.
+        DebugChannel<InProcessTransport> channel;   ///< Snapshot/command channel between physics and render threads.
 
-        CameraSystem camera_sys;
-        SelectionSystem selection_sys;
-        RenderSystem render_sys;
+        CameraSystem camera_sys;       ///< WASD + RMB-drag free-look camera.
+        SelectionSystem selection_sys; ///< LMB ray-pick + ESC deselect.
+        RenderSystem render_sys;       ///< Per-frame raylib + ImGui pass.
 
-        const char *title = "rbps visualizer";
-        int screen_w = 1440;
-        int screen_h = 900;
+        const char *title = "rbps visualizer"; ///< Window title.
+        int screen_w = 1440;                   ///< Window width in pixels.
+        int screen_h = 900;                    ///< Window height in pixels.
 
+        /**
+         * @brief Optional ImGui panel callbacks invoked each frame.
+         *
+         * Each entry runs inside `rlImGuiBegin / rlImGuiEnd`, so it can
+         * issue any `ImGui::*` call directly. Use to add domain-specific
+         * panels without modifying the core `RenderSystem`.
+         */
         std::vector<std::function<void()>> extra_guis;
 
+        /**
+         * @brief Run the visualizer until the window is closed.
+         *
+         * Spawns a physics thread, opens the raylib window, and pumps the
+         * render loop on the calling thread. Returns when the user closes
+         * the window.
+         */
         void run()
         {
             std::atomic<bool> running{true};
