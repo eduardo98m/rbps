@@ -3,43 +3,68 @@
 #include <math3d/math3d.hpp>
 #include "rbc/AABB.hpp"
 
+/**
+ * @file Mesh.hpp
+ * @brief Triangle-mesh collision shape (general — concave allowed).
+ * @ingroup rbc
+ */
+
 namespace rbc
 {
-    // ── MeshData ──────────────────────────────────────────────────────────────
-    // Triangle mesh in LOCAL space.  The shape transform m3d::tf moves it into world.
-    // Precomputed per-face normals are required for SAT-based collision.
-    //
-    // Memory layout:
-    //   vertices[i]               — local-space vertex positions
-    //   indices[f*3 + {0,1,2}]    — vertex indices of face f
-    //   face_normals[f]           — unit normal of face f (consistent winding)
+    /**
+     * @brief Backing storage for a triangle mesh in local space.
+     *
+     * Per-face normals are precomputed and required by the SAT-based
+     * collision routines in [analytic/MeshCollision.hpp](analytic/MeshCollision.hpp).
+     *
+     * Memory layout:
+     * - `vertices[i]`              — local-space vertex positions.
+     * - `indices[f*3 + {0,1,2}]`   — vertex indices of face `f`.
+     * - `face_normals[f]`          — unit normal of face `f` (consistent winding).
+     *
+     * @ingroup rbc
+     */
     struct MeshData
     {
-        const m3d::vec3 *vertices;
-        const uint32_t *indices;
-        const m3d::vec3 *face_normals; // one per face, precomputed
-        uint32_t vert_count;
-        uint32_t face_count;
-        AABB local_aabb; // precomputed local-space AABB
+        const m3d::vec3 *vertices;     ///< Vertex positions in local space.
+        const uint32_t *indices;       ///< Triangle indices, 3 per face.
+        const m3d::vec3 *face_normals; ///< Unit normal per face (precomputed).
+        uint32_t vert_count;           ///< Number of entries in `vertices`.
+        uint32_t face_count;           ///< Number of triangles.
+        AABB local_aabb;               ///< Precomputed local-space AABB.
     };
 
-    // ── Mesh shape ────────────────────────────────────────────────────────────
-    // Non-owning pointer. MeshData must outlive the Mesh.
+    /**
+     * @brief Mesh shape — wraps a non-owning pointer to `MeshData`.
+     *
+     * `MeshData` must outlive every `Mesh` that references it.
+     *
+     * @ingroup rbc
+     */
     struct Mesh
     {
-        const MeshData *data;
+        const MeshData *data; ///< Non-owning pointer.
 
+        /** @brief Default-construct with no data attached. */
         Mesh() : data(nullptr) {}
+        /** @brief Wrap an existing `MeshData` (caller retains ownership). */
         explicit Mesh(const MeshData *data) : data(data) {}
 
+        /** @brief Equality on the data pointer. */
         inline bool operator==(const Mesh &o) const { return data == o.data; }
+        /** @brief Inequality on the data pointer. */
         inline bool operator!=(const Mesh &o) const { return data != o.data; }
     };
 
-    // ── Construction helper ───────────────────────────────────────────────────
-    // Computes face normals and local AABB from raw arrays.
-    // Assumes counter-clockwise winding (outward normals).
-    // Caller owns the returned pointer; call mesh_data_destroy() to free.
+    /**
+     * @brief Allocate a `MeshData` and precompute face normals + local AABB.
+     *
+     * Assumes counter-clockwise triangle winding (outward normals). Caller
+     * owns the returned pointer; call `mesh_data_destroy` to free it. The
+     * `vertices` and `indices` arrays are referenced, not copied.
+     *
+     * @ingroup rbc
+     */
     inline MeshData *mesh_data_create(const m3d::vec3 *vertices, uint32_t vert_count,
                                       const uint32_t *indices, uint32_t face_count)
     {
@@ -52,7 +77,6 @@ namespace rbc
         md->vert_count = vert_count;
         md->face_count = face_count;
 
-        // Compute face normals + local AABB
         m3d::vec3 mn(1e30f, 1e30f, 1e30f);
         m3d::vec3 mx(-1e30f, -1e30f, -1e30f);
 
@@ -77,14 +101,28 @@ namespace rbc
         return md;
     }
 
+    /**
+     * @brief Free a `MeshData` returned by `mesh_data_create`.
+     *
+     * Also frees the precomputed face-normals array.
+     *
+     * @ingroup rbc
+     */
     inline void mesh_data_destroy(MeshData *md)
     {
         delete[] md->face_normals;
         delete md;
     }
 
-    // ── Support (convex-hull support — only valid for CONVEX meshes) ──────────
-    // For concave meshes, use the per-triangle analytic collision in MeshCollision.hpp.
+    /**
+     * @brief Convex-hull support: vertex of `m` farthest along `dir`.
+     *
+     * @warning Only valid for **convex** meshes. Concave meshes must go
+     *          through the per-triangle analytic path in
+     *          [analytic/MeshCollision.hpp](analytic/MeshCollision.hpp).
+     *
+     * @ingroup rbc
+     */
     inline m3d::vec3 support(const Mesh &m, const m3d::vec3 &dir)
     {
         if (!m.data || m.data->vert_count == 0)
@@ -103,12 +141,19 @@ namespace rbc
         return best;
     }
 
-    // ── AABB from precomputed local bounds + transform ────────────────────────
+    /**
+     * @brief Conservative world AABB from the precomputed local AABB.
+     *
+     * Same OBB-projection technique as `Box::compute_aabb`. The result is
+     * a conservative wrapper — for tighter bounds you'd need to project
+     * every world vertex, which is no longer O(1).
+     *
+     * @ingroup rbc
+     */
     inline AABB compute_aabb(const Mesh &m, const m3d::tf &tf)
     {
         if (!m.data)
             return AABB{};
-        // Rotate local AABB into world space (conservative, same method as Box)
         const AABB &local = m.data->local_aabb;
         const m3d::vec3 centre = (local.min + local.max) * 0.5;
         const m3d::vec3 half = (local.max - local.min) * 0.5;
@@ -122,11 +167,18 @@ namespace rbc
         return {world_centre - extent, world_centre + extent};
     }
 
-    // Marker for the dispatcher: Mesh is treated as non-convex (triangle soup).
-    // Convex meshes work too, but the analytic specialisation in
-    // MeshCollision.hpp is the supported path.
+    /**
+     * @brief Tag-dispatched marker: Mesh is treated as non-convex (false).
+     *
+     * Convex meshes work too, but the supported path is the analytic
+     * specialisation in [analytic/MeshCollision.hpp](analytic/MeshCollision.hpp).
+     *
+     * @ingroup rbc
+     */
     constexpr bool is_gjk_convex(const Mesh *) { return false; }
+    /** @brief Returns 0 — mesh has no single representative size. @ingroup rbc */
     inline m3d::scalar representative_radius(const Mesh &) { return 0.0; }
+    /** @brief Stub — mesh pairs go through analytic algorithms. @ingroup rbc */
     inline int face_corners(const Mesh &, const m3d::tf &,
                             const m3d::vec3 &, m3d::vec3[4]) { return 0; }
 } // namespace rbc

@@ -1,21 +1,38 @@
 #pragma once
-// ============================================================================
-//  Dispatcher.hpp
-//
-//  Routes each shape-pair to the correct CollisionAlgorithm specialisation.
-//  The primary template falls back to GJK + EPA + ContactManifoldGenerator
-//  which gives a proper 1-4 point manifold even for non-analytic pairs.
-//
-//  Analytic specialisations (SphereSphere, SphereBox, BoxBox, …) should
-//  fill the ContactManifold directly and bypass GJK/EPA entirely.
-// ============================================================================
+
+/**
+ * @defgroup internals internals — Algorithm implementations
+ * @brief Lower-level building blocks documented for maintainers.
+ *
+ * Symbols here are documented but not part of the public API: collision
+ * algorithm specialisations, GJK / EPA, the constraint solver, broad-phase
+ * sweep helpers, etc. They live in a separate sidebar group so casual
+ * users browsing the API aren't overwhelmed.
+ */
+
+/**
+ * @file Dispatcher.hpp
+ * @brief Compile-time dispatch from `(Shape, Shape)` to the right collision algorithm.
+ * @ingroup rbc
+ *
+ * The primary `CollisionAlgorithm<A, B>` template falls back to GJK + EPA +
+ * `ContactManifoldGenerator` for any convex pair without an analytic
+ * specialisation. Analytic algorithms (sphere–sphere, sphere–box, box–box,
+ * plane vs anything, …) override the primary by partial specialisation in
+ * `analytic/*.hpp` and fill the `ContactManifold` directly without going
+ * through GJK.
+ *
+ * The runtime entry point is `dispatch(Shape, tf, Shape, tf, ContactManifold&)`,
+ * which indexes a compile-time `N×N` table built from the variant's
+ * alternative list.
+ */
 
 #include "rbc/shapes/ShapeTypes.hpp"
 #include "rbc/Contact.hpp"
 #include "rbc/gjk/GJK.hpp"
 #include "rbc/gjk/EPA.hpp"
 #include "rbc/gjk/MinkowskiDiff.hpp"
-#include "rbc/gjk/ContactManifoldGenerator.hpp"   // gjk_epa_manifold + generate_manifold
+#include "rbc/gjk/ContactManifoldGenerator.hpp"
 #include <array>
 #include <cstddef>
 #include <utility>
@@ -24,21 +41,38 @@
 namespace rbc
 {
 
-    // Compile-time convexity query. Forwards to the per-shape free function
-    // is_gjk_convex(const T*) defined next to each shape struct. Using a
-    // pointer tag (rather than a value) avoids requiring constexpr default
-    // constructors on every shape.
+    /**
+     * @brief Compile-time predicate: `true` iff `T` is a convex bounded shape.
+     *
+     * Forwards to the per-shape free function `is_gjk_convex(const T*)`.
+     * The pointer tag avoids requiring a default constructor on every
+     * shape; the value is never read.
+     *
+     * @ingroup rbc
+     */
     template <class T>
     inline constexpr bool gjk_convex_v =
         is_gjk_convex(static_cast<const T *>(nullptr));
 
-    // ── Primary template: GJK/EPA + manifold generation ──────────────────────
-    // Only convex pairs reach the GJK fallback. Non-convex pairs (Plane,
-    // Heightmap, Mesh on either side) without an analytic specialisation
-    // return false silently — there is no useful default for them.
+    /**
+     * @brief Primary template: GJK + EPA + manifold generation for convex pairs.
+     *
+     * Only convex–convex pairs reach the GJK fallback. A non-convex pair
+     * (Plane, Heightmap, or Mesh on either side) without an analytic
+     * specialisation returns `false` silently — there is no useful default.
+     *
+     * Analytic specialisations live in `analytic/*.hpp` and override this
+     * template by partial specialisation.
+     *
+     * @ingroup rbc
+     * @ingroup internals
+     */
     template <typename A, typename B>
     struct CollisionAlgorithm
     {
+        /**
+         * @brief Run the algorithm; fill `manifold` and return `true` on overlap.
+         */
         static bool test(const A       &a, const m3d::tf &tf_a,
                          const B       &b, const m3d::tf &tf_b,
                          ContactManifold &manifold)
@@ -56,10 +90,20 @@ namespace rbc
         }
     };
 
-    // ── Symmetric helper: (B,A) reuses (A,B) and flips the normal ────────────
+    /**
+     * @brief Symmetric helper: `(B, A)` reuses `(A, B)` and flips the contact normal.
+     *
+     * Most analytic specialisations only handle `(A, B)`; the `(B, A)`
+     * direction inherits from this helper so the dispatcher gets a
+     * working entry without code duplication.
+     *
+     * @ingroup rbc
+     * @ingroup internals
+     */
     template <typename A, typename B>
     struct CollisionAlgorithmSym
     {
+        /** @brief Forward to `CollisionAlgorithm<B, A>::test` and flip the normal. */
         static bool test(const A       &a, const m3d::tf &tf_a,
                          const B       &b, const m3d::tf &tf_b,
                          ContactManifold &manifold)
@@ -88,9 +132,15 @@ namespace rbc
 {
     namespace detail
     {
-        // One concrete dispatch function per (A, B) pair. The template indices
-        // come from std::variant's alternative list so the runtime
-        // shape.v.index() and the type identity match by construction.
+        /**
+         * @brief One concrete dispatch function per `(A, B)` shape pair.
+         *
+         * Template indices come from `std::variant`'s alternative list, so
+         * the runtime `shape.v.index()` and the type identity match by
+         * construction.
+         *
+         * @ingroup internals
+         */
         template <std::size_t I, std::size_t J>
         bool dispatch_pair(const Shape     &a, const m3d::tf &tf_a,
                            const Shape     &b, const m3d::tf &tf_b,
@@ -102,19 +152,29 @@ namespace rbc
                 std::get<A>(a.v), tf_a, std::get<B>(b.v), tf_b, out);
         }
 
+        /// Function-pointer signature stored in the dispatch table.
         using DispatchFn = bool (*)(const Shape &, const m3d::tf &,
                                     const Shape &, const m3d::tf &,
                                     ContactManifold &);
 
-        // Build one row of the table for fixed row index I: instantiate
-        // dispatch_pair<I, J> for every J in the column index pack.
+        /**
+         * @brief Build one row `I` of the dispatch table.
+         *
+         * Instantiates `dispatch_pair<I, J>` for every `J` in the column
+         * index pack.
+         *
+         * @ingroup internals
+         */
         template <std::size_t I, std::size_t... Js>
         constexpr auto make_row(std::index_sequence<Js...>)
         {
             return std::array<DispatchFn, sizeof...(Js)>{ &dispatch_pair<I, Js>... };
         }
 
-        // Expand rows over the row-index pack to produce the full N×N table.
+        /**
+         * @brief Expand rows over the row-index pack to produce the full N×N table.
+         * @ingroup internals
+         */
         template <std::size_t... Is>
         constexpr auto make_table(std::index_sequence<Is...>)
         {
@@ -123,14 +183,30 @@ namespace rbc
             };
         }
 
-        // N comes from the variant — single source of truth. Add a shape to
-        // the variant in ShapeTypes.hpp and the table grows automatically.
+        /**
+         * @brief Number of distinct shape kinds — single source of truth from the variant.
+         *
+         * Add a shape to `Shape::v` in `ShapeTypes.hpp` and the table grows
+         * automatically.
+         *
+         * @ingroup internals
+         */
         constexpr std::size_t kShapeCount = std::variant_size_v<decltype(Shape::v)>;
 
+        /// The compile-time `N×N` dispatch table. @ingroup internals
         inline constexpr auto DispatchTable =
             make_table(std::make_index_sequence<kShapeCount>{});
     } // namespace detail
 
+    /**
+     * @brief Run the collision algorithm for `(a, b)`.
+     *
+     * Looks up the right `CollisionAlgorithm<A, B>::test` via the
+     * compile-time dispatch table and forwards the call. This is the
+     * runtime entry point used by `test_narrow_phase`.
+     *
+     * @ingroup rbc
+     */
     inline bool dispatch(const Shape     &a, const m3d::tf &tf_a,
                          const Shape     &b, const m3d::tf &tf_b,
                          ContactManifold &out)

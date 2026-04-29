@@ -3,12 +3,28 @@
 #include "rbc/shapes/Capsule.hpp"
 #include "rbc/shapes/Sphere.hpp"
 
+/**
+ * @file SphereCapsule.hpp
+ * @brief Analytic Sphere–Capsule collision algorithm.
+ * @ingroup rbc
+ * @ingroup internals
+ *
+ * Reduces to a sphere–segment distance test: find the closest point on
+ * the capsule's central segment to the sphere centre, then compare
+ * against the sum of radii.
+ */
+
 namespace rbc
 {
-    // ── Sphere vs Capsule ─────────────────────────────────────────────────────
+    /**
+     * @brief Sphere vs Capsule via segment-distance reduction; 1 contact point.
+     * @ingroup rbc
+     * @ingroup internals
+     */
     template <>
     struct CollisionAlgorithm<Sphere, Capsule>
     {
+        /** @brief Run sphere–capsule. */
         static bool test(const Sphere &sphere, const m3d::tf &tf_sphere,
                          const Capsule &capsule, const m3d::tf &tf_capsule,
                          ContactManifold &manifold)
@@ -46,6 +62,11 @@ namespace rbc
         }
     };
 
+    /**
+     * @brief Capsule vs Sphere — reuses `<Sphere, Capsule>` and flips the normal.
+     * @ingroup rbc
+     * @ingroup internals
+     */
     template <>
     struct CollisionAlgorithm<Capsule, Sphere> : CollisionAlgorithmSym<Capsule, Sphere> {};
 } // namespace rbc

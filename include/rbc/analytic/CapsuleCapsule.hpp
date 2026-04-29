@@ -2,11 +2,29 @@
 #include "rbc/Dispatcher.hpp"
 #include "rbc/shapes/Capsule.hpp"
 
+/**
+ * @file CapsuleCapsule.hpp
+ * @brief Analytic Capsule–Capsule collision algorithm.
+ * @ingroup rbc
+ * @ingroup internals
+ *
+ * Closest-points-between-segments (Ericson, *Real-Time Collision
+ * Detection*, §5.1.9) followed by a radius check. Falls into a 2-point
+ * line manifold when the segments are nearly parallel; single-point
+ * otherwise.
+ */
+
 namespace rbc
 {
+    /**
+     * @brief Capsule vs Capsule via segment-segment closest-points; 1 or 2 contacts.
+     * @ingroup rbc
+     * @ingroup internals
+     */
     template <>
     struct CollisionAlgorithm<Capsule, Capsule>
     {
+        /** @brief Run capsule–capsule. */
         static bool test(const Capsule &a, const m3d::tf &tf_a,
                          const Capsule &b, const m3d::tf &tf_b,
                          ContactManifold &manifold)

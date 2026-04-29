@@ -1,10 +1,18 @@
 #pragma once
-// ── Mesh collision detection ──────────────────────────────────────────────────
-// Brute-force: iterate over all triangles in world space, keep the deepest contact.
-// Suitable for static/kinematic concave meshes.
-//
-// For high face-count meshes, replace with a BVH acceleration structure —
-// the interface (CollisionAlgorithm specialisations) stays identical.
+
+/**
+ * @file MeshCollision.hpp
+ * @brief Analytic shape–Mesh collision algorithms.
+ * @ingroup rbc
+ * @ingroup internals
+ *
+ * Brute-force: iterate every triangle in world space, keep the deepest
+ * contact. Suitable for static / kinematic concave meshes.
+ *
+ * For high face-count meshes, replace the per-call linear scan with a
+ * BVH acceleration structure — the interface (`CollisionAlgorithm`
+ * specialisations) stays identical.
+ */
 
 #include "rbc/Dispatcher.hpp"
 #include "rbc/shapes/Mesh.hpp"

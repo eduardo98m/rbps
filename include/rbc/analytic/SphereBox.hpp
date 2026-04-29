@@ -3,26 +3,35 @@
 #include "rbc/Contact.hpp"
 #include <math3d/math3d.hpp>
 
+/**
+ * @file SphereBox.hpp
+ * @brief Analytic Sphere–Box collision algorithm.
+ * @ingroup rbc
+ * @ingroup internals
+ *
+ * Strategy: find the closest point on the OBB surface to the sphere centre.
+ * If the distance is less than the sphere's radius, the pair overlaps.
+ * Two cases are handled: sphere centre outside the box (closest-point
+ * clamp on the local AABB) and sphere centre inside the box (find the
+ * face with smallest exit penetration).
+ *
+ * @note **Normal convention:** A → B (sphere → box). The XPBD solver
+ *       expects this orientation so that the impulse pushes the sphere
+ *       away from the box.
+ */
+
 namespace rbc
 {
 
-    // ── Sphere vs Box ────────────────────────────────────────────────────────────
-    // Strategy: find the closest point on the OBB surface to the sphere centre.
-    // If that distance < radius, we have a collision.
-    //
-    // Normal convention: A→B  (sphere → box)
-    //   The XPBD solver computes  delta_lambda = -penetration / w  (negative)
-    //   and applies  impulse = delta_lambda * normal  to body A (sphere).
-    //   For the sphere to be pushed AWAY from the box, impulse must point
-    //   away from the box, so  delta_lambda * normal.toward_box  = positive,
-    //   which requires  normal  to point from A (sphere) toward B (box).
-    //
-    // All work is done in the Box's local space to keep the clamping simple,
-    // then results are transformed back to world space.
-
+    /**
+     * @brief Closest-point analytic test for sphere vs OBB; produces 1 contact point.
+     * @ingroup rbc
+     * @ingroup internals
+     */
     template <>
     struct CollisionAlgorithm<Sphere, Box>
     {
+        /** @brief Run sphere–box. */
         static bool test(const Sphere &sphere, const m3d::tf &tf_sphere,
                          const Box    &box,    const m3d::tf &tf_box,
                          ContactManifold &out)
@@ -94,7 +103,11 @@ namespace rbc
         }
     };
 
-    // ── Box vs Sphere — symmetric shim ───────────────────────────────────────────
+    /**
+     * @brief Box vs Sphere — reuses `<Sphere, Box>` and flips the normal.
+     * @ingroup rbc
+     * @ingroup internals
+     */
     template <>
     struct CollisionAlgorithm<Box, Sphere>
         : CollisionAlgorithmSym<Box, Sphere>

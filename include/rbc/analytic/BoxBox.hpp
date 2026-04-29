@@ -4,6 +4,23 @@
 #include <array>
 #include <limits>
 
+/**
+ * @file BoxBox.hpp
+ * @brief Analytic Box–Box collision algorithm (SAT + face/face manifold).
+ * @ingroup rbc
+ * @ingroup internals
+ *
+ * Standard 15-axis Separating Axis Test on two oriented boxes:
+ * 3 face normals from each box plus 9 edge–edge cross products. When the
+ * separating axis is a face normal the algorithm builds a face/face
+ * contact manifold (up to 4 contact points); for edge–edge separation it
+ * falls back to a single contact point.
+ *
+ * Box–Box is currently the only pair that produces a true face/face
+ * manifold; other shape pairs use 1-point contacts. See
+ * `docs/design/contact-generation.md` for the planned generalisation.
+ */
+
 namespace rbc
 {
     namespace detail
@@ -214,9 +231,15 @@ namespace rbc
         }
     }
 
+    /**
+     * @brief Box vs Box via 15-axis SAT; produces a face/face manifold (1–4 contacts).
+     * @ingroup rbc
+     * @ingroup internals
+     */
     template <>
     struct CollisionAlgorithm<Box, Box>
     {
+        /** @brief Run box–box. */
         static bool test(const Box &a, const m3d::tf &tf_a,
                          const Box &b, const m3d::tf &tf_b,
                          ContactManifold &manifold)

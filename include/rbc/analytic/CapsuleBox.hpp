@@ -5,16 +5,30 @@
 #include <algorithm>
 #include <limits>
 
+/**
+ * @file CapsuleBox.hpp
+ * @brief Analytic Capsule–Box collision algorithm (SAT).
+ * @ingroup rbc
+ * @ingroup internals
+ *
+ * Treats the capsule as a line segment with a radius. SAT tests 6 axes:
+ * the 3 box face normals plus the 3 edge × segment cross-products.
+ * Generates a 1-point or 2-point manifold depending on which feature
+ * was the separating axis.
+ */
+
 namespace rbc
 {
 
-    // ── Capsule vs Box ────────────────────────────────────────────────────────
-    // SAT approach: Treat the capsule as a line segment with a radius.
-    // We test 6 axes: 3 Box face normals and 3 Edge-Segment cross products.
-    // Then, we generate a 1-point or 2-point manifold depending on the feature.
+    /**
+     * @brief Capsule vs Box via SAT on 6 axes; 1 or 2 contacts depending on the feature.
+     * @ingroup rbc
+     * @ingroup internals
+     */
     template <>
     struct CollisionAlgorithm<Capsule, Box>
     {
+        /** @brief Run capsule–box. */
         static bool test(const Capsule &capsule, const m3d::tf &tf_capsule,
                          const Box &box, const m3d::tf &tf_box,
                          ContactManifold &manifold)
@@ -201,7 +215,11 @@ namespace rbc
         }
     };
 
-    // Box vs Capsule — symmetric shim
+    /**
+     * @brief Box vs Capsule — reuses `<Capsule, Box>` and flips the normal.
+     * @ingroup rbc
+     * @ingroup internals
+     */
     template <>
     struct CollisionAlgorithm<Box, Capsule> : CollisionAlgorithmSym<Box, Capsule>
     {

@@ -3,24 +3,46 @@
 #include "rbc/AABB.hpp"
 #include "rbc/shapes/FaceHelpers.hpp"
 
+/**
+ * @file Ellipsoid.hpp
+ * @brief Ellipsoid collision shape.
+ * @ingroup rbc
+ */
+
 namespace rbc
 {
-    // ── Ellipsoid ─────────────────────────────────────────────────────────────
-    // Axis-aligned ellipsoid in local space; rotation handled by m3d::tf.
+    /**
+     * @brief Axis-aligned ellipsoid in local space.
+     *
+     * Local-space surface: `(x/a)² + (y/b)² + (z/c)² = 1` with semi-axes
+     * `(a, b, c)` along local X, Y, Z. Body rotation is handled by `m3d::tf`.
+     *
+     * @ingroup rbc
+     */
     struct Ellipsoid
     {
-        m3d::vec3 half_extents; // semi-axes (a, b, c) along local X, Y, Z
+        m3d::vec3 half_extents; ///< Semi-axes (a, b, c) along local X, Y, Z.
 
+        /** @brief Default ellipsoid: semi-axes (0.5, 0.5, 0.5) (unit sphere). */
         Ellipsoid() : half_extents(0.5, 0.5, 0.5) {}
+        /** @brief Construct with explicit semi-axes. */
         explicit Ellipsoid(const m3d::vec3 &half_extents) : half_extents(half_extents) {}
 
+        /** @brief Equality on semi-axes. */
         inline bool operator==(const Ellipsoid &o) const { return half_extents == o.half_extents; }
+        /** @brief Inequality. */
         inline bool operator!=(const Ellipsoid &o) const { return !(*this == o); }
     };
 
-    // ── Support function ──────────────────────────────────────────────────────
-    // For x²/a² + y²/b² + z²/c² ≤ 1, maximise d·x via Lagrange multipliers:
-    //   p_k = a_k² · d_k  /  sqrt( a_x²·d_x² + a_y²·d_y² + a_z²·d_z² )
+    /**
+     * @brief Local-space support via Lagrange multipliers.
+     *
+     * For the constraint `(x/a)² + (y/b)² + (z/c)² ≤ 1`, the support point
+     * along `dir` is:
+     * `p_k = a_k² · d_k / sqrt(Σ a_k² · d_k²)`.
+     *
+     * @ingroup rbc
+     */
     inline m3d::vec3 support(const Ellipsoid &e, const m3d::vec3 &dir)
     {
         const m3d::vec3 &a = e.half_extents;
@@ -35,12 +57,20 @@ namespace rbc
         return scaled / denom;
     }
 
+    /** @brief Volume `(4/3)·π·a·b·c`. @ingroup rbc */
     inline m3d::scalar compute_volume(const Ellipsoid &e)
     {
         return (4.0 / 3.0) * m3d::PI * e.half_extents.x * e.half_extents.y * e.half_extents.z;
     }
 
-    // Ixx = (2/5)·m·(b² + c²), cyclic.
+    /**
+     * @brief Inertia tensor of a uniform-density ellipsoid about its centre.
+     *
+     * Diagonal entries `Iii = (2/5)·m·(j² + k²)` cycled over the three axes.
+     * Mass is taken as the volume (unit density).
+     *
+     * @ingroup rbc
+     */
     inline m3d::smat3 compute_inertia_tensor(const Ellipsoid &e)
     {
         const m3d::scalar mass = compute_volume(e);
@@ -54,10 +84,15 @@ namespace rbc
             0.0, 0.0, 0.0);
     }
 
-    // ── Tight AABB for a rotated ellipsoid ────────────────────────────────────
-    // World-space half-extent along axis i:
-    //   extent_i = sqrt( R[0][i]²·ax² + R[1][i]²·ay² + R[2][i]²·az² )
-    // (Same derivation as Box but with sqrt of sum-of-squares instead of sum of |.|.)
+    /**
+     * @brief Tight world AABB.
+     *
+     * World-space half-extent along axis `i` is
+     * `sqrt(R[0][i]²·a² + R[1][i]²·b² + R[2][i]²·c²)`. Same derivation
+     * as `Box::compute_aabb` but with sum-of-squares instead of sum-of-`|·|`.
+     *
+     * @ingroup rbc
+     */
     inline AABB compute_aabb(const Ellipsoid &e, const m3d::tf &tf)
     {
         const m3d::mat3 R = m3d::mat3_cast(tf.rot);
@@ -69,14 +104,16 @@ namespace rbc
         return {tf.pos - extent, tf.pos + extent};
     }
 
-    // Marker for the dispatcher: Ellipsoid is a convex bounded shape.
+    /** @brief Tag-dispatched marker: Ellipsoid is a convex bounded shape (true). @ingroup rbc */
     constexpr bool is_gjk_convex(const Ellipsoid *) { return true; }
 
+    /** @brief Representative size = the largest semi-axis. @ingroup rbc */
     inline m3d::scalar representative_radius(const Ellipsoid &e)
     {
         return m3d::max(m3d::max(e.half_extents.x, e.half_extents.y), e.half_extents.z);
     }
 
+    /** @brief Disc-approximation face polygon (ellipsoid has no flat face). @ingroup rbc */
     inline int face_corners(const Ellipsoid &e, const m3d::tf &tf,
                             const m3d::vec3 &dir, m3d::vec3 out[4])
     {

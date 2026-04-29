@@ -1,23 +1,28 @@
 #pragma once
-// ============================================================================
-//  ContactManifoldGenerator.hpp
-//
-//  Given an EPA result (one point, one normal, one depth) this generates a
-//  proper 1-4 point manifold by:
-//
-//   1. Finding the REFERENCE face (most aligned with normal) on shape A.
-//   2. Finding the INCIDENT face (most anti-aligned) on shape B.
-//   3. Clipping the incident face polygon against the reference face's side
-//      planes (Sutherland-Hodgman), then depth-testing against the reference
-//      face plane.
-//   4. Reducing to ≤4 contact points.
-//
-//  For primitive pairs that have an analytic fast-path (SphereSphere,
-//  SphereBox, etc.) the analytic algorithm should fill the manifold directly
-//  and not call this generator.
-//
-//  This is used by the GJK/EPA *fallback* path in CollisionAlgorithm<A,B>.
-// ============================================================================
+
+/**
+ * @file ContactManifoldGenerator.hpp
+ * @brief Build a 1–4 point contact manifold from a single EPA result.
+ * @ingroup rbc
+ * @ingroup internals
+ *
+ * Given an EPA result (one normal, one depth, one contact point) the
+ * generator produces a proper 1–4 point manifold by:
+ * 1. Selecting the **reference** face on shape A (the face most aligned
+ *    with the EPA normal) via `face_corners`.
+ * 2. Selecting the **incident** face on shape B (most anti-aligned).
+ * 3. Clipping the incident polygon against the reference face's side
+ *    planes (Sutherland–Hodgman) and depth-testing against the
+ *    reference face plane.
+ * 4. Reducing the surviving points to at most 4 by maximising support
+ *    area (deepest, then farthest, then farthest from segment, then
+ *    farthest from triangle).
+ *
+ * Pairs with an analytic fast path (`SphereSphere`, `SphereBox`, …)
+ * fill the manifold directly and skip this generator. The path through
+ * here is the GJK/EPA fallback used by the primary `CollisionAlgorithm<A, B>`
+ * template.
+ */
 
 #include "rbc/Contact.hpp"
 #include "rbc/gjk/GJK.hpp"
@@ -38,6 +43,21 @@ namespace rbc
     namespace manifold_detail
     {
 
+        /**
+         * @brief Sutherland–Hodgman: clip polygon `poly` by half-space `plane`.
+         *
+         * Keeps the part of `poly` on the positive side of the plane (where
+         * `dot(point - plane_p, plane_n) >= 0`).
+         *
+         * @param poly   Input polygon vertices in order.
+         * @param n      Vertex count of `poly`.
+         * @param plane_n Plane normal (need not be unit length).
+         * @param plane_p Any point on the plane.
+         * @param[out] out Output vertices; must have room for at least `2 * n` entries.
+         * @return Number of vertices written to `out`.
+         *
+         * @ingroup internals
+         */
         inline int clip_polygon_by_plane(const m3d::vec3 *poly, int n,
                                          const m3d::vec3 &plane_n,
                                          const m3d::vec3 &plane_p,
@@ -64,7 +84,16 @@ namespace rbc
             return out_n;
         }
 
-        // Reduce n contact candidates to ≤4 by maximising the support area.
+        /**
+         * @brief Reduce `n` contact candidates to at most 4 by maximising support area.
+         *
+         * Greedy selection: pick the deepest first, then the farthest from
+         * it, then the farthest from that segment, then the farthest from
+         * the resulting triangle. The 4-point output is the most stable
+         * support set for an XPBD or impulse solver.
+         *
+         * @ingroup internals
+         */
         inline int reduce_to_4(const m3d::vec3 *pts,
                                const m3d::scalar *depths,
                                int n,
@@ -173,18 +202,27 @@ namespace rbc
 
     } // namespace manifold_detail
 
-    // ---------------------------------------------------------------------------
-    //  Main entry point
-    // ---------------------------------------------------------------------------
-
-    // Expand a single-point EPA result into a full manifold.
-    // `epa_normal`   — penetration normal (A→B convention from EPA)
-    // `epa_depth`    — penetration depth
-    // `epa_contact`  — EPA contact point (barycentric on the Minkowski diff face)
-    // `shape_a/b`    — the two shapes
-    // `tf_a/tf_b`    — their world transforms
-    //
-    // The function fills `manifold` with 1-4 contact points.
+    /**
+     * @brief Expand a single-point EPA result into a 1–4 point manifold.
+     *
+     * Picks the reference face on `shape_a` (most aligned with `epa_normal`)
+     * and the incident face on `shape_b` (most anti-aligned), clips the
+     * incident polygon against the reference face's side planes, then
+     * reduces to ≤ 4 contacts. Falls back to the EPA single-point result
+     * if clipping eliminates everything.
+     *
+     * @param epa_normal  Penetration normal from EPA (A→B convention).
+     * @param epa_depth   Penetration depth from EPA (positive on overlap).
+     * @param epa_contact EPA contact point in world space.
+     * @param shape_a     First shape.
+     * @param tf_a        Transform of `shape_a`.
+     * @param shape_b     Second shape.
+     * @param tf_b        Transform of `shape_b`.
+     * @param[out] manifold Filled with up to 4 contact points.
+     *
+     * @ingroup rbc
+     * @ingroup internals
+     */
     inline void generate_manifold(const m3d::vec3 &epa_normal,
                                   m3d::scalar epa_depth,
                                   const m3d::vec3 &epa_contact,
@@ -271,11 +309,18 @@ namespace rbc
         }
     }
 
-    // ---------------------------------------------------------------------------
-    //  Convenience: run GJK → EPA → generate_manifold in one call.
-    //  This is what the primary CollisionAlgorithm<A,B> template should call
-    //  instead of filling manifold manually.
-    // ---------------------------------------------------------------------------
+    /**
+     * @brief Convenience: run GJK → EPA → `generate_manifold` in one call.
+     *
+     * The primary `CollisionAlgorithm<A, B>` template calls this for any
+     * convex pair that doesn't have an analytic specialisation.
+     *
+     * @return `false` if GJK reports the shapes are separated or EPA
+     *         fails to converge; `true` (and `manifold` is filled) on overlap.
+     *
+     * @ingroup rbc
+     * @ingroup internals
+     */
     inline bool gjk_epa_manifold(const Shape &sa,
                                  const m3d::tf &tf_a,
                                  const Shape &sb,

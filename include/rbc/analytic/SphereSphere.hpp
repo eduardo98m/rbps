@@ -2,16 +2,29 @@
 #include "rbc/shapes/ShapeTypes.hpp"
 #include "rbc/Contact.hpp"
 #include <math3d/math3d.hpp>
+
+/**
+ * @file SphereSphere.hpp
+ * @brief Analytic Sphere–Sphere collision algorithm.
+ * @ingroup rbc
+ * @ingroup internals
+ *
+ * Pure distance check — no SAT, no GJK needed. The only axis that matters
+ * is the vector between the two centres.
+ */
+
 namespace rbc
 {
 
-    // ── Sphere vs Sphere ─────────────────────────────────────────────────────────
-    // Pure distance check — no SAT, no GJK needed.
-    // The only axis that matters is the vector between the two centres.
-
+    /**
+     * @brief Distance test: overlap iff `|center_b - center_a| < r_a + r_b`.
+     * @ingroup rbc
+     * @ingroup internals
+     */
     template <>
     struct CollisionAlgorithm<Sphere, Sphere>
     {
+        /** @brief Run sphere–sphere; produces 1 contact point on overlap. */
         static bool test(const Sphere &a, const m3d::tf &tf_a,
                          const Sphere &b, const m3d::tf &tf_b,
                          ContactManifold &manifold)

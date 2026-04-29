@@ -1,16 +1,24 @@
 #pragma once
-// ============================================================================
-//  PlaneCollision.hpp
-//
-//  Analytic convex-shape-vs-plane collision.  Planes are infinite half-spaces
-//  and cannot enter the SAP broad-phase (infinite AABB).  Instead they live
-//  in a separate list and are tested against every dynamic collider each frame
-//  directly inside run_narrow_phase() in CollisionPipeline.cpp.
-//
-//  KEY INSIGHT: Any convex shape S collides with a plane iff its "deepest"
-//  point (support in the -normal direction) lies on the wrong side of the
-//  plane.
-// ============================================================================
+
+/**
+ * @file PlaneCollision.hpp
+ * @brief Analytic convex-shape-vs-Plane collision algorithms.
+ * @ingroup rbc
+ * @ingroup internals
+ *
+ * Planes are infinite half-spaces and cannot enter the SAP broad phase
+ * (infinite AABB). They live in a separate list and are tested against
+ * every dynamic collider each frame inside `run_narrow_phase` in
+ * `CollisionPipeline.cpp`.
+ *
+ * @par Key insight
+ * Any convex shape S collides with a plane iff its "deepest" point —
+ * `support(S, -world_normal)` — lies on the wrong side of the plane.
+ * This drives the generic `convex_vs_plane` helper used for shapes that
+ * only need a single contact point. Box and Capsule have dedicated
+ * specialisations that produce multi-point manifolds (4 corners or 2
+ * endpoints).
+ */
 
 #include "rbc/Dispatcher.hpp"
 #include "rbc/shapes/Plane.hpp"

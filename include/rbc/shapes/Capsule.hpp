@@ -3,29 +3,55 @@
 #include "rbc/AABB.hpp"
 #include "rbc/shapes/FaceHelpers.hpp"
 
+/**
+ * @file Capsule.hpp
+ * @brief Capsule (line segment with spherical caps) collision shape.
+ * @ingroup rbc
+ */
+
 namespace rbc
 {
-    // ── Capsule ───────────────────────────────────────────────────────────────
-    // A cylinder of radius `radius` capped with two hemispheres.
-    // In local space the principal axis is Y.
-    //   Top hemisphere centre  = (0, +half_height, 0)
-    //   Bottom hemisphere centre = (0, -half_height, 0)
-    // Total height = 2*(half_height + radius).
+    /**
+     * @brief Capsule = a Y-axis cylinder of radius `radius` capped with two hemispheres.
+     *
+     * In local space the principal axis is +Y:
+     * - Top hemisphere centre = `(0, +half_height, 0)`.
+     * - Bottom hemisphere centre = `(0, -half_height, 0)`.
+     * - Total height = `2 * (half_height + radius)`.
+     *
+     * Algorithmically a Minkowski sum of a segment and a sphere, which makes
+     * the support function and AABB cheap.
+     *
+     * @ingroup rbc
+     */
     struct Capsule
     {
-        m3d::scalar half_height; // distance from centre to each cap centre
-        m3d::scalar radius;
+        m3d::scalar half_height; ///< Distance from centre to each cap centre.
+        m3d::scalar radius;      ///< Cap and cylinder radius.
 
+        /** @brief Default capsule of half-height 0.5 and radius 0.25. */
         Capsule() : half_height(0.5), radius(0.25) {}
+        /** @brief Construct with explicit dimensions. */
         Capsule(m3d::scalar half_height, m3d::scalar radius)
             : half_height(half_height), radius(radius) {}
 
+        /** @brief Equality on both fields. */
         inline bool operator==(const Capsule &o) const
         { return half_height == o.half_height && radius == o.radius; }
+        /** @brief Inequality. */
         inline bool operator!=(const Capsule &o) const { return !(*this == o); }
     };
 
-    // ── World-space endpoints (convenience, used by collision algorithms) ─────
+    /**
+     * @brief World-space endpoints of the capsule's central segment.
+     *
+     * @param c        Capsule shape.
+     * @param tf       Body transform.
+     * @param[out] p1_out  Endpoint on the +Y side of local space.
+     * @param[out] p2_out  Endpoint on the −Y side of local space.
+     *
+     * @ingroup rbc
+     */
     inline void capsule_endpoints(const Capsule &c, const m3d::tf &tf,
                                   m3d::vec3 &p1_out, m3d::vec3 &p2_out)
     {
@@ -34,9 +60,15 @@ namespace rbc
         p2_out = tf.pos - axis;
     }
 
-    // ── Support function (local space, axis = local Y) ────────────────────────
-    // Capsule = Minkowski sum of segment [(0,-h,0),(0,+h,0)] and sphere of radius r.
-    // Support = endpoint in dir.y sign direction, then nudge by r·normalize(dir).
+    /**
+     * @brief Local-space support: pick the cap centre on the side `dir.y` points to,
+     *        then nudge by `radius * normalize(dir)`.
+     *
+     * The Minkowski-sum identity: capsule = segment ⊕ sphere, so
+     * `support_capsule = support_segment + support_sphere`.
+     *
+     * @ingroup rbc
+     */
     inline m3d::vec3 support(const Capsule &c, const m3d::vec3 &dir)
     {
         const m3d::vec3 endpoint(0.0,
@@ -47,34 +79,37 @@ namespace rbc
         return endpoint + (dir / len) * c.radius;
     }
 
+    /** @brief Volume = cylinder + two hemispheres = `π·r²·(2h + 4r/3)`. @ingroup rbc */
     inline m3d::scalar compute_volume(const Capsule &c)
     {
-        // Cylinder + two hemispheres
         const m3d::scalar r = c.radius, h = c.half_height;
         return m3d::PI * r * r * (2.0 * h + (4.0 / 3.0) * r);
     }
 
-    // Inertia tensor about the capsule's local axes (unit density).
+    /**
+     * @brief Inertia tensor of a uniform-density capsule about its centre.
+     *
+     * Built from the cylinder + two hemispheres composition; the hemisphere
+     * contribution to the transverse axis uses the parallel-axis theorem
+     * with offset `h + 3r/8`. Reference: Eberly, *Game Physics*, capsule
+     * moment integrals.
+     *
+     * @ingroup rbc
+     */
     inline m3d::smat3 compute_inertia_tensor(const Capsule &c)
     {
-        // References: Game Physics, Eberly; moment integrals for capsule.
         const m3d::scalar r  = c.radius, h = c.half_height;
         const m3d::scalar r2 = r * r;
         const m3d::scalar h2 = h * h;
-        const m3d::scalar mass = compute_volume(c); // unit density
+        const m3d::scalar mass = compute_volume(c);
 
-        // Cylinder mass and hemisphere mass fractions
         const m3d::scalar m_cyl  = m3d::PI * r2 * 2.0 * h;
-        const m3d::scalar m_hemi = mass - m_cyl; // = (4/3)*pi*r³ total for both caps
+        const m3d::scalar m_hemi = mass - m_cyl;
 
-        // About the principal axis (Y): Iyy
         const m3d::scalar Iyy = (m_cyl * r2 / 2.0) +
                                   (m_hemi * 2.0 * r2 / 5.0);
 
-        // About a transverse axis (X or Z): Ixx
-        // Cylinder contribution
         const m3d::scalar Ixx_cyl = m_cyl * (r2 / 4.0 + h2 / 3.0);
-        // Hemisphere contribution (using parallel axis theorem, d = h + 3r/8 from cap centre)
         const m3d::scalar d_hemi  = h + 3.0 * r / 8.0;
         const m3d::scalar Ixx_hemi = m_hemi * (2.0 * r2 / 5.0 + d_hemi * d_hemi);
         const m3d::scalar Ixx = Ixx_cyl + Ixx_hemi;
@@ -82,8 +117,15 @@ namespace rbc
         return m3d::smat3(Ixx, Iyy, Ixx, 0.0, 0.0, 0.0);
     }
 
-    // ── Tight AABB ────────────────────────────────────────────────────────────
-    // World axis of the capsule, then union of two sphere-radius boxes at endpoints.
+    /**
+     * @brief Tight world AABB.
+     *
+     * Computed as the union of two `radius`-sized boxes around the world
+     * endpoints — exact for a capsule and cheaper than a 6-direction
+     * support sweep.
+     *
+     * @ingroup rbc
+     */
     inline AABB compute_aabb(const Capsule &c, const m3d::tf &tf)
     {
         const m3d::vec3 axis = tf.rotate_vector(m3d::vec3(0, c.half_height, 0));
@@ -96,11 +138,13 @@ namespace rbc
         };
     }
 
-    // Marker for the dispatcher: Capsule is a convex bounded shape.
+    /** @brief Tag-dispatched marker: Capsule is a convex bounded shape (true). @ingroup rbc */
     constexpr bool is_gjk_convex(const Capsule *) { return true; }
 
+    /** @brief Representative size = the cap radius. @ingroup rbc */
     inline m3d::scalar representative_radius(const Capsule &c) { return c.radius; }
 
+    /** @brief Disc-approximation face polygon (capsule has no flat face). @ingroup rbc */
     inline int face_corners(const Capsule &c, const m3d::tf &tf,
                             const m3d::vec3 &dir, m3d::vec3 out[4])
     {

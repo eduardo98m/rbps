@@ -1,9 +1,22 @@
 #pragma once
-// ── Heightmap collision detection ─────────────────────────────────────────────
-// For each query, determines the relevant grid cells by projecting the query
-// shape's AABB onto the heightmap grid, then tests the resulting triangles.
-// The heightmap transform tf is ignored — world position is baked into
-// HeightmapData::origin (see Heightmap.hpp).
+
+/**
+ * @file HeightmapCollision.hpp
+ * @brief Analytic shape–Heightmap collision algorithms.
+ * @ingroup rbc
+ * @ingroup internals
+ *
+ * For each query, determines the relevant grid cells by projecting the
+ * query shape's AABB onto the heightmap grid, then tests the resulting
+ * triangles using the helpers in [TriangleUtils.hpp](TriangleUtils.hpp).
+ * The heightmap transform `tf` is ignored — world position is baked into
+ * `HeightmapData::origin` (see [Heightmap.hpp](../shapes/Heightmap.hpp)).
+ *
+ * @warning The implementation is currently incomplete. Sphere–heightmap
+ *          and capsule–heightmap pass tests; box–heightmap and
+ *          mesh–heightmap are not yet wired up. See
+ *          `docs/design/heightmap.md` for the planned rewrite.
+ */
 
 #include "rbc/Dispatcher.hpp"
 #include "rbc/shapes/Heightmap.hpp"

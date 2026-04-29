@@ -2,10 +2,23 @@
 #include <math3d/math3d.hpp>
 #include "rbc/Contact.hpp"
 
+/**
+ * @file TriangleUtils.hpp
+ * @brief Triangle/segment geometry helpers shared by mesh + heightmap collision.
+ * @ingroup rbc
+ * @ingroup internals
+ */
+
 namespace rbc::tri
 {
-    // ── Closest point on triangle ABC to point P ──────────────────────────────
-    // Classic Barycentric / Voronoi-region method (Ericson, RTCD §5.1.5).
+    /**
+     * @brief Closest point on triangle `ABC` to query point `P`.
+     *
+     * Barycentric / Voronoi-region method. Reference:
+     * Ericson, *Real-Time Collision Detection*, §5.1.5.
+     *
+     * @ingroup internals
+     */
     inline m3d::vec3 closest_point_on_triangle(const m3d::vec3 &P,
                                                const m3d::vec3 &A,
                                                const m3d::vec3 &B,
@@ -47,7 +60,10 @@ namespace rbc::tri
         return A + AB * v + AC * w;
     }
 
-    // ── Squared distance from point P to triangle ABC ─────────────────────────
+    /**
+     * @brief Squared distance from point `P` to triangle `ABC`.
+     * @ingroup internals
+     */
     inline m3d::scalar sq_dist_point_triangle(const m3d::vec3 &P,
                                               const m3d::vec3 &A,
                                               const m3d::vec3 &B,
@@ -57,7 +73,10 @@ namespace rbc::tri
         return m3d::length_sq(P - Q);
     }
 
-    // ── Closest point on segment [P,Q] to point X ────────────────────────────
+    /**
+     * @brief Closest point on segment `[P, Q]` to query point `X`.
+     * @ingroup internals
+     */
     inline m3d::vec3 closest_point_on_segment(const m3d::vec3 &P,
                                               const m3d::vec3 &Q,
                                               const m3d::vec3 &X)
@@ -70,8 +89,14 @@ namespace rbc::tri
         return P + d * t;
     }
 
-    // ── Squared distance from segment [P,Q] to triangle ABC ──────────────────
-    // Tests: each segment endpoint vs triangle, each triangle edge vs segment.
+    /**
+     * @brief Squared distance from segment `[P, Q]` to triangle `ABC`.
+     *
+     * Tests every segment endpoint against the triangle plus every triangle
+     * edge against the segment, returning the minimum.
+     *
+     * @ingroup internals
+     */
     inline m3d::scalar sq_dist_segment_triangle(const m3d::vec3 &P, const m3d::vec3 &Q,
                                                 const m3d::vec3 &A, const m3d::vec3 &B,
                                                 const m3d::vec3 &C)
@@ -135,9 +160,17 @@ namespace rbc::tri
         return best;
     }
 
-    // ── Sphere vs triangle analytic test ─────────────────────────────────────
-    // Returns true + fills Contact if sphere penetrates triangle.
-    // The contact normal points from the triangle face toward the sphere.
+    /**
+     * @brief Test a sphere against a single triangle.
+     *
+     * Returns `true` and fills `manifold` (1 contact point) if the sphere
+     * penetrates the triangle. The contact normal points from the
+     * triangle face toward the sphere.
+     *
+     * @param face_normal Precomputed unit triangle normal (avoids re-deriving).
+     *
+     * @ingroup internals
+     */
     inline bool sphere_vs_triangle(const m3d::vec3 &centre, m3d::scalar radius,
                                    const m3d::vec3 &A, const m3d::vec3 &B, const m3d::vec3 &C,
                                    const m3d::vec3 &face_normal, // precomputed, unit
@@ -169,8 +202,14 @@ namespace rbc::tri
         return true;
     }
 
-    // ── Capsule vs triangle analytic test ────────────────────────────────────
-    // Returns true + fills Contact if capsule penetrates triangle.
+    /**
+     * @brief Test a capsule against a single triangle.
+     *
+     * Returns `true` and fills `manifold` (1 contact point) if the capsule
+     * penetrates the triangle.
+     *
+     * @ingroup internals
+     */
     inline bool capsule_vs_triangle(const m3d::vec3 &cap_p1, const m3d::vec3 &cap_p2,
                                     m3d::scalar radius,
                                     const m3d::vec3 &A, const m3d::vec3 &B, const m3d::vec3 &C,

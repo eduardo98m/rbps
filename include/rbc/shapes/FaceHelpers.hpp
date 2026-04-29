@@ -1,12 +1,34 @@
 #pragma once
 #include <math3d/math3d.hpp>
 
+/**
+ * @file FaceHelpers.hpp
+ * @brief Disc-approximation fallback for shapes without flat faces.
+ * @ingroup rbc
+ */
+
 namespace rbc
 {
-    // Disc-approximation fallback used by face_corners() of convex shapes that
-    // do not have a flat face (Sphere, Capsule, Ellipsoid, Cone). Lives here to
-    // avoid a cycle: ContactManifoldGenerator.hpp depends on every shape, and
-    // each shape's face_corners() needs this helper.
+    /**
+     * @brief Build a 4-corner polygon approximating the contact face at `support_pt`.
+     *
+     * Used as the `face_corners` fallback for convex shapes that don't have
+     * a flat face on the contact normal (Sphere, Capsule, Ellipsoid, Cone).
+     * The polygon is a square of side `radius` lying in the plane normal to
+     * `normal` and centred on `support_pt`.
+     *
+     * Lives in this small header to break a cycle: every shape's
+     * `face_corners` needs this helper, but `ContactManifoldGenerator.hpp`
+     * (which is the natural home) depends on every shape.
+     *
+     * @param support_pt World-space point that the polygon is centred on.
+     * @param normal     Unit world-space contact normal.
+     * @param radius     Patch half-size (typically `representative_radius`).
+     * @param[out] corners 4 polygon corners in world space.
+     * @return Always 4.
+     *
+     * @ingroup rbc
+     */
     inline int get_generic_face_corners(const m3d::vec3 &support_pt,
                                         const m3d::vec3 &normal,
                                         m3d::scalar radius,
