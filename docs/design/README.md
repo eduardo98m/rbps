@@ -35,6 +35,14 @@ to the design doc as the work progresses.
 | 16 | Actuator models                       | @subpage feature_actuator_models |
 | 17 | Sample-based MPC (CEM / MPPI)         | @subpage feature_sample_mpc |
 | 18 | Multi-world support                   | @subpage feature_multi_world |
+| 19 | Convex hull collider                  | @subpage feature_convex_hull |
+| 20 | Collider completeness                 | @subpage feature_collider_completeness |
+| –  | Roadmap (dependencies between the above) | @subpage feature_roadmap |
+
+The **Roadmap** page links every feature above into a topological
+dependency graph; start there if you don't know which feature to pick
+up first. Rendering the embedded graph requires `graphviz`
+(install `dot` and rebuild the docs).
 
 ## Doc template
 

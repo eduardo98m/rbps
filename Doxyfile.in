@@ -87,7 +87,14 @@ SKIP_FUNCTION_MACROS   = NO
 PREDEFINED             = DOXYGEN_RUNNING
 
 # ── Diagrams ─────────────────────────────────────────────────────────────────
-HAVE_DOT               = NO
+# HAVE_DOT enables Graphviz integration. Required so @dotfile blocks in design
+# pages (e.g. docs/design/roadmap/dependencies.dot) render inline. Contributors
+# need the `dot` binary on PATH (install via `graphviz` package).
+HAVE_DOT               = YES
+DOT_IMAGE_FORMAT       = svg
+INTERACTIVE_SVG        = YES
+# Search path for files referenced via @dotfile (e.g. the roadmap dependency graph).
+DOTFILE_DIRS           = @CMAKE_SOURCE_DIR@/docs/design/roadmap
 CLASS_DIAGRAMS         = YES
 COLLABORATION_GRAPH    = NO
 INCLUDED_BY_GRAPH      = NO

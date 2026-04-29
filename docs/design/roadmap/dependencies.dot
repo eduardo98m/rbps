@@ -1,0 +1,109 @@
+// Feature dependency graph for RBPS planned features.
+//
+// Source of truth: the prerequisite table in roadmap.md. If the table changes,
+// update this file as well.
+//
+// Render manually with:
+//   dot -Tsvg dependencies.dot -o dependencies.svg
+// Doxygen renders it inline via @dotfile when HAVE_DOT=YES.
+//
+// Edge convention: prereq -> dependent.
+
+digraph features {
+    rankdir = LR;
+    node [shape = box, style = rounded, fontname = "Helvetica"];
+    edge [color = "#555555"];
+
+    // ── Foundations (level 0): no prerequisites ─────────────────────────────
+    subgraph cluster_foundations {
+        label = "Foundations";
+        style = dashed;
+        broadphase_bvh           [label = "broadphase-bvh"];
+        contact_generation       [label = "contact-generation"];
+        world_snapshot_restore   [label = "world-snapshot-restore"];
+        openmp_parallelization   [label = "openmp-parallelization"];
+        convex_hull              [label = "convex-hull (new)"];
+        collider_completeness    [label = "collider-completeness (new)"];
+    }
+
+    // ── Physics (level 1+) ──────────────────────────────────────────────────
+    subgraph cluster_physics {
+        label = "Physics";
+        style = dashed;
+        heightmap                [label = "heightmap"];
+        articulated_bodies_xpbd  [label = "articulated-bodies-xpbd"];
+        actuator_models          [label = "actuator-models"];
+    }
+
+    // ── I/O & ecosystem ─────────────────────────────────────────────────────
+    subgraph cluster_io {
+        label = "I/O & ecosystem";
+        style = dashed;
+        scene_format             [label = "scene-format (URDF)"];
+        python_bindings          [label = "python-bindings"];
+        ros2_integration         [label = "ros2-integration"];
+    }
+
+    // ── Performance & evaluation ────────────────────────────────────────────
+    subgraph cluster_perf_eval {
+        label = "Performance & evaluation";
+        style = dashed;
+        benchmark_harness        [label = "benchmark-harness"];
+        multi_world              [label = "multi-world"];
+    }
+
+    // ── UX ──────────────────────────────────────────────────────────────────
+    subgraph cluster_ux {
+        label = "UX";
+        style = dashed;
+        ui_overhaul              [label = "ui-overhaul"];
+        visualizer_refactor      [label = "visualizer-refactor"];
+        rendering                [label = "rendering"];
+        test_app_interactivity   [label = "test-app-interactivity"];
+    }
+
+    // ── Perception & control ────────────────────────────────────────────────
+    subgraph cluster_perception_control {
+        label = "Perception & control";
+        style = dashed;
+        sensors_gpu              [label = "sensors-gpu"];
+        sample_mpc               [label = "sample-mpc"];
+    }
+
+    // ── Edges: prereq -> dependent ──────────────────────────────────────────
+
+    // Level 0 -> Level 1
+    contact_generation     -> heightmap;
+    contact_generation     -> articulated_bodies_xpbd;
+    contact_generation     -> collider_completeness;
+    broadphase_bvh         -> collider_completeness;
+    ui_overhaul            -> visualizer_refactor;
+    openmp_parallelization -> multi_world;
+    world_snapshot_restore -> multi_world;
+
+    // Level 1 -> Level 2
+    articulated_bodies_xpbd -> scene_format;
+    heightmap               -> scene_format;
+    contact_generation      -> scene_format;
+    contact_generation      -> benchmark_harness;
+    articulated_bodies_xpbd -> benchmark_harness;
+    heightmap               -> benchmark_harness;
+
+    // Level 2 -> Level 3
+    articulated_bodies_xpbd -> actuator_models;
+    scene_format            -> actuator_models;
+    visualizer_refactor     -> test_app_interactivity;
+    scene_format            -> test_app_interactivity;
+    articulated_bodies_xpbd -> test_app_interactivity;
+    rendering               -> test_app_interactivity;
+    scene_format            -> python_bindings;
+    articulated_bodies_xpbd -> python_bindings;
+    world_snapshot_restore  -> python_bindings;
+    scene_format            -> ros2_integration;
+
+    // Level 3 -> Level 4
+    python_bindings         -> sample_mpc;
+    multi_world             -> sample_mpc;
+    world_snapshot_restore  -> sample_mpc;
+    articulated_bodies_xpbd -> sample_mpc;
+}

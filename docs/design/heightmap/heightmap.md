@@ -46,6 +46,23 @@ visr_demo cannot construct any realistic terrain scene.
    [HeightmapCollision.hpp](../../../include/rbc/analytic/HeightmapCollision.hpp)
    once tests pass.
 
+## Pair coverage
+
+This doc owns finishing the **Box–HM** and **Mesh–HM** pairs (steps 1–3
+above). The remaining heightmap pair gaps are tracked in
+[collider-completeness](../collider-completeness/collider-completeness.md):
+
+| Pair | Owned by | Status |
+|---|---|---|
+| Sphere–Heightmap | this doc | working (`test_heightmap_sphere`) |
+| Capsule–Heightmap | this doc | working (`test_heightmap_capsule`) |
+| Box–Heightmap | this doc | proposed (steps 1–2) |
+| Mesh–Heightmap | this doc | proposed (step 3) |
+| Heightmap–Plane | this doc | explicit `false` (step 4) |
+| Heightmap–Heightmap | this doc | explicit `false` (step 4) |
+| Cone–Heightmap, Ellipsoid–Heightmap | [collider-completeness](../collider-completeness/collider-completeness.md) | needs convex-vs-triangle helper |
+| ConvexHull–Heightmap | [collider-completeness](../collider-completeness/collider-completeness.md) | depends on [convex-hull](../convex-hull/convex-hull.md) shipping |
+
 ## Risks / Open Questions
 - For very large heightmaps (≥ 1024×1024) the per-frame cell scan may
   dominate. Consider a coarse acceleration grid — but only after profiling.
