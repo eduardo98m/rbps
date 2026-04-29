@@ -1,7 +1,20 @@
 #pragma once
+
+/**
+ * @defgroup ivc ivc — Index Vector Core
+ * @brief Stable ID + handle bookkeeping for Struct-of-Arrays collections.
+ *
+ * Where `storage::DEFINE_DYN_SOA` owns both the bookkeeping AND the data
+ * arrays, IVC owns only the bookkeeping (index table + metadata) and lets
+ * your collection own its own arrays. The trade-off: IVC is more flexible
+ * (you can mix in fixed-size arrays, custom layouts, etc.) at the cost of
+ * having to call the swap-and-pop yourself when erasing.
+ */
+
 /**
  * @file ivc.hpp
  * @brief Index Vector Core (IVC) — stable ID management for Struct-of-Arrays collections.
+ * @ingroup ivc
  *
  * This is the SoA equivalent of siv::Vector.  Instead of owning the data, it
  * only owns the two bookkeeping tables (indexes + metadata) that make IDs
@@ -89,6 +102,7 @@ struct Metadata {
 // ─── Core struct (two flavours) ───────────────────────────────────────────────
 
 /**
+ * @ingroup ivc
  * @brief Dynamic bookkeeping tables (heap-allocated, unlimited capacity).
  *
  * Embed via the IVC_CORE macro.
@@ -101,6 +115,7 @@ struct Core
 };
 
 /**
+ * @ingroup ivc
  * @brief Fixed-size bookkeeping tables (stack-allocated, compile-time capacity).
  *
  * Embed via the IVC_CORE_FIXED(N) macro.
@@ -118,6 +133,7 @@ struct CoreFixed
 // ─── Handle ───────────────────────────────────────────────────────────────────
 
 /**
+ * @ingroup ivc
  * @brief A safe, stable reference to an item inside a Core-bearing collection.
  *
  * Stores (id, validity_id, Core*).  Checking the handle re-reads the current
@@ -227,6 +243,15 @@ namespace detail
 
 // ----- reserve / capacity ----------------------------------------------------
 
+/**
+ * @ingroup ivc
+ * @brief Pre-allocate space for `n` IDs in the bookkeeping tables.
+ *
+ * No-op for `CoreFixed` (its tables are already sized for `Capacity`).
+ *
+ * @param c The Core embedded in your collection.
+ * @param n Expected number of items.
+ */
 inline void reserve(Core& c, size_t n)
 {
     c.indexes.reserve(n);
@@ -239,6 +264,7 @@ inline void reserve(CoreFixed<Capacity>&, size_t) { /* no-op */ }
 // ----- add -------------------------------------------------------------------
 
 /**
+ * @ingroup ivc
  * @brief Register a new item and return its stable ID.
  *
  * After calling this, push_back (or assign at n_items-1) to EVERY data array
@@ -264,6 +290,7 @@ inline ID add(CoreFixed<Capacity>& c)
 // ----- erase -----------------------------------------------------------------
 
 /**
+ * @ingroup ivc
  * @brief Erase the item with the given ID.
  *
  * @param c        The Core embedded in your collection.
@@ -273,16 +300,17 @@ inline ID add(CoreFixed<Capacity>& c)
  *
  * After this call, pop_back on every data array in your collection.
  *
- * Example:
- *   ivc::erase(bc._ivc, id, [&](size_t a, size_t b) {
- *       std::swap(bc.position[a],    bc.position[b]);
- *       std::swap(bc.orientation[a], bc.orientation[b]);
- *       std::swap(bc.mass[a],        bc.mass[b]);
- *       // ... every array
- *   });
- *   bc.position.pop_back();
- *   bc.orientation.pop_back();
- *   bc.mass.pop_back();
+ * @code
+ * ivc::erase(bc._ivc, id, [&](size_t a, size_t b) {
+ *     std::swap(bc.position[a],    bc.position[b]);
+ *     std::swap(bc.orientation[a], bc.orientation[b]);
+ *     std::swap(bc.mass[a],        bc.mass[b]);
+ *     // ... every array
+ * });
+ * bc.position.pop_back();
+ * bc.orientation.pop_back();
+ * bc.mass.pop_back();
+ * @endcode
  */
 template<typename TSwapFn>
 inline void erase(Core& c, ID id, TSwapFn&& swap_fn)
@@ -296,7 +324,10 @@ inline void erase(CoreFixed<Capacity>& c, ID id, TSwapFn&& swap_fn)
     detail::erase_impl(c, id, std::forward<TSwapFn>(swap_fn));
 }
 
-/** Convenience overload: erase via a Handle. */
+/**
+ * @ingroup ivc
+ * @brief Convenience overload: erase via a Handle.
+ */
 template<typename TSwapFn>
 inline void erase(Core& c, const Handle& h, TSwapFn&& swap_fn)
 {
@@ -306,7 +337,13 @@ inline void erase(Core& c, const Handle& h, TSwapFn&& swap_fn)
 
 // ----- index access ----------------------------------------------------------
 
-/** Returns the current data index for a live ID. */
+/**
+ * @ingroup ivc
+ * @brief Return the current packed data index for a live ID.
+ *
+ * No validity check — pass a stale ID and you get a stale index. Use a
+ * `Handle` (or `is_valid`) when the ID may have been freed.
+ */
 inline size_t index(const Core& c, ID id)
 {
     assert(id < c.indexes.size());
@@ -320,7 +357,10 @@ inline size_t index(const CoreFixed<Capacity>& c, ID id)
     return static_cast<size_t>(c.indexes[id]);
 }
 
-/** Returns the current data index from a Handle (validity-checked). */
+/**
+ * @ingroup ivc
+ * @brief Return the current packed data index from a Handle (validity-checked).
+ */
 inline size_t index(const Handle& h)
 {
     return h.index();
@@ -328,14 +368,23 @@ inline size_t index(const Handle& h)
 
 // ----- handles ---------------------------------------------------------------
 
-/** Create a Handle to an existing item. */
+/**
+ * @ingroup ivc
+ * @brief Create a Handle to an existing item.
+ */
 inline Handle make_handle(Core& c, ID id)
 {
     assert(id < c.indexes.size() && c.indexes[id] < c.n_items);
     return {id, c.metadata[c.indexes[id]].validity_id, &c};
 }
 
-/** Check validity of an id + snapshot pair (e.g. stored externally). */
+/**
+ * @ingroup ivc
+ * @brief Check validity of an `(id, validity_id)` pair stored externally.
+ *
+ * Use when you've serialised a snapshot of a Handle's id+validity but
+ * don't want to keep the `Core*` reference around.
+ */
 inline bool is_valid(const Core& c, ID id, ID validity_id)
 {
     return id < c.indexes.size()
@@ -351,7 +400,13 @@ inline bool is_valid(const CoreFixed<Capacity>& c, ID id, ID validity_id)
 
 // ----- utilities -------------------------------------------------------------
 
-/** The ID that would be returned by the NEXT call to add(). */
+/**
+ * @ingroup ivc
+ * @brief The ID that would be returned by the next call to `add(c)`.
+ *
+ * Useful when a caller needs to know the upcoming ID before committing to
+ * the insertion (e.g. to wire it into a parallel structure first).
+ */
 inline ID next_id(const Core& c)
 {
     if (c.metadata.size() > c.n_items)
@@ -360,6 +415,7 @@ inline ID next_id(const Core& c)
 }
 
 /**
+ * @ingroup ivc
  * @brief Clear all items and invalidate all existing IDs / handles.
  *
  * Bumps every validity_id so outstanding Handles become stale.
@@ -386,30 +442,34 @@ inline void clear(CoreFixed<Capacity>& c)
 // ─── Convenience macros ───────────────────────────────────────────────────────
 
 /**
+ * @ingroup ivc
  * @brief Embed dynamic stable-ID bookkeeping into a SoA collection struct.
  *
- * The embedded member is named _ivc so all ivc:: free functions can be called
- * as  ivc::add(myCollection._ivc).
+ * The embedded member is named `_ivc` so all `ivc::` free functions can be called
+ * as  `ivc::add(myCollection._ivc)`.
  *
- * Usage:
- *   struct BodyCollection {
- *       IVC_CORE;
- *       std::vector<vec3> position;
- *       ...
- *   };
+ * @code
+ * struct BodyCollection {
+ *     IVC_CORE;
+ *     std::vector<vec3> position;
+ *     // ...
+ * };
+ * @endcode
  */
 #define IVC_CORE  ::ivc::Core _ivc
 
 /**
+ * @ingroup ivc
  * @brief Embed fixed-size stable-ID bookkeeping (no heap allocation).
  *
  * @param N  Maximum number of live items (compile-time constant).
  *
- * Usage:
- *   struct BodyCollection {
- *       IVC_CORE_FIXED(256);
- *       vec3 position[256];
- *       ...
- *   };
+ * @code
+ * struct BodyCollection {
+ *     IVC_CORE_FIXED(256);
+ *     vec3 position[256];
+ *     // ...
+ * };
+ * @endcode
  */
 #define IVC_CORE_FIXED(N)  ::ivc::CoreFixed<(N)> _ivc

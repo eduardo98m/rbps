@@ -3,6 +3,31 @@
 #include <utility>
 #include <vector>
 
+/**
+ * @defgroup storage storage — Structure-of-Arrays containers
+ * @brief Macro-generated SoA collections with stable versioned IDs.
+ *
+ * A concrete collection is created with `DEFINE_SOA` (fixed capacity) or
+ * `DEFINE_DYN_SOA` (dynamic capacity). Both produce a struct with one named
+ * array per field and an `O(1)` `add` / `remove` / `index_of` API, with
+ * generation-bit versioning to detect stale IDs.
+ *
+ * In tight solver loops, callers convert ID → packed data index once and
+ * then access fields directly:
+ *
+ * @code
+ * for (uint32_t i = 0; i < bc.count(); ++i)
+ *     bc.position[i] += bc.linear_velocity[i] * dt;
+ * @endcode
+ */
+
+/**
+ * @file Soa.hpp
+ * @brief CRTP bases (`SoABase`, `DynSoABase`) and the `DEFINE_SOA` /
+ *        `DEFINE_DYN_SOA` X-macro generators.
+ * @ingroup storage
+ */
+
 // =============================================================================
 //  SoABase<Derived, IdType, Capacity, GenerationBits>
 //
@@ -19,6 +44,7 @@
 // =============================================================================
 
 /**
+ * @ingroup storage
  * @brief CRTP base for fixed-capacity Structure-of-Arrays containers.
  *
  * Provides stable versioned IDs, O(1) add/remove/lookup, and iteration helpers.
@@ -301,6 +327,7 @@ struct SoABase
 // =============================================================================
 
 /**
+ * @ingroup storage
  * @brief Define a named SoA struct with direct field access.
  *
  * Generates a struct where every field from FIELDS_MACRO becomes a plain
@@ -365,6 +392,7 @@ struct SoABase
 // =============================================================================
 
 /**
+ * @ingroup storage
  * @brief CRTP base for dynamically-allocated Structure-of-Arrays containers.
  *
  * Mirrors SoABase exactly, but all bookkeeping arrays are std::vector.
@@ -562,6 +590,7 @@ private:
 };
 
 /**
+ * @ingroup storage
  * @brief Define a named dynamic SoA struct with direct field access.
  *
  * Same API as DEFINE_SOA, but capacity grows at runtime.
