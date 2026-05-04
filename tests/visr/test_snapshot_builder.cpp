@@ -182,6 +182,23 @@ TEST(shape_ellipsoid)
     ASSERT_NEAR(e->semi_axes.z, 0.5, 1e-6);
 }
 
+TEST(shape_cylinder)
+{
+    rbps::World w;
+    const uint32_t bid = make_dynamic_body(w);
+    rbps::ColliderParams cp{};
+    cp.body_id   = bid;
+    cp.local_rot = m3d::quat{1, 0, 0, 0};
+    cp.shape     = rbc::Shape(rbc::Cylinder{1.0, 0.5});
+    cp.restitution = cp.static_friction = cp.dynamic_friction = 0.3;
+    w.create_collider(cp);
+    auto snap = snap0(w);
+    const auto *c = std::get_if<CylinderSnap>(&snap.colliders[0].shape);
+    ASSERT_TRUE(c != nullptr);
+    ASSERT_NEAR(c->base_radius, 0.5, 1e-6);
+    ASSERT_NEAR(c->half_height, 1.0, 1e-6);
+}
+
 TEST(collider_world_transform_with_offset)
 {
     rbps::World w;
@@ -240,6 +257,7 @@ TEST_SUITE(
     RUN_TEST(shape_plane),
     RUN_TEST(shape_cone),
     RUN_TEST(shape_ellipsoid),
+    RUN_TEST(shape_cylinder),
     RUN_TEST(collider_world_transform_with_offset),
     RUN_TEST(collider_material_properties),
     RUN_TEST(build_snapshot_does_not_mutate_world)

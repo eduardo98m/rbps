@@ -33,6 +33,8 @@ namespace visr
     struct PlaneSnap    { m3d::vec3   normal; m3d::scalar distance; };
     /** @brief POD: cone shape parameters. @ingroup visr */
     struct ConeSnap     { m3d::scalar radius; m3d::scalar height; };
+        /** @brief POD: cylinder shape parameters. @ingroup visr */
+    struct CylinderSnap { m3d::scalar half_height; m3d::scalar base_radius; };
     /** @brief POD: ellipsoid shape parameters. @ingroup visr */
     struct EllipsoidSnap{ m3d::vec3   semi_axes; };
     /** @brief POD: heightmap dimensions (height data is NOT snapshotted). @ingroup visr */
@@ -70,6 +72,7 @@ namespace visr
         BoxSnap,
         CapsuleSnap,
         PlaneSnap,
+        CylinderSnap,
         ConeSnap,
         EllipsoidSnap,
         HeightmapSnap,

@@ -4,6 +4,7 @@
 #include "rbc/shapes/Box.hpp"
 #include "rbc/shapes/Ellipsoid.hpp"
 #include "rbc/shapes/Capsule.hpp"
+#include "rbc/shapes/Cylinder.hpp"
 #include "rbc/shapes/Cone.hpp"
 #include "rbc/shapes/Plane.hpp"
 #include "rbc/shapes/Heightmap.hpp"
@@ -65,7 +66,7 @@ namespace rbc
      */
     struct Shape
     {
-        std::variant<Sphere, Box, Ellipsoid, Capsule, Cone, Plane, Heightmap, Mesh, ConvexHull> v;
+        std::variant<Sphere, Box, Ellipsoid, Capsule, Cylinder, Cone, Plane, Heightmap, Mesh, ConvexHull> v;
 
         /** @brief Default-construct holding a default `Sphere`. */
         Shape() = default;
@@ -78,6 +79,8 @@ namespace rbc
         /** @brief Construct from a concrete shape. */
         Shape(const Capsule    &c) : v(c) {}
         /** @brief Construct from a concrete shape. */
+        Shape(const Cylinder &c) : v(c) {}
+        /** @brief Construct from a concrete shape. */
         Shape(const Cone       &c) : v(c) {}
         /** @brief Construct from a concrete shape. */
         Shape(const Plane      &p) : v(p) {}
@@ -87,6 +90,7 @@ namespace rbc
         Shape(const Mesh       &m) : v(m) {}
         /** @brief Construct from a concrete shape. */
         Shape(const ConvexHull &h) : v(h) {}
+        
 
         /** @brief Read the active alternative; throws `std::bad_variant_access` on mismatch. */
         template <class T> const T &get() const { return std::get<T>(v); }

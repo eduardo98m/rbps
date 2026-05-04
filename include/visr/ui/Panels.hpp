@@ -331,6 +331,7 @@ namespace visr::ui
             if      constexpr (std::is_same_v<T, SpherSnap>)     return "Sphere";
             else if constexpr (std::is_same_v<T, BoxSnap>)       return "Box";
             else if constexpr (std::is_same_v<T, CapsuleSnap>)   return "Capsule";
+            else if constexpr (std::is_same_v<T, CylinderSnap>)  return "Cylinder";
             else if constexpr (std::is_same_v<T, PlaneSnap>)     return "Plane";
             else if constexpr (std::is_same_v<T, ConeSnap>)      return "Cone";
             else if constexpr (std::is_same_v<T, EllipsoidSnap>) return "Ellipsoid";
@@ -386,6 +387,8 @@ namespace visr::ui
                             sh.half_extents.x, sh.half_extents.y, sh.half_extents.z);
             else if constexpr (std::is_same_v<T, CapsuleSnap>)
                 ImGui::Text("radius=%.4f  half_height=%.4f", sh.radius, sh.half_height);
+            else if constexpr (std::is_same_v<T, CylinderSnap>)
+                ImGui::Text("base_radius=%.4f  half_height=%.4f", sh.base_radius, sh.half_height);
             else if constexpr (std::is_same_v<T, PlaneSnap>)
                 ImGui::Text("normal=(%.3f %.3f %.3f)  d=%.4f",
                             sh.normal.x, sh.normal.y, sh.normal.z, sh.distance);

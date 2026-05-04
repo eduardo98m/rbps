@@ -180,6 +180,18 @@ namespace visr::draw
                 DrawSphereWires({0, -hh, 0}, r, 6, 6, col);
                 rlPopMatrix();
             }
+            else if constexpr (std::is_same_v<T, CylinderSnap>)
+            {
+                const float r  = (float)shape.base_radius;
+                const float hh = (float)shape.half_height;
+                Vector3 axis; float deg;
+                quat_to_axis_angle(c.world_rot, axis, deg);
+                rlPushMatrix();
+                rlTranslatef(pos.x, pos.y, pos.z);
+                rlRotatef(deg, axis.x, axis.y, axis.z);
+                DrawCylinderWires({0, -hh, 0}, r, r, hh * 2.0f, 25, col);
+                rlPopMatrix();
+            }
             // ── Plane ────────────────────────────────────────────────────────
             // Draw an oriented grid in the plane's tangent space, plus a
             // normal arrow.  The grid is centered at the plane's world origin

@@ -50,6 +50,8 @@ namespace visr
                                       sh.half_extents.z * sh.half_extents.z));
             else if constexpr (std::is_same_v<T, CapsuleSnap>)
                 r = (float)sh.radius + (float)sh.half_height;
+            else if constexpr (std::is_same_v<T, CylinderSnap>)
+                r = (float)sh.base_radius + (float)sh.half_height;
             else if constexpr (std::is_same_v<T, ConeSnap>)
                 r = std::max((float)sh.radius, (float)sh.height);
             else if constexpr (std::is_same_v<T, EllipsoidSnap>)

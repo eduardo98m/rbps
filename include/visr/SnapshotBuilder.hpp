@@ -43,6 +43,10 @@ namespace visr
                 // PlaneSnap::distance → the d offset (plane equation: n·x = d)
                 return PlaneSnap{p.normal, p.d};
             }
+            ShapeSnap operator()(const rbc::Cylinder &c) const
+            {
+                return CylinderSnap{c.half_height, c.base_radius};
+            }
             ShapeSnap operator()(const rbc::Cone &c) const
             {
                 return ConeSnap{c.base_radius, c.half_height};

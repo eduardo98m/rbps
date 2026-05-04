@@ -167,6 +167,32 @@ static void build_convex_hull_demo(rbps::World &w)
     w.create_collider(cp);
 }
 
+static void build_cylinder_demo(rbps::World &w)
+{
+
+    rbc::Cylinder cylinder(0.5, 1.0);
+
+    rbps::BodyParams bp{};
+    bp.type     = rbps::BodyType::DYNAMIC;
+    bp.position = m3d::vec3{1.0, 2.0, 0.0};
+    bp.orientation = m3d::quat::from_axis_angle({1, 0, 0}, M_PI/2); // tilt it so it's not perfectly vertical
+    bp.mass     = 5.0;
+    // I_shape is computed at unit density; scale to actual mass / volume.
+    const m3d::scalar vol = rbc::compute_volume(cylinder);
+    bp.inertia_tensor = rbc::compute_inertia_tensor(cylinder) * (bp.mass / vol);
+    const uint32_t id = w.create_body(bp);
+
+    rbps::ColliderParams cp{};
+    cp.body_id          = id;
+    cp.local_pos        = m3d::vec3{0.0, 0.0, 0.0};
+    cp.local_rot        = m3d::quat{1, 0, 0, 0};
+    cp.shape            = rbc::Shape(cylinder);
+    cp.restitution      = 0.2;
+    cp.static_friction  = 0.5;
+    cp.dynamic_friction = 0.4;
+    w.create_collider(cp);
+}
+
 static void build_box_tower(rbps::World &w)
 {
     double y_pos = 0.00;
@@ -283,6 +309,7 @@ int main()
     //build_prismatic_joint_demo(app.world);
     build_box_tower(app.world);
     build_convex_hull_demo(app.world);
+    build_cylinder_demo(app.world);
 
     // ── Extra demo panel ──────────────────────────────────────────────────
     app.extra_guis.push_back([&]()

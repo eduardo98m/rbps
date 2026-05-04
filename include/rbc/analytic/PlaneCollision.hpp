@@ -393,6 +393,152 @@ namespace rbc
     {
     };
 
+    // ── Cylinder vs Plane (Multi-point manifold) ───────────────────────────────
+    //
+    // A cylinder has three distinct contact configurations with a plane:
+    //
+    //  Case 1 – Flat cap facing the plane (axis ∥ plane normal, |cos θ| ≈ 1):
+    //           The entire cap rim could be in contact. We emit the 4 cardinal
+    //           points of the penetrating cap as the manifold (stable 4-point
+    //           contact, consistent with Box and ConvexHull conventions).
+    //
+    //  Case 2 – Oblique (general case, 0 < |cos θ| < threshold):
+    //           Both caps contribute a single support point each (the point on
+    //           each cap rim deepest into the plane). We emit up to 2 points.
+    //
+    //  Case 3 – Side contact (axis ⊥ plane normal, |cos θ| ≈ 0):
+    //           The deepest point is on the curved surface midway along the
+    //           axis. We emit a single point at the support along -world_n.
+    //
+    // The threshold between Case 1 and Case 2 is |cos θ| > cos(10°) ≈ 0.985.
+    // The threshold between Case 2 and Case 3 is |cos θ| < cos(80°) ≈ 0.174.
+    //
+    template <>
+    struct CollisionAlgorithm<Cylinder, Plane>
+    {
+        static bool test(const Cylinder &a, const m3d::tf &tf_a,
+                         const Plane &b, const m3d::tf &tf_b,
+                         ContactManifold &out)
+        {
+            // ── 1. Plane in world space ──────────────────────────────────────
+            const m3d::vec3 world_n = tf_b.rotate_vector(b.normal);
+            const m3d::scalar world_d = b.d + m3d::dot(world_n, tf_b.pos);
+
+            // ── 2. Cylinder axis in world space ──────────────────────────────
+            // Local +Y is the cylinder axis.
+            const m3d::vec3 world_axis = tf_a.rotate_vector(m3d::vec3(0, 1, 0));
+
+            // cos  between cylinder axis and plane normal
+            const m3d::scalar cos_theta = m3d::dot(world_axis, world_n);
+
+            // ── 3. Early out via support point ───────────────────────────────
+            // The support of the cylinder along -world_n gives the deepest
+            // possible point. If it is above the plane, nothing penetrates.
+            const m3d::vec3 local_neg_n = tf_a.inverse_rotate_vector(-world_n);
+            const m3d::vec3 support_local = support(a, local_neg_n);
+            const m3d::vec3 support_world = tf_a.transform_point(support_local);
+            const m3d::scalar support_dist = m3d::dot(support_world, world_n) - world_d;
+
+            constexpr m3d::scalar epsilon = 1e-4f;
+            constexpr m3d::scalar parallel_threshold = 0.985f;      // cos(10°)
+            constexpr m3d::scalar perpendicular_threshold = 0.174f; // cos(80°)
+
+            if (support_dist > epsilon)
+                return false;
+
+            out.normal = -world_n;
+            out.num_points = 0;
+
+            const m3d::scalar abs_cos = m3d::abs(cos_theta);
+
+            // ── CASE 1: Axis roughly parallel to plane normal ─────────────────
+            // The facing cap is nearly flat against the plane.
+            // Emit the 4 cardinal rim points of that cap for a stable manifold.
+            if (abs_cos >= parallel_threshold)
+            {
+                // Which cap faces the plane? The one whose centre is deeper.
+                // cos_theta < 0 means +Y cap faces toward the plane normal
+                // (i.e. +Y cap is the lower one), and vice-versa.
+                const m3d::scalar cap_sign = (cos_theta < 0.0f) ? 1.0f : -1.0f;
+
+                // Cap centre in world space
+                const m3d::vec3 cap_centre = tf_a.pos + cap_sign * a.half_height * world_axis;
+
+                // Two orthogonal radial directions in the cap plane.
+                // Build them from world_axis to stay numerically stable.
+                m3d::vec3 radial1 = m3d::cross(world_axis, m3d::vec3(1, 0, 0));
+                if (m3d::dot(radial1, radial1) < 1e-6f)
+                    radial1 = m3d::cross(world_axis, m3d::vec3(0, 0, 1));
+                radial1 = m3d::normalize(radial1);
+                const m3d::vec3 radial2 = m3d::normalize(m3d::cross(world_axis, radial1));
+
+                // 4 cardinal points on the cap rim
+                const m3d::vec3 rim[4] = {
+                    cap_centre + a.base_radius * radial1,
+                    cap_centre - a.base_radius * radial1,
+                    cap_centre + a.base_radius * radial2,
+                    cap_centre - a.base_radius * radial2,
+                };
+
+                for (int i = 0; i < 4; ++i)
+                {
+                    const m3d::scalar dist = m3d::dot(rim[i], world_n) - world_d;
+                    if (dist <= epsilon)
+                    {
+                        out.points[out.num_points].position = rim[i];
+                        out.points[out.num_points].penetration_depth = -dist;
+                        out.num_points++;
+                    }
+                }
+
+                // Cap centre itself if it also penetrates (e.g. deep embedding)
+                // — skip, 4 rim points are sufficient for the solver.
+            }
+            // ── CASE 2 & 3: Oblique and perpendicular ─────────────────────────────
+            // In both cases: one contact candidate per cap rim, at the radial
+            // position deepest into the plane. Emit whichever caps penetrate.
+            else
+            {
+                const m3d::scalar radial_len = m3d::sqrt(
+                    support_local.x * support_local.x +
+                    support_local.z * support_local.z);
+
+                m3d::vec3 radial_world(0, 0, 0);
+                if (radial_len > m3d::EPSILON)
+                {
+                    const m3d::vec3 radial_local(
+                        support_local.x / radial_len * a.base_radius,
+                        0.0f,
+                        support_local.z / radial_len * a.base_radius);
+                    radial_world = tf_a.rotate_vector(radial_local);
+                }
+
+                const m3d::vec3 cap_pts[2] = {
+                    tf_a.pos + a.half_height * world_axis + radial_world,
+                    tf_a.pos - a.half_height * world_axis + radial_world,
+                };
+
+                for (int i = 0; i < 2; ++i)
+                {
+                    const m3d::scalar dist = m3d::dot(cap_pts[i], world_n) - world_d;
+                    if (dist <= epsilon)
+                    {
+                        out.points[out.num_points].position = cap_pts[i];
+                        out.points[out.num_points].penetration_depth = -dist;
+                        out.num_points++;
+                    }
+                }
+            }
+
+            return out.num_points > 0;
+        }
+    };
+
+    template <>
+    struct CollisionAlgorithm<Plane, Cylinder> : CollisionAlgorithmSym<Plane, Cylinder>
+    {
+    };
+
     // ── Plane vs Plane — always false (two infinite half-spaces) ──────────────
     template <>
     struct CollisionAlgorithm<Plane, Plane>
