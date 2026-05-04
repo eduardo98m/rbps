@@ -98,6 +98,7 @@ namespace rbps
             out.relative_velocity.push_back(0.0);
             out.normal_force.push_back(m3d::vec3(0));
             out.tangent_force.push_back(m3d::vec3(0));
+            out.use_dynamic_friction.push_back(false);
             ++out.n_contacts;
         }
     }
