@@ -278,9 +278,9 @@ int main()
     app.world.substeps = 25;
 
     build_ground(app.world);
-    build_fixed_joint_demo(app.world);
-    build_revolute_joint_demo(app.world);
-    build_prismatic_joint_demo(app.world);
+    //build_fixed_joint_demo(app.world);
+    //build_revolute_joint_demo(app.world);
+    //build_prismatic_joint_demo(app.world);
     build_box_tower(app.world);
     build_convex_hull_demo(app.world);
 

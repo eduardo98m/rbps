@@ -83,9 +83,211 @@ namespace rbc
     RBC_PLANE_SPEC(Ellipsoid)
     RBC_PLANE_SPEC(Cone)
     RBC_PLANE_SPEC(Mesh)
-    RBC_PLANE_SPEC(ConvexHull)
 
 #undef RBC_PLANE_SPEC
+
+    // ── ConvexHull vs Plane (Multi-point manifold) ────────────────────────────
+    template <>
+    struct CollisionAlgorithm<ConvexHull, Plane>
+    {
+        static bool test(const ConvexHull &a, const m3d::tf &tf_a,
+                         const Plane &b, const m3d::tf &tf_b,
+                         ContactManifold &out)
+        {
+            if (!a.data || a.data->vert_count == 0)
+                return false;
+
+            const m3d::vec3 world_n = tf_b.rotate_vector(b.normal);
+            const m3d::scalar world_d = b.d + m3d::dot(world_n, tf_b.pos);
+            const m3d::vec3 local_n = tf_a.inverse_rotate_vector(world_n);
+            const m3d::scalar local_d = world_d - m3d::dot(tf_a.pos, world_n);
+
+            constexpr m3d::scalar epsilon = 1e-4f;
+
+            // ── EARLY OUT: deepest support point is above the plane ──────────
+            const m3d::vec3 deepest_local = support(a, -local_n);
+            if (m3d::dot(deepest_local, local_n) - local_d > epsilon)
+                return false;
+
+            // ── STEP 1: Gather ALL penetrating vertices (local space) ────────
+            struct TempPoint
+            {
+                m3d::vec3 pos;
+                m3d::scalar depth;
+            };
+            TempPoint temp_points[32];
+            int temp_count = 0;
+
+            for (uint32_t i = 0; i < a.data->vert_count; ++i)
+            {
+                const m3d::vec3 &lv = a.data->vertices[i];
+                const m3d::scalar dist = m3d::dot(lv, local_n) - local_d;
+                if (dist <= epsilon && temp_count < 32)
+                    temp_points[temp_count++] = {lv, -dist};
+            }
+
+            if (temp_count == 0)
+                return false;
+
+            out.normal = -world_n;
+            out.num_points = 0;
+
+            // ── STEP 2: Manifold Reduction → best 4 contacts ─────────────────
+            if (temp_count <= 4)
+            {
+                // Trivial: keep all points
+                for (int i = 0; i < temp_count; ++i)
+                {
+                    out.points[i].position = tf_a.transform_point(temp_points[i].pos);
+                    out.points[i].penetration_depth = temp_points[i].depth;
+                }
+                out.num_points = temp_count;
+            }
+            else
+            {
+                // ── Area-Maximization (4-point reduction) ────────────────────
+                //
+                // Strategy (all work is done in the contact plane, i.e. the 2-D
+                // projection along world_n, so we never need sqrt for area):
+                //
+                //  P0 – deepest penetration point   (most physically important)
+                //  P1 – farthest from P0            (maximises the first edge)
+                //  P2 – farthest from line P0-P1    (maximises triangle area)
+                //  P3 – farthest from triangle P0P1P2 on the *opposite* side
+                //       (maximises the final quadrilateral area)
+                //
+                // Cross-products are computed in 3-D but the plane-normal
+                // component is what gives the signed area, which is exactly
+                // what we want (and avoids building a 2-D basis).
+
+                int idx[4] = {-1, -1, -1, -1};
+
+                // ── P0: deepest point ────────────────────────────────────────
+                {
+                    m3d::scalar best = -1e18f;
+                    for (int i = 0; i < temp_count; ++i)
+                    {
+                        if (temp_points[i].depth > best)
+                        {
+                            best = temp_points[i].depth;
+                            idx[0] = i;
+                        }
+                    }
+                }
+
+                // ── P1: farthest from P0 (squared distance, no sqrt needed) ──
+                {
+                    const m3d::vec3 &p0 = temp_points[idx[0]].pos;
+                    m3d::scalar best = -1e18f;
+                    for (int i = 0; i < temp_count; ++i)
+                    {
+                        if (i == idx[0])
+                            continue;
+                        const m3d::vec3 d = temp_points[i].pos - p0;
+                        const m3d::scalar dist2 = m3d::dot(d, d);
+                        if (dist2 > best)
+                        {
+                            best = dist2;
+                            idx[1] = i;
+                        }
+                    }
+                }
+
+                // ── P2: farthest from line P0–P1 ─────────────────────────────
+                // |cross(edge, v - p0)| is proportional to the distance to the
+                // line; we compare squared magnitudes to stay branch-friendly.
+                {
+                    const m3d::vec3 &p0 = temp_points[idx[0]].pos;
+                    const m3d::vec3 edge = temp_points[idx[1]].pos - p0;
+                    m3d::scalar best = -1e18f;
+                    for (int i = 0; i < temp_count; ++i)
+                    {
+                        if (i == idx[0] || i == idx[1])
+                            continue;
+                        const m3d::vec3 c = m3d::cross(edge, temp_points[i].pos - p0);
+                        const m3d::scalar dist2 = m3d::dot(c, c);
+                        if (dist2 > best)
+                        {
+                            best = dist2;
+                            idx[2] = i;
+                        }
+                    }
+                }
+
+                // ── P3: maximise signed area of the quadrilateral ────────────
+                //
+                // We want the point that extends the quad the most.
+                // For each candidate we try it as the 4th vertex inserted
+                // between each pair of consecutive triangle edges and pick
+                // the insertion that gives the largest *additional* area.
+                //
+                // A stable, branch-free approach: score = max over the three
+                // "pockets" of the signed area contribution (negative means
+                // it is on the interior – we clamp to 0).
+                //
+                // pocket 0: outside edge P0→P1  → cross(P1-P0, X-P0)·n
+                // pocket 1: outside edge P1→P2  → cross(P2-P1, X-P1)·n
+                // pocket 2: outside edge P2→P0  → cross(P0-P2, X-P2)·n
+                {
+                    const m3d::vec3 &p0 = temp_points[idx[0]].pos;
+                    const m3d::vec3 &p1 = temp_points[idx[1]].pos;
+                    const m3d::vec3 &p2 = temp_points[idx[2]].pos;
+
+                    // Pocket edge directions
+                    const m3d::vec3 e01 = p1 - p0;
+                    const m3d::vec3 e12 = p2 - p1;
+                    const m3d::vec3 e20 = p0 - p2;
+
+                    m3d::scalar best = -1e18f;
+                    for (int i = 0; i < temp_count; ++i)
+                    {
+                        if (i == idx[0] || i == idx[1] || i == idx[2])
+                            continue;
+
+                        const m3d::vec3 &x = temp_points[i].pos;
+
+                        // Signed area contribution for each pocket (dot with world_n
+                        // gives the component perpendicular to the contact plane)
+                        const m3d::scalar a0 = m3d::dot(m3d::cross(e01, x - p0), local_n);
+                        const m3d::scalar a1 = m3d::dot(m3d::cross(e12, x - p1), local_n);
+                        const m3d::scalar a2 = m3d::dot(m3d::cross(e20, x - p2), local_n);
+
+                        // Best pocket area this candidate can contribute
+                        // (negative → interior, not useful)
+                        m3d::scalar score = a0;
+                        if (a1 > score)
+                            score = a1;
+                        if (a2 > score)
+                            score = a2;
+
+                        if (score > best)
+                        {
+                            best = score;
+                            idx[3] = i;
+                        }
+                    }
+                }
+
+                // ── Emit contacts ─────────────────────────────────────────────
+                // Determine how many unique indices we found (idx[3] can be -1
+                // if all remaining candidates were strictly interior).
+                const int emit = (idx[3] >= 0) ? 4 : 3;
+                for (int i = 0; i < emit; ++i)
+                {
+                    out.points[i].position = tf_a.transform_point(temp_points[idx[i]].pos);
+                    out.points[i].penetration_depth = temp_points[idx[i]].depth;
+                }
+                out.num_points = emit;
+            }
+
+            return out.num_points > 0;
+        }
+    };
+
+    template <>
+    struct CollisionAlgorithm<Plane, ConvexHull> : CollisionAlgorithmSym<Plane, ConvexHull>
+    {
+    };
 
     // ── Box vs Plane (Multi-point manifold) ───────────────────────────────────
     template <>
