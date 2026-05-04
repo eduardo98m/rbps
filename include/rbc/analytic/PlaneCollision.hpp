@@ -306,68 +306,35 @@ namespace rbc
                 tf_a.rotate_vector(m3d::vec3(0, 1, 0)),
                 tf_a.rotate_vector(m3d::vec3(0, 0, 1))};
 
-            // 3. Find reference face (most anti-aligned with plane normal)
-            m3d::scalar min_alignment = std::numeric_limits<m3d::scalar>::max();
-            int best_axis = -1;
-            int best_sign = 0;
+            // 3. Early out: support radius along plane normal
+            constexpr m3d::scalar epsilon = 1e-4f;
+            const m3d::scalar r = a.half_extents.x * std::abs(m3d::dot(u[0], world_n)) + a.half_extents.y * std::abs(m3d::dot(u[1], world_n)) + a.half_extents.z * std::abs(m3d::dot(u[2], world_n));
+            const m3d::scalar center_dist = m3d::dot(tf_a.pos, world_n) - world_d;
+            if (center_dist - r > epsilon)
+                return false;
 
-            for (int i = 0; i < 3; ++i)
-            {
-                for (int s = -1; s <= 1; s += 2)
-                {
-                    m3d::vec3 f_n = static_cast<m3d::scalar>(s) * u[i];
-                    m3d::scalar align = m3d::dot(f_n, world_n);
-                    if (align < min_alignment)
-                    {
-                        min_alignment = align;
-                        best_axis = i;
-                        best_sign = s;
-                    }
-                }
-            }
-
-            // 4. Calculate the 4 corners of the incident face
-            m3d::vec3 face_center = tf_a.pos + static_cast<m3d::scalar>(best_sign) *
-                                                   (best_axis == 0 ? a.half_extents.x * u[0] : best_axis == 1 ? a.half_extents.y * u[1]
-                                                                                                              : a.half_extents.z * u[2]);
-
-            int a1 = (best_axis + 1) % 3;
-            int a2 = (best_axis + 2) % 3;
-            const m3d::vec3 span1 = (a1 == 0 ? a.half_extents.x * u[0] : a1 == 1 ? a.half_extents.y * u[1]
-                                                                                 : a.half_extents.z * u[2]);
-            const m3d::vec3 span2 = (a2 == 0 ? a.half_extents.x * u[0] : a2 == 1 ? a.half_extents.y * u[1]
-                                                                                 : a.half_extents.z * u[2]);
-
-            m3d::vec3 face_pts[4] = {
-                face_center + span1 + span2,
-                face_center + span1 - span2,
-                face_center - span1 - span2,
-                face_center - span1 + span2};
-
-            // 5. Check vertices against the plane (NO CLIPPING REQUIRED)
+            // 4. Test all 8 corners
+            out.normal = -world_n;
             out.num_points = 0;
-            out.normal = -world_n; // Keeping your convention
 
-            const m3d::scalar epsilon = 1e-4; // Collision margin/epsilon
+            for (int sx = -1; sx <= 1; sx += 2)
+                for (int sy = -1; sy <= 1; sy += 2)
+                    for (int sz = -1; sz <= 1; sz += 2)
+                    {
+                        const m3d::vec3 corner = tf_a.pos + static_cast<m3d::scalar>(sx) * a.half_extents.x * u[0] + static_cast<m3d::scalar>(sy) * a.half_extents.y * u[1] + static_cast<m3d::scalar>(sz) * a.half_extents.z * u[2];
 
-            for (int i = 0; i < 4; ++i)
-            {
-                // Distance from point to plane
-                m3d::scalar dist = m3d::dot(face_pts[i], world_n) - world_d;
-
-                // If the point is behind the plane (plus small epsilon), it's a contact
-                if (dist <= epsilon)
-                {
-                    out.points[out.num_points].position = face_pts[i];
-                    out.points[out.num_points].penetration_depth = -dist; // Positive depth
-                    out.num_points++;
-                }
-            }
+                        const m3d::scalar dist = m3d::dot(corner, world_n) - world_d;
+                        if (dist <= epsilon && out.num_points < 4)
+                        {
+                            out.points[out.num_points].position = corner;
+                            out.points[out.num_points].penetration_depth = -dist;
+                            out.num_points++;
+                        }
+                    }
 
             return out.num_points > 0;
         }
     };
-
     template <>
     struct CollisionAlgorithm<Plane, Box> : CollisionAlgorithmSym<Plane, Box>
     {
