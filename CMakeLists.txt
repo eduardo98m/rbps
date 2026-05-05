@@ -25,7 +25,11 @@ set(RBC_SOURCES
     src/rbc/gjk/EPA.cpp
 )
 
+
 add_library(rbc_lib ${RBC_SOURCES})
+target_compile_options(rbc_lib PUBLIC -fsanitize=address -fno-omit-frame-pointer)
+target_link_options(rbc_lib PUBLIC -fsanitize=address)
+
 target_include_directories(rbc_lib PUBLIC include)
 
 
@@ -33,6 +37,9 @@ add_library(rbps_lib ${RBPS_SOURCES})
 target_include_directories(rbps_lib PUBLIC include)
 
 target_link_libraries(rbps_lib PUBLIC rbc_lib)
+target_compile_options(rbps_lib PUBLIC -fsanitize=address -fno-omit-frame-pointer)
+target_link_options(rbps_lib PUBLIC -fsanitize=address)
+
 
 #----------------------------------------------------------
 
@@ -151,6 +158,9 @@ if(RBPS_BUILD_VISR)
     # ── 6. Demo application ────────────────────────────────────────────────
     add_executable(visr_demo src/visr_demo/main.cpp)
     target_link_libraries(visr_demo PRIVATE visr_lib)
+
+    target_compile_options(visr_demo PUBLIC -fsanitize=address -fno-omit-frame-pointer)
+    target_link_options(visr_demo PUBLIC -fsanitize=address)
  
     message(STATUS "[visr] targets: visr_lib, visr_headless, visr_demo")
 endif() # RBPS_BUILD_VISR
