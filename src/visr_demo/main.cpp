@@ -239,8 +239,8 @@ int main()
         ImGui::Begin("Safe Spawner");
         
         static int shape_idx = 0;
-        const char* names[] = { "Sphere", "Box", "Hex Prism (Stackable)", "Tetrahedron" };
-        ImGui::Combo("Shape", &shape_idx, names, 4);
+        const char* names[] = { "Sphere", "Box", "Cylinder", "Hex Prism (Stackable)", "Tetrahedron" };
+        ImGui::Combo("Shape", &shape_idx, names, 5);
 
         static float pos[3] = { 0, 5, 0 };
         ImGui::DragFloat3("Pos", pos, 0.1f);
@@ -257,10 +257,16 @@ int main()
             } else if (shape_idx == 1) {
                 rbc::Box s{{0.5, 0.5, 0.5}};
                 cmd.shape = rbc::Shape(s); cmd.volume = rbc::compute_volume(s); cmd.unit_inertia = rbc::compute_inertia_tensor(s);
-            } else if (shape_idx == 2) {
+            } 
+            else if (shape_idx == 2) {
+                rbc::Cylinder s = rbc::Cylinder(0.5, 0.6);
+                cmd.shape = rbc::Shape(s); cmd.volume = rbc::compute_volume(s); cmd.unit_inertia = rbc::compute_inertia_tensor(s);
+            }
+            else if (shape_idx == 3) {
                 rbc::ConvexHull s(get_hex_prism_data());
                 cmd.shape = rbc::Shape(s); cmd.volume = rbc::compute_volume(s); cmd.unit_inertia = rbc::compute_inertia_tensor(s);
-            } else {
+            } 
+            else {
                 rbc::ConvexHull s(get_tetrahedron_data());
                 cmd.shape = rbc::Shape(s); cmd.volume = rbc::compute_volume(s); cmd.unit_inertia = rbc::compute_inertia_tensor(s);
             }
