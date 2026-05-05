@@ -99,28 +99,6 @@ namespace visr
         {
             std::atomic<bool> running{true};
 
-            // ── Physics thread ────────────────────────────────────────────
-            // std::thread phys([this, &running]()
-            // {
-            //     while (running.load(std::memory_order_relaxed))
-            //     {
-            //         channel.poll(world);
-
-            //         // Store the result — should_step() consumes a step-once
-            //         // token so it must only be called once per tick.
-            //         const bool stepped = channel.should_step();
-            //         if (stepped)
-            //             world.step();
-
-            //         // push(world, stepped):
-            //         //   stepped=true  → publish snapshot + advance sim_time
-            //         //                   + record graph samples
-            //         //   stepped=false → publish snapshot only (render stays
-            //         //                   live for inspection, graphs flatline)
-            //         channel.push(world, stepped);
-            //     }
-            // });
-
             std::thread phys([this, &running]()
                              {
                 using namespace std::chrono;
