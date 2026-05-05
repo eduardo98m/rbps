@@ -115,7 +115,27 @@ namespace visr
                        else if constexpr (std::is_same_v<T, CmdSetGravity>)
                        {
                        }
-                   },
+
+                       else if constexpr (std::is_same_v<T, CmdSpawnBody>)
+                    {
+                        rbps::BodyParams bp{};
+                        bp.type = rbps::BodyType::DYNAMIC;
+                        bp.position = c.position;
+                        bp.orientation = c.orientation;
+                        bp.mass = c.mass;
+                        // Scale unit inertia by mass/volume
+                        bp.inertia_tensor = c.unit_inertia * (c.mass / c.volume);
+                        
+                        uint32_t id = world.create_body(bp);
+
+                        rbps::ColliderParams cp{};
+                        cp.body_id = id;
+                        cp.shape = c.shape;
+                        cp.restitution = 0.2;
+                        cp.static_friction = 0.5;
+                        cp.dynamic_friction = 0.4;
+                        world.create_collider(cp);
+                    } },
                    cmd);
     }
 

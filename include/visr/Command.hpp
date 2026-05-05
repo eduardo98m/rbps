@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <variant>
 #include <math3d/math3d.hpp>
+#include "rbc/shapes/ShapeTypes.hpp"
 
 /**
  * @file Command.hpp
@@ -22,55 +23,76 @@ namespace visr
     /** @brief Change the simulation timestep and/or substep count live. @ingroup visr */
     struct CmdSetTimestep
     {
-        double   timestep;
-        int      substeps;
+        double timestep;
+        int substeps;
     };
 
     /** @brief Select a body by stable ID. @ingroup visr */
-    struct CmdSelectBody     { uint32_t id; };
+    struct CmdSelectBody
+    {
+        uint32_t id;
+    };
     /** @brief Select a collider by stable ID. @ingroup visr */
-    struct CmdSelectCollider { uint32_t id; };
+    struct CmdSelectCollider
+    {
+        uint32_t id;
+    };
     /** @brief Clear all selection state. @ingroup visr */
-    struct CmdClearSelection {};
+    struct CmdClearSelection
+    {
+    };
 
     /** @brief Apply an instantaneous linear impulse at a world-space point. @ingroup visr */
     struct CmdApplyImpulse
     {
-        uint32_t    body_id;
-        m3d::vec3   impulse;     ///< Impulse vector (world space).
-        m3d::vec3   world_point; ///< World-space application point.
+        uint32_t body_id;
+        m3d::vec3 impulse;     ///< Impulse vector (world space).
+        m3d::vec3 world_point; ///< World-space application point.
     };
 
     /** @brief Teleport a body (position + orientation) and zero its velocities. @ingroup visr */
     struct CmdTeleportBody
     {
-        uint32_t    body_id;
-        m3d::vec3   position;
-        m3d::quat   orientation;
+        uint32_t body_id;
+        m3d::vec3 position;
+        m3d::quat orientation;
     };
 
     /** @brief Zero a body's linear and angular velocities. @ingroup visr */
-    struct CmdZeroVelocity { uint32_t body_id; };
+    struct CmdZeroVelocity
+    {
+        uint32_t body_id;
+    };
 
     /** @brief Set the position target for an actuated joint. @ingroup visr */
     struct CmdSetJointTarget
     {
-        uint32_t    joint_id;
+        uint32_t joint_id;
         m3d::scalar target; ///< Position target — radians for revolute, metres for prismatic.
     };
 
     /** @brief Set the speed target for an actuated joint. @ingroup visr */
     struct CmdSetJointSpeed
     {
-        uint32_t    joint_id;
+        uint32_t joint_id;
         m3d::scalar speed;
     };
 
     /** @brief Update a joint's damping coefficient live. @ingroup visr */
     struct CmdSetJointDamping
     {
-        uint32_t    joint_id;
+        uint32_t joint_id;
         m3d::scalar damping;
+    };
+
+    struct CmdSpawnBody
+    {
+        m3d::vec3 position;
+        m3d::quat orientation;
+        rbc::Shape shape;
+        m3d::scalar mass;
+        m3d::scalar volume;
+        m3d::smat3 unit_inertia;
     };
 
     /**
@@ -86,7 +108,9 @@ namespace visr
     {
         BodyLinearSpeed,
         BodyAngularSpeed,
-        BodyPositionX, BodyPositionY, BodyPositionZ,
+        BodyPositionX,
+        BodyPositionY,
+        BodyPositionZ,
         ContactNormalLambda,
         ContactTangentLambda,
         ContactPenetrationDepth,
@@ -99,17 +123,24 @@ namespace visr
     struct CmdTrackQuantity
     {
         TrackTarget target;
-        uint32_t    id;      ///< Body / contact / joint / constraint stable ID.
-        bool        enabled; ///< `false` to stop tracking the series.
+        uint32_t id;  ///< Body / contact / joint / constraint stable ID.
+        bool enabled; ///< `false` to stop tracking the series.
     };
 
     /** @brief Set the global gravity vector. @ingroup visr */
-    struct CmdSetGravity { m3d::vec3 gravity; };
+    struct CmdSetGravity
+    {
+        m3d::vec3 gravity;
+    };
 
     /** @brief Pause the simulation — physics thread stops calling `world.step()`. @ingroup visr */
-    struct CmdPause  {};
+    struct CmdPause
+    {
+    };
     /** @brief Resume a previously paused simulation. @ingroup visr */
-    struct CmdResume {};
+    struct CmdResume
+    {
+    };
 
     /**
      * @brief Variant over every command type.
@@ -134,7 +165,7 @@ namespace visr
         CmdSetJointSpeed,
         CmdSetJointDamping,
         CmdTrackQuantity,
-        CmdSetGravity
-    >;
+        CmdSetGravity,
+        CmdSpawnBody>;
 
 } // namespace visr
