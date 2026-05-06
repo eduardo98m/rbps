@@ -79,9 +79,15 @@ int main()
 
         // ── Auto-save BEFORE invoking the pipeline ─────────────────────
         // If run_pipeline crashes, this is the file we want on disk.
+        //
+        // Suspended while crash recovery is pending — otherwise the
+        // initial-default state would clobber _last_input.scn on the
+        // first frame, before the user has a chance to click "Replay
+        // last crash". The flag is cleared by the banner buttons
+        // (Replay / Dismiss); auto-save resumes on the next frame.
         const bool inputs_changed = first_frame ||
                                     !cdbg::inputs_equal(state, prev_inputs);
-        if (inputs_changed)
+        if (inputs_changed && !state.crash_recovery_pending)
         {
             cdbg::save_scenario(cdbg::kLastInputPath, state);
             prev_inputs = state;
