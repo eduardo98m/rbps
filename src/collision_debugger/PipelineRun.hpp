@@ -38,9 +38,9 @@ namespace cdbg
 
         // ── Manifold-gen intermediates (world space) ────────────────────
         int        ref_face_n = 0;
-        m3d::vec3  ref_face[4]{};
+        m3d::vec3  ref_face[rbc::kMaxFaceCorners]{};
         int        inc_face_n = 0;
-        m3d::vec3  inc_face[4]{};
+        m3d::vec3  inc_face[rbc::kMaxFaceCorners]{};
         std::vector<m3d::vec3>   post_clip_polygon;   // after Sutherland-Hodgman
         std::vector<m3d::vec3>   kept_points;         // after depth-test, pre-reduce
         std::vector<m3d::scalar> kept_depths;
@@ -125,14 +125,15 @@ namespace cdbg
         out.manifold.normal     = epa_n;
         out.manifold.num_points = 0;
 
-        out.ref_face_n = rbc::shape_face_corners(sa, tf_a,  epa_n, out.ref_face);
-        out.inc_face_n = rbc::shape_face_corners(sb, tf_b, -epa_n, out.inc_face);
+        out.ref_face_n = rbc::shape_face_corners(sa, tf_a,  epa_n, out.ref_face, rbc::kMaxFaceCorners);
+        out.inc_face_n = rbc::shape_face_corners(sb, tf_b, -epa_n, out.inc_face, rbc::kMaxFaceCorners);
 
         const m3d::vec3   ref_face_n = epa_n;
         const m3d::scalar ref_d_pln  = m3d::dot(out.ref_face[0], ref_face_n);
 
         // Sutherland-Hodgman against each side plane of the reference face
-        m3d::vec3 buf0[16], buf1[16];
+        constexpr int kClipBuf = 2 * rbc::kMaxFaceCorners;
+        m3d::vec3 buf0[kClipBuf], buf1[kClipBuf];
         int cnt = out.inc_face_n;
         for (int i = 0; i < out.inc_face_n; ++i)
             buf0[i] = out.inc_face[i];
@@ -150,8 +151,8 @@ namespace cdbg
         out.post_clip_polygon.assign(buf0, buf0 + cnt);
 
         // Depth-test: keep points on or below the reference face plane
-        m3d::vec3   keep_pts[16];
-        m3d::scalar keep_dep[16];
+        m3d::vec3   keep_pts[kClipBuf];
+        m3d::scalar keep_dep[kClipBuf];
         int keep_n = 0;
         for (int i = 0; i < cnt; ++i)
         {

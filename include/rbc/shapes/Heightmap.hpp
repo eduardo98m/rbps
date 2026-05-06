@@ -154,5 +154,5 @@ namespace rbc
     inline m3d::scalar representative_radius(const Heightmap &) { return 0.0; }
     /** @brief Stub — heightmap pairs go through analytic algorithms. @ingroup rbc */
     inline int face_corners(const Heightmap &, const m3d::tf &,
-                            const m3d::vec3 &, m3d::vec3[4]) { return 0; }
+                            const m3d::vec3 &, m3d::vec3 *, int) { return 0; }
 } // namespace rbc

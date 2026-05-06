@@ -136,16 +136,17 @@ namespace rbc
      * @brief World-space corners of the face of `shape` that is most aligned with `dir`.
      *
      * Used by the contact-manifold generator as the reference / incident
-     * polygon. Returns the number of corners written (up to 4); shapes
-     * without flat faces fall back to a disc approximation in
-     * `get_generic_face_corners`.
+     * polygon. Returns the number of corners written (up to `capacity`);
+     * shapes without flat faces fall back to a disc approximation in
+     * `get_generic_face_corners`. ConvexHull may return up to its
+     * largest merged-polygon size — pass at least `kMaxFaceCorners`.
      *
      * @ingroup rbc
      */
     inline int shape_face_corners(const Shape &shape, const m3d::tf &tf,
-                                  const m3d::vec3 &dir, m3d::vec3 out[4])
+                                  const m3d::vec3 &dir, m3d::vec3 *out, int capacity)
     {
-        return std::visit([&](const auto &x) { return face_corners(x, tf, dir, out); }, shape.v);
+        return std::visit([&](const auto &x) { return face_corners(x, tf, dir, out, capacity); }, shape.v);
     }
 
     /**

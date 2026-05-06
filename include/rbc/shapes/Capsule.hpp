@@ -146,10 +146,10 @@ namespace rbc
 
     /** @brief Disc-approximation face polygon (capsule has no flat face). @ingroup rbc */
     inline int face_corners(const Capsule &c, const m3d::tf &tf,
-                            const m3d::vec3 &dir, m3d::vec3 out[4])
+                            const m3d::vec3 &dir, m3d::vec3 *out, int capacity)
     {
         const m3d::vec3 local_dir = tf.inverse_rotate_vector(dir);
         const m3d::vec3 sup_world = tf.transform_point(support(c, local_dir));
-        return get_generic_face_corners(sup_world, dir, representative_radius(c), out);
+        return get_generic_face_corners(sup_world, dir, representative_radius(c), out, capacity);
     }
 } // namespace rbc

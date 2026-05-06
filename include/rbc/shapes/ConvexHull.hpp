@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <cstdio>
+#include <vector>
 #include <math3d/math3d.hpp>
 #include "rbc/AABB.hpp"
 #include "rbc/shapes/FaceHelpers.hpp"
@@ -43,18 +44,31 @@ namespace rbc
      * @brief Backing storage for a convex polytope in local space.
      *
      * Non-owning over `vertices` and `face_indices` (caller keeps those
-     * arrays alive); owning over `face_normals` (allocated by
-     * `convex_hull_data_create` when face data is supplied).
+     * arrays alive); owning over `face_normals` and the merged-polygon
+     * arrays (allocated by `convex_hull_data_create` when face data is
+     * supplied).
      *
      * Memory layout:
      * - `vertices[i]`              — local-space vertex positions.
      * - `face_indices[f*3 + {0,1,2}]` — vertex indices of triangle face `f` (CCW).
-     * - `face_normals[f]`          — unit outward normal of face `f`, precomputed.
+     * - `face_normals[f]`          — unit outward normal of triangle `f`, precomputed.
+     *
+     * @par Merged polygon faces
+     * Adjacent coplanar triangles are grouped into a single logical face
+     * polygon at create time. The contact-manifold generator uses these
+     * polygons (not the per-triangle slices) so that fan-triangulated
+     * faces like a hex-prism cap clip as a single hexagon instead of one
+     * of its sub-triangles. For a hull where every face is a triangle
+     * (e.g. tetrahedron) the polygon set is identical to the triangle set.
+     *
+     * - `poly_indices[poly_offsets[p] .. poly_offsets[p+1]-1]` — vertex
+     *   indices of polygon `p`, in CCW order around `poly_normals[p]`.
+     * - `poly_offsets` length == `poly_count + 1`; the last entry equals
+     *   the total number of indices in `poly_indices`.
+     * - `poly_normals[p]` — averaged unit outward normal of polygon `p`.
      *
      * Set `face_indices == nullptr` and `face_count == 0` for a
-     * vertex-only hull. `face_offsets` is reserved for future
-     * polygon-face support and currently unused (only triangulated
-     * faces are consumed).
+     * vertex-only hull; `poly_*` will all be null with `poly_count == 0`.
      *
      * @ingroup rbc
      */
@@ -62,11 +76,16 @@ namespace rbc
     {
         const m3d::vec3 *vertices;     ///< Vertex positions in local space (non-owning).
         const uint32_t  *face_indices; ///< Triangle indices, 3 per face (non-owning); may be `nullptr`.
-        const uint32_t  *face_offsets; ///< Reserved for non-triangulated faces; currently unused.
-        const m3d::vec3 *face_normals; ///< Unit outward normal per face (owned by helper when faces given).
+        const uint32_t  *face_offsets; ///< Reserved (currently unused); kept for ABI stability.
+        const m3d::vec3 *face_normals; ///< Unit outward normal per triangle (owned).
         uint32_t         vert_count;   ///< Number of entries in `vertices`.
         uint32_t         face_count;   ///< Number of triangles; 0 when `face_indices == nullptr`.
         AABB             local_aabb;   ///< Precomputed local-space AABB.
+
+        const uint32_t  *poly_indices; ///< Packed vertex indices of merged polygons (owned).
+        const uint32_t  *poly_offsets; ///< Length `poly_count + 1`; ranges into `poly_indices` (owned).
+        const m3d::vec3 *poly_normals; ///< Unit outward normal per polygon (owned).
+        uint32_t         poly_count;   ///< Number of merged polygon faces.
     };
 
     /**
@@ -128,6 +147,10 @@ namespace rbc
         hd->face_normals = nullptr;
         hd->vert_count   = vert_count;
         hd->face_count   = (face_indices ? face_count : 0u);
+        hd->poly_indices = nullptr;
+        hd->poly_offsets = nullptr;
+        hd->poly_normals = nullptr;
+        hd->poly_count   = 0;
 
         if (hd->face_count > 0)
         {
@@ -140,6 +163,141 @@ namespace rbc
                 norms[f] = m3d::normalize(m3d::cross(B - A, C - A));
             }
             hd->face_normals = norms;
+
+            // ── Merge coplanar triangles into logical polygon faces ───────
+            // Two triangles belong to the same face when their outward
+            // normals point in the same direction within `kCoplanarDot`.
+            // For a convex polytope, parallel-normal triangles ARE coplanar
+            // (no two distinct planes share a normal direction on a convex
+            // hull), so the normal test is sufficient — no plane-distance
+            // check needed.
+            constexpr m3d::scalar kCoplanarDot = 0.99995; // ~0.57°
+            std::vector<int> parent(face_count);
+            for (uint32_t i = 0; i < face_count; ++i) parent[i] = static_cast<int>(i);
+            auto find = [&parent](int x) {
+                while (parent[x] != x) { parent[x] = parent[parent[x]]; x = parent[x]; }
+                return x;
+            };
+            for (uint32_t i = 0; i < face_count; ++i)
+                for (uint32_t j = i + 1; j < face_count; ++j)
+                    if (m3d::dot(norms[i], norms[j]) > kCoplanarDot)
+                    {
+                        const int ri = find(static_cast<int>(i));
+                        const int rj = find(static_cast<int>(j));
+                        if (ri != rj) parent[ri] = rj;
+                    }
+
+            // Collect triangles per group and average normals.
+            std::vector<std::vector<uint32_t>> groups;
+            std::vector<int> root_to_group(face_count, -1);
+            for (uint32_t i = 0; i < face_count; ++i)
+            {
+                const int r = find(static_cast<int>(i));
+                if (root_to_group[r] < 0)
+                {
+                    root_to_group[r] = static_cast<int>(groups.size());
+                    groups.emplace_back();
+                }
+                groups[root_to_group[r]].push_back(i);
+            }
+
+            // For each group: walk the boundary of the union by collecting
+            // edges that appear in only one triangle of the group, then
+            // chain them tip-to-tail into one CCW cycle.
+            std::vector<uint32_t> all_indices;
+            std::vector<uint32_t> offsets;
+            std::vector<m3d::vec3> poly_norms_vec;
+            offsets.push_back(0);
+
+            for (const auto &group : groups)
+            {
+                // Gather directed edges; index by source vertex for chaining.
+                struct DirEdge { uint32_t a, b; };
+                std::vector<DirEdge> tri_edges;
+                tri_edges.reserve(group.size() * 3);
+                for (const uint32_t f : group)
+                {
+                    const uint32_t a = face_indices[f * 3 + 0];
+                    const uint32_t b = face_indices[f * 3 + 1];
+                    const uint32_t c = face_indices[f * 3 + 2];
+                    tri_edges.push_back({a, b});
+                    tri_edges.push_back({b, c});
+                    tri_edges.push_back({c, a});
+                }
+
+                // An edge (a→b) is INTERIOR iff (b→a) appears elsewhere.
+                std::vector<DirEdge> boundary;
+                boundary.reserve(tri_edges.size());
+                for (size_t i = 0; i < tri_edges.size(); ++i)
+                {
+                    bool reversed_present = false;
+                    for (size_t j = 0; j < tri_edges.size(); ++j)
+                    {
+                        if (i == j) continue;
+                        if (tri_edges[j].a == tri_edges[i].b &&
+                            tri_edges[j].b == tri_edges[i].a)
+                        { reversed_present = true; break; }
+                    }
+                    if (!reversed_present) boundary.push_back(tri_edges[i]);
+                }
+
+                if (boundary.empty()) continue; // pathological — drop polygon
+
+                // Chain edges: start with boundary[0], find next whose `a`
+                // matches current `b`, repeat until we close the loop.
+                std::vector<bool> used(boundary.size(), false);
+                std::vector<uint32_t> loop;
+                loop.reserve(boundary.size());
+
+                used[0] = true;
+                loop.push_back(boundary[0].a);
+                uint32_t current = boundary[0].b;
+                for (size_t step = 1; step < boundary.size(); ++step)
+                {
+                    bool found = false;
+                    for (size_t k = 0; k < boundary.size(); ++k)
+                    {
+                        if (used[k]) continue;
+                        if (boundary[k].a == current)
+                        {
+                            used[k] = true;
+                            loop.push_back(boundary[k].a);
+                            current = boundary[k].b;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) break; // open chain — keep what we have
+                }
+
+                if (loop.size() < 3) continue;
+
+                // Average the group's triangle normals to reduce FP noise.
+                m3d::vec3 avg_n(0, 0, 0);
+                for (const uint32_t f : group) avg_n = avg_n + norms[f];
+                const m3d::scalar an_len = m3d::length(avg_n);
+                if (an_len < m3d::EPSILON) continue;
+                avg_n = avg_n / an_len;
+
+                for (uint32_t idx : loop) all_indices.push_back(idx);
+                offsets.push_back(static_cast<uint32_t>(all_indices.size()));
+                poly_norms_vec.push_back(avg_n);
+            }
+
+            const uint32_t pcount = static_cast<uint32_t>(poly_norms_vec.size());
+            if (pcount > 0)
+            {
+                auto *pi = new uint32_t[all_indices.size()];
+                auto *po = new uint32_t[pcount + 1];
+                auto *pn = new m3d::vec3[pcount];
+                for (size_t k = 0; k < all_indices.size(); ++k) pi[k] = all_indices[k];
+                for (uint32_t k = 0; k <= pcount; ++k) po[k] = offsets[k];
+                for (uint32_t k = 0; k < pcount; ++k) pn[k] = poly_norms_vec[k];
+                hd->poly_indices = pi;
+                hd->poly_offsets = po;
+                hd->poly_normals = pn;
+                hd->poly_count   = pcount;
+            }
         }
 
         m3d::vec3 mn(1e30f, 1e30f, 1e30f);
@@ -172,6 +330,9 @@ namespace rbc
         if (!hd)
             return;
         delete[] hd->face_normals;
+        delete[] hd->poly_indices;
+        delete[] hd->poly_offsets;
+        delete[] hd->poly_normals;
         delete hd;
     }
 
@@ -264,38 +425,69 @@ namespace rbc
     /**
      * @brief Face polygon most aligned with `dir`.
      *
-     * - With face data: pick the face whose local outward normal is most
-     *   aligned with `dir` (transformed to local space), transform its 3
-     *   vertices to world space, return 3 corners.
-     * - Without face data: fall back to the disc-approximation patch
-     *   (same as Sphere/Capsule), centred on the world support point.
+     * - With merged polygons: pick the polygon whose averaged outward
+     *   normal is most aligned with `dir` (transformed to local space),
+     *   transform its vertices to world space, return up to `capacity`
+     *   corners. This is the path that supplies the contact-manifold
+     *   generator with a true logical-face polygon (e.g. the full hexagon
+     *   of a hex-prism cap rather than one of its 4 fan triangles).
+     * - With only triangle data and no merged polygons (vert-only hull
+     *   or merge produced nothing): fall back to picking the single
+     *   best-aligned triangle, returning 3 corners.
+     * - Without any face data: disc-approximation patch (same as
+     *   Sphere/Capsule), centred on the world support point.
+     *
+     * @param capacity Capacity of `out`; the returned count is clamped
+     *                 to this. Pass `kMaxFaceCorners`-sized buffers in
+     *                 manifold-generation callers.
      *
      * @ingroup rbc
      */
     inline int face_corners(const ConvexHull &h, const m3d::tf &tf,
-                            const m3d::vec3 &dir, m3d::vec3 out[4])
+                            const m3d::vec3 &dir, m3d::vec3 *out, int capacity)
     {
-        if (!h.data || h.data->vert_count == 0)
+        if (!h.data || h.data->vert_count == 0 || capacity <= 0)
             return 0;
 
         if (h.data->face_count == 0 || !h.data->face_indices || !h.data->face_normals)
         {
             const m3d::vec3 local_dir = tf.inverse_rotate_vector(dir);
             const m3d::vec3 sup_world = tf.transform_point(support(h, local_dir));
-            return get_generic_face_corners(sup_world, dir, representative_radius(h), out);
+            return get_generic_face_corners(sup_world, dir, representative_radius(h), out, capacity);
         }
 
         const m3d::vec3 local_dir = tf.inverse_rotate_vector(dir);
+
+        // Prefer the merged polygon set when available — these are the
+        // actual logical faces and avoid triangulation seams becoming
+        // false silhouette edges in Sutherland-Hodgman clipping.
+        if (h.data->poly_count > 0 && h.data->poly_normals && h.data->poly_indices && h.data->poly_offsets)
+        {
+            uint32_t best = 0;
+            m3d::scalar best_d = m3d::dot(h.data->poly_normals[0], local_dir);
+            for (uint32_t p = 1; p < h.data->poly_count; ++p)
+            {
+                const m3d::scalar d = m3d::dot(h.data->poly_normals[p], local_dir);
+                if (d > best_d) { best_d = d; best = p; }
+            }
+            const uint32_t start = h.data->poly_offsets[best];
+            const uint32_t end   = h.data->poly_offsets[best + 1];
+            const int n = static_cast<int>(end - start);
+            const int written = (n < capacity) ? n : capacity;
+            for (int i = 0; i < written; ++i)
+                out[i] = tf.transform_point(h.data->vertices[h.data->poly_indices[start + i]]);
+            return written;
+        }
+
+        // No merged polygons (degenerate hull or merge failed): fall
+        // back to a single best-aligned triangle.
+        if (capacity < 3) return 0;
         uint32_t best = 0;
         m3d::scalar best_d = m3d::dot(h.data->face_normals[0], local_dir);
         for (uint32_t f = 1; f < h.data->face_count; ++f)
         {
             const m3d::scalar d = m3d::dot(h.data->face_normals[f], local_dir);
-            if (d > best_d)
-            {
-                best_d = d;
-                best = f;
-            }
+            if (d > best_d) { best_d = d; best = f; }
         }
 
         out[0] = tf.transform_point(h.data->vertices[h.data->face_indices[best * 3 + 0]]);

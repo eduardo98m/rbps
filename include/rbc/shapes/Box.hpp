@@ -133,8 +133,9 @@ namespace rbc
      * @ingroup rbc
      */
     inline int face_corners(const Box &b, const m3d::tf &tf,
-                            const m3d::vec3 &dir, m3d::vec3 corners[4])
+                            const m3d::vec3 &dir, m3d::vec3 *corners, int capacity)
     {
+        if (capacity < 4) return 0;
         const m3d::vec3 axes[3] = {
             tf.rotate_vector(m3d::vec3(1, 0, 0)),
             tf.rotate_vector(m3d::vec3(0, 1, 0)),

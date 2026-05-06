@@ -107,11 +107,11 @@ namespace rbc
      * @ingroup rbc
      */
     inline int face_corners(const Sphere &s, const m3d::tf &tf,
-                            const m3d::vec3 &dir, m3d::vec3 out[4])
+                            const m3d::vec3 &dir, m3d::vec3 *out, int capacity)
     {
         const m3d::vec3 local_dir = tf.inverse_rotate_vector(dir);
         const m3d::vec3 sup_world = tf.transform_point(support(s, local_dir));
-        return get_generic_face_corners(sup_world, dir, representative_radius(s), out);
+        return get_generic_face_corners(sup_world, dir, representative_radius(s), out, capacity);
     }
 
 }

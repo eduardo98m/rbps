@@ -237,11 +237,13 @@ namespace rbc
 
         // ── Determine reference and incident "face polygons" ──────────────────
         // Each shape supplies its own face_corners() — Box gives exact
-        // corners, others fall back to a disc approximation. Variant-level
-        // dispatch lives in shape_face_corners (ShapeTypes.hpp).
-        m3d::vec3 ref_corners[4], inc_corners[4];
-        const int ref_n = shape_face_corners(shape_a, tf_a,  epa_normal, ref_corners);
-        const int inc_n = shape_face_corners(shape_b, tf_b, -epa_normal, inc_corners);
+        // 4 corners, ConvexHull gives the merged logical polygon (up to
+        // kMaxFaceCorners), others fall back to a disc approximation.
+        // Variant-level dispatch lives in shape_face_corners
+        // (ShapeTypes.hpp).
+        m3d::vec3 ref_corners[kMaxFaceCorners], inc_corners[kMaxFaceCorners];
+        const int ref_n = shape_face_corners(shape_a, tf_a,  epa_normal, ref_corners, kMaxFaceCorners);
+        const int inc_n = shape_face_corners(shape_b, tf_b, -epa_normal, inc_corners, kMaxFaceCorners);
 
         // ── Face-alignment check ─────────────────────────────────────────────
         // For face-face contact to make sense, the chosen face on each shape
@@ -289,7 +291,10 @@ namespace rbc
         // For the side planes we need to know the face "tangent frame".
         // We approximate with the two axes perpendicular to ref_face_n.
         // Use the winding of ref_corners to build edge normals.
-        m3d::vec3 buf0[16], buf1[16];
+        // Worst-case output of clipping an n-gon against m side planes
+        // is n + m, so size buffers at 2 * kMaxFaceCorners.
+        constexpr int kClipBuf = 2 * kMaxFaceCorners;
+        m3d::vec3 buf0[kClipBuf], buf1[kClipBuf];
         int cnt = inc_n;
         for (int i = 0; i < inc_n; ++i)
             buf0[i] = inc_corners[i];
@@ -305,8 +310,8 @@ namespace rbc
         }
 
         // Keep only points that are on or behind the reference face plane
-        m3d::vec3 keep_pts[16];
-        m3d::scalar keep_dep[16];
+        m3d::vec3 keep_pts[kClipBuf];
+        m3d::scalar keep_dep[kClipBuf];
         int keep_n = 0;
 
         for (int i = 0; i < cnt; ++i)
