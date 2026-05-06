@@ -243,10 +243,47 @@ namespace rbc
         const int ref_n = shape_face_corners(shape_a, tf_a,  epa_normal, ref_corners);
         const int inc_n = shape_face_corners(shape_b, tf_b, -epa_normal, inc_corners);
 
+        // ── Face-alignment check ─────────────────────────────────────────────
+        // For face-face contact to make sense, the chosen face on each shape
+        // must be near-parallel to the contact normal. When the contact is
+        // edge-edge or vertex-face, face_corners still picks "some best face"
+        // whose actual normal sits at an angle to epa_normal — running the
+        // SH clip in that case produces phantom contact points along the
+        // clipped polygon's boundary. Detect this and fall back to a single-
+        // point manifold using the EPA contact directly.
+        //
+        // The disc fallback (`get_generic_face_corners` in FaceHelpers.hpp)
+        // builds its corners IN the plane perpendicular to dir, so its actual
+        // face normal == dir by construction and the check passes.
+        auto poly_normal = [](const m3d::vec3 *pts, int n,
+                              const m3d::vec3 &hint) -> m3d::vec3 {
+            if (n < 3) return hint;
+            m3d::vec3 nrm = m3d::cross(pts[1] - pts[0], pts[2] - pts[0]);
+            const m3d::scalar len = m3d::length(nrm);
+            if (len < m3d::EPSILON) return hint;
+            nrm = nrm / len;
+            return (m3d::dot(nrm, hint) >= 0) ? nrm : -nrm;
+        };
+
+        const m3d::vec3 ref_n_actual = poly_normal(ref_corners, ref_n,  epa_normal);
+        const m3d::vec3 inc_n_actual = poly_normal(inc_corners, inc_n, -epa_normal);
+        constexpr m3d::scalar kFaceAlignThreshold = 0.95; // ~18°
+        const bool a_aligned = m3d::dot(ref_n_actual,  epa_normal) > kFaceAlignThreshold;
+        const bool b_aligned = m3d::dot(inc_n_actual, -epa_normal) > kFaceAlignThreshold;
+        if (!a_aligned || !b_aligned)
+        {
+            manifold.num_points = 1;
+            manifold.points[0].position          = epa_contact;
+            manifold.points[0].penetration_depth = epa_depth;
+            return;
+        }
+
         // ── Sutherland-Hodgman: clip incident polygon against reference face ──
-        // Build the reference face normal (outward = epa_normal direction)
-        // The reference face plane passes through ref_corners[0].
-        const m3d::vec3 ref_face_n = epa_normal; // outward normal of reference face
+        // Use the actual reference-face normal (sign-corrected to align with
+        // epa_normal) rather than epa_normal directly. For correctly-wound
+        // faces these match within FP noise; using the actual normal gives
+        // a tighter clip on slightly tilted face contacts.
+        const m3d::vec3 ref_face_n = ref_n_actual;
         const m3d::scalar ref_d = m3d::dot(ref_corners[0], ref_face_n);
 
         // For the side planes we need to know the face "tangent frame".

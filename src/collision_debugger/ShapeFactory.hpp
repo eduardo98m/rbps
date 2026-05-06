@@ -43,11 +43,13 @@ namespace cdbg
             m3d::vec3(-0.6,  0.6, -0.6),
             m3d::vec3( 0.6, -0.6, -0.6),
         };
+        // CCW-from-outside winding so cross(B-A, C-A) yields the outward normal.
+        // (Original 0,1,2 / 0,3,1 / 0,2,3 / 1,3,2 was inward — see plan.)
         static const uint32_t faces[4 * 3] = {
-            0, 1, 2,
-            0, 3, 1,
-            0, 2, 3,
-            1, 3, 2,
+            0, 2, 1,
+            0, 1, 3,
+            0, 3, 2,
+            1, 2, 3,
         };
         static rbc::ConvexHullData *data =
             rbc::convex_hull_data_create(verts, 4, faces, 4);
@@ -111,22 +113,30 @@ namespace cdbg
             }
 
             int f = 0;
-            // Top cap (tri-fan around vertex 0)
+            // Vertices on top/bottom hexagons go CCW around +Y when viewed
+            // from above (+Y → -Y), because (cos θ, sin θ) with θ increasing
+            // and looking down -Y traces the X-Z plane CW... but cross(B-A,
+            // C-A) of three CCW-from-+Y points lands in -Y. So for the
+            // OUTWARD top-cap normal we need (0, i+1, i), and for the
+            // outward bottom-cap normal we need (6, i+6, i+7). Sides also
+            // need their winding flipped from the naive choice.
+
+            // Top cap (tri-fan around vertex 0) — outward = +Y
             for (int i = 1; i < 5; ++i)
             {
-                faces[f++] = 0; faces[f++] = i; faces[f++] = i + 1;
+                faces[f++] = 0; faces[f++] = i + 1; faces[f++] = i;
             }
-            // Bottom cap (reversed winding for outward normal)
+            // Bottom cap (tri-fan around vertex 6) — outward = -Y
             for (int i = 1; i < 5; ++i)
             {
-                faces[f++] = 6; faces[f++] = i + 7; faces[f++] = i + 6;
+                faces[f++] = 6; faces[f++] = i + 6; faces[f++] = i + 7;
             }
-            // Sides: 6 quads = 12 triangles
+            // Sides: 6 quads = 12 triangles, outward radial
             for (int i = 0; i < 6; ++i)
             {
                 const int next = (i + 1) % 6;
-                faces[f++] = i;    faces[f++] = i + 6;    faces[f++] = next;
-                faces[f++] = next; faces[f++] = i + 6;    faces[f++] = next + 6;
+                faces[f++] = i;    faces[f++] = next;       faces[f++] = i + 6;
+                faces[f++] = next; faces[f++] = next + 6;   faces[f++] = i + 6;
             }
             initialized = true;
         }
