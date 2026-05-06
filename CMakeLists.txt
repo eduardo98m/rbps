@@ -161,8 +161,16 @@ if(RBPS_BUILD_VISR)
 
     target_compile_options(visr_demo PUBLIC -fsanitize=address -fno-omit-frame-pointer)
     target_link_options(visr_demo PUBLIC -fsanitize=address)
- 
-    message(STATUS "[visr] targets: visr_lib, visr_headless, visr_demo")
+
+    # ── 7. Collision debugger (interactive narrowphase visualizer) ─────────
+    #  Sibling to visr_demo. Owns no World, runs no physics — pose two shapes
+    #  manually and watch every stage of GJK -> EPA -> manifold generation.
+    add_executable(collision_debugger src/collision_debugger/main.cpp)
+    target_link_libraries(collision_debugger PRIVATE visr_lib)
+    target_compile_options(collision_debugger PUBLIC -fsanitize=address -fno-omit-frame-pointer)
+    target_link_options(collision_debugger PUBLIC -fsanitize=address)
+
+    message(STATUS "[visr] targets: visr_lib, visr_headless, visr_demo, collision_debugger")
 endif() # RBPS_BUILD_VISR
 
 
