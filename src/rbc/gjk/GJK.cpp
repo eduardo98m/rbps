@@ -350,20 +350,46 @@ namespace rbc
         m3d::vec3 ACD = m3d::cross(C - A, D - A);
         m3d::vec3 ADB = m3d::cross(D - A, B - A);
 
+        // When reducing to a triangular face, the chosen face's vertices must
+        // be laid out so that project_triangle_origin sees the newest support
+        // point at vertex[2] (its expected "A" slot). The original tetrahedron
+        // layout has A=vertex[3], B=vertex[2], C=vertex[1], D=vertex[0]; passing
+        // `curr` directly would make project_triangle_origin read the back face
+        // (B, C, D) regardless of which face was actually selected — silently
+        // dropping the most-recently-added support and producing wrong results
+        // (false positives on separated pairs, no-progress loops).
         if (m3d::dot(ABC, -A) > 0)
         {
+            // Face ABC: vertices A=v[3], B=v[2], C=v[1]; free D=v[0]
             free_v[nfree++] = curr.vertex[0];
-            return project_triangle_origin(curr, next);
+            Simplex tri;
+            tri.rank = 3;
+            tri.vertex[0] = curr.vertex[1];   // C (oldest of the face)
+            tri.vertex[1] = curr.vertex[2];   // B
+            tri.vertex[2] = curr.vertex[3];   // A (newest)
+            return project_triangle_origin(tri, next);
         }
         if (m3d::dot(ACD, -A) > 0)
         {
+            // Face ACD: vertices A=v[3], C=v[1], D=v[0]; free B=v[2]
             free_v[nfree++] = curr.vertex[2];
-            return project_triangle_origin(curr, next);
+            Simplex tri;
+            tri.rank = 3;
+            tri.vertex[0] = curr.vertex[0];   // D
+            tri.vertex[1] = curr.vertex[1];   // C
+            tri.vertex[2] = curr.vertex[3];   // A (newest)
+            return project_triangle_origin(tri, next);
         }
         if (m3d::dot(ADB, -A) > 0)
         {
+            // Face ADB: vertices A=v[3], D=v[0], B=v[2]; free C=v[1]
             free_v[nfree++] = curr.vertex[1];
-            return project_triangle_origin(curr, next);
+            Simplex tri;
+            tri.rank = 3;
+            tri.vertex[0] = curr.vertex[2];   // B
+            tri.vertex[1] = curr.vertex[0];   // D
+            tri.vertex[2] = curr.vertex[3];   // A (newest)
+            return project_triangle_origin(tri, next);
         }
 
         ray = m3d::vec3(0, 0, 0);

@@ -150,7 +150,13 @@ namespace rbc
     bool EPA::expand(unsigned int pass, SimplexVertex *w,
                      EPAFace *f, int e, EPAHorizon &horizon)
     {
-        //If we hit a face already visited in this pass, it's just an internal 
+        // Defensive: a missing adjacency means the polytope was built in
+        // an inconsistent state. Bail cleanly — the outer loop's
+        // `if (!valid || horizon.nf < 3)` accepts the best face so far.
+        if (!f)
+            return false;
+
+        //If we hit a face already visited in this pass, it's just an internal
         // edge of the visible region. We return TRUE to continue safely.
         if (f->pass == pass)
             return true;
@@ -214,16 +220,104 @@ namespace rbc
             ++num_vertices;
         }
 
-        // For rank == 3 we build one face; for rank == 4 we build the tetrahedron
-        if (simplex.rank == 3)
+        // Deduplicate. GJK's project_tetrahedron_origin can deliver a rank-4
+        // simplex with coincident vertices (it doesn't validate non-zero
+        // tetrahedral volume). Building faces over duplicates produces
+        // zero-area cross products in new_face(), which returns null and
+        // makes the rank-4 wiring abort with Failed. Fold duplicates here
+        // and let the appropriate path (rank-3 promotion or rank-4 wiring)
+        // handle the cleaned-up vertex set.
         {
-            EPAFace *f = new_face(vertices[0], vertices[1], vertices[2]);
-            if (!f)
-                return Failed;
-
-            // We will let the main loop run – it will immediately add the 4th vertex
+            const m3d::scalar dedup_tol_sq = m3d::EPSILON * m3d::EPSILON;
+            unsigned int unique_n = 0;
+            for (unsigned int i = 0; i < num_vertices; ++i)
+            {
+                bool dup = false;
+                for (unsigned int j = 0; j < unique_n; ++j)
+                {
+                    if (m3d::length_sq(vertices[i]->w - vertices[j]->w) < dedup_tol_sq)
+                    {
+                        dup = true;
+                        break;
+                    }
+                }
+                if (!dup)
+                {
+                    if (unique_n != i)
+                        std::swap(vertices[unique_n], vertices[i]);
+                    ++unique_n;
+                }
+            }
+            num_vertices = unique_n;
         }
-        else // rank == 4
+
+        if (num_vertices < 3)
+            return Failed; // cannot even form a triangle
+
+        // Promote rank-3 (or rank-4-degenerated-to-3) to rank-4 by adding a
+        // support point off the triangle plane. GJK reaches this state for
+        // vertex-on-face tangent contacts (where enclose_origin couldn't
+        // extrude) or when project_tetrahedron returned a degenerate simplex
+        // with duplicates (caught above by dedup).
+        if (num_vertices == 3)
+        {
+            const m3d::vec3 a = vertices[0]->w;
+            const m3d::vec3 b = vertices[1]->w;
+            const m3d::vec3 c = vertices[2]->w;
+            m3d::vec3 plane_n = m3d::cross(b - a, c - a);
+            const m3d::scalar plane_n_len = m3d::length(plane_n);
+            if (plane_n_len < m3d::EPSILON)
+                return NonLinear; // degenerate (collinear) triangle from GJK
+            plane_n = plane_n / plane_n_len;
+
+            if (num_vertices >= max_vertices)
+                return OutOfVertices;
+            SimplexVertex *w = vertices[num_vertices];
+
+            // Probe Minkowski-difference supports on both sides of the plane.
+            const m3d::vec3 dir_a_pos = shape.tf_a.inverse_rotate_vector( plane_n);
+            const m3d::vec3 dir_b_pos = shape.tf_b.inverse_rotate_vector(-plane_n);
+            const m3d::vec3 w0_pos = shape.tf_a.transform_point(shape_support(*shape.shape_a, dir_a_pos));
+            const m3d::vec3 w1_pos = shape.tf_b.transform_point(shape_support(*shape.shape_b, dir_b_pos));
+            const m3d::vec3 w_pos  = w0_pos - w1_pos;
+            const m3d::scalar d_pos = m3d::dot(w_pos - a, plane_n);
+
+            const m3d::vec3 dir_a_neg = shape.tf_a.inverse_rotate_vector(-plane_n);
+            const m3d::vec3 dir_b_neg = shape.tf_b.inverse_rotate_vector( plane_n);
+            const m3d::vec3 w0_neg = shape.tf_a.transform_point(shape_support(*shape.shape_a, dir_a_neg));
+            const m3d::vec3 w1_neg = shape.tf_b.transform_point(shape_support(*shape.shape_b, dir_b_neg));
+            const m3d::vec3 w_neg  = w0_neg - w1_neg;
+            const m3d::scalar d_neg = m3d::dot(w_neg - a, plane_n);
+
+            // Origin's signed distance from the triangle plane (in +n).
+            // Pick the support on the SAME side as origin so the resulting
+            // tetrahedron actually encloses origin. By convexity of the
+            // Minkowski difference, support distance ≥ |d_origin| on the
+            // matching side. Fall back to the larger-abs side when origin
+            // is on the plane (d_origin ≈ 0).
+            const m3d::scalar d_origin = -m3d::dot(a, plane_n);
+            const bool prefer_pos = (d_origin > m3d::EPSILON) ||
+                                    (d_origin >= -m3d::EPSILON &&
+                                     std::abs(d_pos) >= std::abs(d_neg));
+
+            if (prefer_pos)
+            {
+                if (std::abs(d_pos) < tolerance)
+                    return Failed; // truly tangent — no penetration volume
+                w->w0 = w0_pos; w->w1 = w1_pos; w->w = w_pos;
+            }
+            else
+            {
+                if (std::abs(d_neg) < tolerance)
+                    return Failed;
+                w->w0 = w0_neg; w->w1 = w1_neg; w->w = w_neg;
+            }
+            ++num_vertices;
+            // Fall through to the rank-4 face-build block below.
+        }
+
+        // Wire up four faces with full adjacency. Reaches here for both
+        // GJK rank == 4 and rank == 3 promoted via the block above.
         {
             // Ensure consistent CCW winding (origin inside, normals outward)
             if (m3d::dot(vertices[0]->w - vertices[3]->w,
