@@ -346,3 +346,16 @@ if(RBPS_BUILD_VISR)
     add_visr_test(test_debug_channel)
     add_visr_test(test_command_dispatch)
 endif() # RBPS_BUILD_VISR
+
+# ── Regression tests exported by collision_debugger ────────────────────────
+#  Files in tests/rbc/regression/ are gitignored — local-only artifacts.
+#  Glob picks them up if present so ctest runs them; absence is fine
+#  (empty list → no targets registered). Re-run cmake after exporting a
+#  new scenario.
+file(GLOB CDBG_REGRESSION_SOURCES "tests/rbc/regression/test_*.cpp")
+foreach(src ${CDBG_REGRESSION_SOURCES})
+    get_filename_component(name ${src} NAME_WE)
+    add_executable(${name} ${src})
+    target_link_libraries(${name} PRIVATE rbc_lib)
+    add_test(NAME ${name} COMMAND ${name})
+endforeach()
