@@ -46,13 +46,21 @@ namespace rbc
          */
         m3d::vec3 support(const m3d::vec3 &dir) const
         {
-            m3d::vec3 local_dir_a = tf_a.inverse_rotate_vector(dir);
-            m3d::vec3 p_a = tf_a.transform_point(shape_support(*shape_a, local_dir_a));
+            return support_a(dir) - support_b(-dir);
+        }
 
-            m3d::vec3 local_dir_b = tf_b.inverse_rotate_vector(-dir);
-            m3d::vec3 p_b = tf_b.transform_point(shape_support(*shape_b, local_dir_b));
+        /** @brief World-space support of A along `dir`. */
+        m3d::vec3 support_a(const m3d::vec3 &dir) const
+        {
+            const m3d::vec3 local_dir = tf_a.inverse_rotate_vector(dir);
+            return tf_a.transform_point(shape_support(*shape_a, local_dir));
+        }
 
-            return p_a - p_b;
+        /** @brief World-space support of B along `dir`. */
+        m3d::vec3 support_b(const m3d::vec3 &dir) const
+        {
+            const m3d::vec3 local_dir = tf_b.inverse_rotate_vector(dir);
+            return tf_b.transform_point(shape_support(*shape_b, local_dir));
         }
     };
 }

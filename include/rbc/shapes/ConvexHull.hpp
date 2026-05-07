@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <vector>
@@ -86,6 +87,15 @@ namespace rbc
         const uint32_t  *poly_offsets; ///< Length `poly_count + 1`; ranges into `poly_indices` (owned).
         const m3d::vec3 *poly_normals; ///< Unit outward normal per polygon (owned).
         uint32_t         poly_count;   ///< Number of merged polygon faces.
+
+        // Adjacency tables used by the manifold pipeline. Built once at
+        // construction; null when the hull has no merged polygons.
+        const uint32_t  *vertex_to_polys_offsets;     ///< Length `vert_count + 1` (owned).
+        const uint32_t  *vertex_to_polys_indices;     ///< Polygons containing each vertex (owned).
+        const uint32_t  *vertex_to_neighbors_offsets; ///< Length `vert_count + 1` (owned).
+        const uint32_t  *vertex_to_neighbors_indices; ///< Polygon-edge neighbors per vertex (owned).
+        const uint32_t  *poly_to_polys_offsets;       ///< Length `poly_count + 1` (owned).
+        const uint32_t  *poly_to_polys_indices;       ///< Polygons sharing an edge with each polygon (owned).
     };
 
     /**
@@ -151,6 +161,12 @@ namespace rbc
         hd->poly_offsets = nullptr;
         hd->poly_normals = nullptr;
         hd->poly_count   = 0;
+        hd->vertex_to_polys_offsets     = nullptr;
+        hd->vertex_to_polys_indices     = nullptr;
+        hd->vertex_to_neighbors_offsets = nullptr;
+        hd->vertex_to_neighbors_indices = nullptr;
+        hd->poly_to_polys_offsets       = nullptr;
+        hd->poly_to_polys_indices       = nullptr;
 
         if (hd->face_count > 0)
         {
@@ -297,6 +313,94 @@ namespace rbc
                 hd->poly_offsets = po;
                 hd->poly_normals = pn;
                 hd->poly_count   = pcount;
+
+                // ── Adjacency tables used by the manifold pipeline ────────
+                // O(P²) edge-pairing pass on poly count P (typically ≤ 32).
+                // Rebuild with hash maps if vert_count > ~256.
+                std::vector<std::vector<uint32_t>> v2p(vert_count);
+                std::vector<std::vector<uint32_t>> v2n(vert_count);
+                std::vector<std::vector<uint32_t>> p2p(pcount);
+
+                for (uint32_t p = 0; p < pcount; ++p)
+                {
+                    const uint32_t s = po[p];
+                    const uint32_t e = po[p + 1];
+                    const uint32_t n = e - s;
+                    for (uint32_t i = 0; i < n; ++i)
+                    {
+                        const uint32_t a = pi[s + i];
+                        const uint32_t b = pi[s + (i + 1) % n];
+                        auto &vp = v2p[a];
+                        if (std::find(vp.begin(), vp.end(), p) == vp.end())
+                            vp.push_back(p);
+                        auto &va = v2n[a];
+                        if (std::find(va.begin(), va.end(), b) == va.end())
+                            va.push_back(b);
+                        auto &vb = v2n[b];
+                        if (std::find(vb.begin(), vb.end(), a) == vb.end())
+                            vb.push_back(a);
+                    }
+                }
+
+                // Two CCW polygons share an edge when one has (a,b) and the
+                // other has (b,a). Scan all polygon pairs.
+                for (uint32_t p = 0; p < pcount; ++p)
+                {
+                    const uint32_t s_p = po[p];
+                    const uint32_t n_p = po[p + 1] - s_p;
+                    for (uint32_t q = 0; q < pcount; ++q)
+                    {
+                        if (q == p) continue;
+                        const uint32_t s_q = po[q];
+                        const uint32_t n_q = po[q + 1] - s_q;
+                        bool shared = false;
+                        for (uint32_t i = 0; i < n_p && !shared; ++i)
+                        {
+                            const uint32_t a = pi[s_p + i];
+                            const uint32_t b = pi[s_p + (i + 1) % n_p];
+                            for (uint32_t j = 0; j < n_q; ++j)
+                            {
+                                const uint32_t c = pi[s_q + j];
+                                const uint32_t d = pi[s_q + (j + 1) % n_q];
+                                if (a == d && b == c) { shared = true; break; }
+                            }
+                        }
+                        if (shared) p2p[p].push_back(q);
+                    }
+                }
+
+                auto flatten = [](const std::vector<std::vector<uint32_t>> &src,
+                                  uint32_t **out_offs, uint32_t **out_idx) {
+                    const uint32_t n = static_cast<uint32_t>(src.size());
+                    auto *offs = new uint32_t[n + 1];
+                    offs[0] = 0;
+                    uint32_t total = 0;
+                    for (uint32_t i = 0; i < n; ++i)
+                    {
+                        total += static_cast<uint32_t>(src[i].size());
+                        offs[i + 1] = total;
+                    }
+                    uint32_t *idx = (total > 0) ? new uint32_t[total] : nullptr;
+                    uint32_t k = 0;
+                    for (uint32_t i = 0; i < n; ++i)
+                        for (uint32_t v : src[i])
+                            idx[k++] = v;
+                    *out_offs = offs;
+                    *out_idx  = idx;
+                };
+
+                uint32_t *v2p_o = nullptr, *v2p_i = nullptr;
+                uint32_t *v2n_o = nullptr, *v2n_i = nullptr;
+                uint32_t *p2p_o = nullptr, *p2p_i = nullptr;
+                flatten(v2p, &v2p_o, &v2p_i);
+                flatten(v2n, &v2n_o, &v2n_i);
+                flatten(p2p, &p2p_o, &p2p_i);
+                hd->vertex_to_polys_offsets     = v2p_o;
+                hd->vertex_to_polys_indices     = v2p_i;
+                hd->vertex_to_neighbors_offsets = v2n_o;
+                hd->vertex_to_neighbors_indices = v2n_i;
+                hd->poly_to_polys_offsets       = p2p_o;
+                hd->poly_to_polys_indices       = p2p_i;
             }
         }
 
@@ -333,6 +437,12 @@ namespace rbc
         delete[] hd->poly_indices;
         delete[] hd->poly_offsets;
         delete[] hd->poly_normals;
+        delete[] hd->vertex_to_polys_offsets;
+        delete[] hd->vertex_to_polys_indices;
+        delete[] hd->vertex_to_neighbors_offsets;
+        delete[] hd->vertex_to_neighbors_indices;
+        delete[] hd->poly_to_polys_offsets;
+        delete[] hd->poly_to_polys_indices;
         delete hd;
     }
 
