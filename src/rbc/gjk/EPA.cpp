@@ -154,6 +154,54 @@ namespace rbc
             vertices[num_vertices++] = new SimplexVertex(*seed.vertex[i]);
         }
 
+        // Detect a coplanar seed (face-on-face touching contacts).
+        // The Minkowski difference's surface passes through the origin
+        // and the four GJK simplex vertices end up on it, so the seed
+        // tetrahedron is flat and `compute_face_normal` rejects every
+        // face. Sample the support perpendicular to the plane on each
+        // side; if at least one side is flat (within tolerance), this
+        // is a touching contact: return `Valid` with depth = 0 and the
+        // plane's outward normal.
+        {
+            const m3d::vec3 va = vertices[0]->w;
+            const m3d::vec3 vb = vertices[1]->w;
+            const m3d::vec3 vc = vertices[2]->w;
+            const m3d::vec3 vd = vertices[3]->w;
+
+            m3d::vec3 plane_n = m3d::cross(vb - va, vc - va);
+            if (m3d::length_sq(plane_n) < m3d::EPSILON * m3d::EPSILON)
+                plane_n = m3d::cross(vb - va, vd - va);
+            if (m3d::length_sq(plane_n) < m3d::EPSILON * m3d::EPSILON)
+                plane_n = m3d::cross(vc - va, vd - va);
+
+            if (m3d::length_sq(plane_n) > m3d::EPSILON * m3d::EPSILON)
+            {
+                plane_n = m3d::normalize(plane_n);
+                const m3d::scalar dist_d = m3d::abs(m3d::dot(vd - va, plane_n));
+                if (dist_d < 1e-5)
+                {
+                    // Coplanar seed. Sample perpendicular extent on each side.
+                    const m3d::vec3 sp = shape.support_a( plane_n) - shape.support_b(-plane_n);
+                    const m3d::vec3 sn = shape.support_a(-plane_n) - shape.support_b( plane_n);
+                    const m3d::scalar dist_pos = m3d::dot(sp - va,  plane_n);
+                    const m3d::scalar dist_neg = m3d::dot(sn - va, -plane_n);
+
+                    constexpr m3d::scalar PERP = 1e-4;
+                    if (dist_pos < PERP || dist_neg < PERP)
+                    {
+                        // Polytope is flat on at least one side — touching contact.
+                        // Outward normal points into the side with less extent.
+                        normal = (dist_pos <= dist_neg) ? plane_n : -plane_n;
+                        depth  = 0.0;
+                        contact_point = (vertices[0]->w0 + vertices[1]->w0
+                                       + vertices[2]->w0 + vertices[3]->w0) * 0.25;
+                        status = Valid;
+                        return status;
+                    }
+                }
+            }
+        }
+
         SimplexVertex *vA = vertices[0];
         SimplexVertex *vB = vertices[1];
         SimplexVertex *vC = vertices[2];

@@ -178,7 +178,8 @@ namespace rbc
                                      const m3d::vec3 &epa_contact,
                                      const ConvexHullData *ha, const m3d::tf &tf_a,
                                      const ConvexHullData *hb, const m3d::tf &tf_b,
-                                     ContactManifold &manifold)
+                                     ContactManifold &manifold,
+                                     ManifoldDebugCapture *cap)
         {
             manifold.normal = epa_normal;
             manifold.num_points = 0;
@@ -212,8 +213,20 @@ namespace rbc
                 const m3d::vec3 p2 = tf_b.transform_point(hb->vertices[edges.b0]);
                 const m3d::vec3 d2 = tf_b.transform_point(hb->vertices[edges.b1]) - p2;
 
+                if (cap)
+                {
+                    cap->edge_edge = true;
+                    cap->ref_face = { p1, p1 + d1 };
+                    cap->inc_face = { p2, p2 + d2 };
+                }
+
                 if (clipping::skew_line_closest_points(p1, d1, p2, d2, l1, l2))
                 {
+                    if (cap)
+                    {
+                        cap->kept_points = { (l1 + l2) * 0.5 };
+                        cap->kept_depths = { epa_depth };
+                    }
                     emit_single_contact(manifold, epa_normal, (l1 + l2) * 0.5, epa_depth);
                     return;
                 }
@@ -247,9 +260,21 @@ namespace rbc
                 inc_world[i] = tf_inc.transform_point(
                     hinc->vertices[hinc->poly_indices[inc_s + i]]);
 
-            // Reference polygon's first vertex in world (used as plane point).
-            const uint32_t ref_first_v = href->poly_indices[href->poly_offsets[ref_poly]];
-            const m3d::vec3 ref_pt_world = tf_ref.transform_point(href->vertices[ref_first_v]);
+            // Reference polygon vertices in world (also captured for the debugger).
+            const uint32_t ref_s = href->poly_offsets[ref_poly];
+            const uint32_t ref_e = href->poly_offsets[ref_poly + 1];
+            std::vector<m3d::vec3> ref_world(ref_e - ref_s);
+            for (uint32_t i = 0; i < ref_e - ref_s; ++i)
+                ref_world[i] = tf_ref.transform_point(
+                    href->vertices[href->poly_indices[ref_s + i]]);
+
+            const m3d::vec3 ref_pt_world = ref_world[0];
+
+            if (cap)
+            {
+                cap->ref_face = ref_world;
+                cap->inc_face = inc_world;
+            }
 
             // Boundary planes from neighbor polygons.
             std::vector<clipping::Plane> planes;
@@ -288,6 +313,9 @@ namespace rbc
             ref_plane.point  = ref_pt_world;
             ref_plane.normal = -ref_n_world;
 
+            if (cap)
+                cap->post_clip_polygon.assign(clipped.begin(), clipped.begin() + n_clipped);
+
             std::vector<m3d::vec3> final_pts(static_cast<size_t>(clip_cap + 4));
             const int n_final = clipping::sutherland_hodgman(
                 clipped.data(), n_clipped,
@@ -312,11 +340,21 @@ namespace rbc
                 else
                     pen = -m3d::dot(diff, epa_normal);
 
-                if (pen < 0.0)
+                // `pen <= 0` keeps on-face points (pen == 0) so face-touching
+                // contacts (depth = 0 from EPA's coplanar-seed branch) produce
+                // a real manifold instead of falling through to a single EPA
+                // witness.
+                if (pen <= 0.0)
                 {
                     keep_pts.push_back(p);
                     keep_dep.push_back(-pen);
                 }
+            }
+
+            if (cap)
+            {
+                cap->kept_points = keep_pts;
+                cap->kept_depths = keep_dep;
             }
 
             if (keep_pts.empty())
@@ -348,10 +386,12 @@ namespace rbc
                            const m3d::tf &tf_a,
                            const Shape &shape_b,
                            const m3d::tf &tf_b,
-                           ContactManifold &manifold)
+                           ContactManifold &manifold,
+                           ManifoldDebugCapture *capture)
     {
         manifold.normal = epa_normal;
         manifold.num_points = 0;
+        if (capture) *capture = ManifoldDebugCapture{};
 
         const ConvexHullData *ha = as_convex_hull(shape_a);
         const ConvexHullData *hb = as_convex_hull(shape_b);
@@ -359,7 +399,7 @@ namespace rbc
         if (hull_has_adjacency(ha) && hull_has_adjacency(hb))
         {
             manifold_convex_convex(epa_normal, epa_depth, epa_contact,
-                                    ha, tf_a, hb, tf_b, manifold);
+                                    ha, tf_a, hb, tf_b, manifold, capture);
             return;
         }
 

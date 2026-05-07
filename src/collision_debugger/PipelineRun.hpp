@@ -37,13 +37,18 @@ namespace cdbg
         std::vector<EPAFaceCopy> epa_faces;
 
         // ── Manifold-gen intermediates (world space) ────────────────────
+        // Mirrors `rbc::ManifoldDebugCapture`. The reference + incident
+        // polygons may carry up to ~16 vertices, but for legacy reasons
+        // we keep them as fixed-size buffers of length kMaxFaceCorners
+        // so the existing UI code reads them as plain arrays.
         int        ref_face_n = 0;
         m3d::vec3  ref_face[rbc::kMaxFaceCorners]{};
         int        inc_face_n = 0;
         m3d::vec3  inc_face[rbc::kMaxFaceCorners]{};
-        std::vector<m3d::vec3>   post_clip_polygon;   // after Sutherland-Hodgman
-        std::vector<m3d::vec3>   kept_points;         // after depth-test, pre-reduce
+        std::vector<m3d::vec3>   post_clip_polygon;
+        std::vector<m3d::vec3>   kept_points;
         std::vector<m3d::scalar> kept_depths;
+        bool                     edge_edge = false;
 
         // ── Final manifold ──────────────────────────────────────────────
         rbc::ContactManifold manifold{};
@@ -55,11 +60,10 @@ namespace cdbg
     };
 
     // Run the full GJK → EPA → manifold pipeline and capture every
-    // intermediate stage into `out`. This duplicates the body of
-    // gjk_epa_manifold + generate_manifold from
-    // include/rbc/gjk/ContactManifoldGenerator.hpp because those
-    // functions don't expose intermediates — the duplication is
-    // intentional and is the only piece of mirrored logic in the tool.
+    // intermediate stage into `out`. The manifold stage delegates to
+    // `rbc::generate_manifold` with a `ManifoldDebugCapture`, so the
+    // visualization always tracks the actual algorithm rather than a
+    // shadow copy that drifts.
     inline void run_pipeline(const rbc::Shape &sa, const m3d::tf &tf_a,
                              const rbc::Shape &sb, const m3d::tf &tf_b,
                              PipelineResult &out)
@@ -117,78 +121,26 @@ namespace cdbg
             out.epa_faces.push_back(c);
         }
 
-        // ── 3. Manifold generation (mirror generate_manifold, capturing intermediates) ─
-        const m3d::vec3 epa_n     = out.epa_normal;
-        const m3d::scalar epa_d   = out.epa_depth;
-        const m3d::vec3 epa_pt    = out.epa_contact_point;
-
-        out.manifold.normal     = epa_n;
-        out.manifold.num_points = 0;
-
-        out.ref_face_n = rbc::shape_face_corners(sa, tf_a,  epa_n, out.ref_face, rbc::kMaxFaceCorners);
-        out.inc_face_n = rbc::shape_face_corners(sb, tf_b, -epa_n, out.inc_face, rbc::kMaxFaceCorners);
-
-        const m3d::vec3   ref_face_n = epa_n;
-        const m3d::scalar ref_d_pln  = m3d::dot(out.ref_face[0], ref_face_n);
-
-        // Sutherland-Hodgman against each side plane of the reference face
-        constexpr int kClipBuf = 2 * rbc::kMaxFaceCorners;
-        m3d::vec3 buf0[kClipBuf], buf1[kClipBuf];
-        int cnt = out.inc_face_n;
-        for (int i = 0; i < out.inc_face_n; ++i)
-            buf0[i] = out.inc_face[i];
-
-        for (int i = 0; i < out.ref_face_n && cnt > 0; ++i)
-        {
-            const m3d::vec3 edge = out.ref_face[(i + 1) % out.ref_face_n] - out.ref_face[i];
-            const m3d::vec3 side_n = m3d::normalize(m3d::cross(ref_face_n, edge));
-            cnt = rbc::manifold_detail::clip_polygon_by_plane(
-                buf0, cnt, side_n, out.ref_face[i], buf1);
-            for (int k = 0; k < cnt; ++k)
-                buf0[k] = buf1[k];
-        }
-
-        out.post_clip_polygon.assign(buf0, buf0 + cnt);
-
-        // Depth-test: keep points on or below the reference face plane
-        m3d::vec3   keep_pts[kClipBuf];
-        m3d::scalar keep_dep[kClipBuf];
-        int keep_n = 0;
-        for (int i = 0; i < cnt; ++i)
-        {
-            const m3d::scalar sd = m3d::dot(buf0[i], ref_face_n) - ref_d_pln;
-            if (sd <= m3d::EPSILON)
-            {
-                keep_pts[keep_n] = buf0[i];
-                keep_dep[keep_n] = (sd < 0.0) ? (-sd) : epa_d;
-                ++keep_n;
-            }
-        }
-
-        out.kept_points .assign(keep_pts, keep_pts + keep_n);
-        out.kept_depths .assign(keep_dep, keep_dep + keep_n);
-
-        if (keep_n == 0)
-        {
-            out.manifold.num_points = 1;
-            out.manifold.points[0].position          = epa_pt;
-            out.manifold.points[0].penetration_depth = epa_d;
-            out.manifold_built = true;
-            return;
-        }
-
-        m3d::vec3   red_pts[4];
-        m3d::scalar red_dep[4];
-        const int red_n = rbc::manifold_detail::reduce_to_4(
-            keep_pts, keep_dep, keep_n, red_pts, red_dep);
-
-        out.manifold.num_points = red_n;
-        for (int i = 0; i < red_n; ++i)
-        {
-            out.manifold.points[i].position          = red_pts[i];
-            out.manifold.points[i].penetration_depth = red_dep[i];
-        }
+        // ── 3. Manifold generation (delegates to the real implementation) ─
+        rbc::ManifoldDebugCapture cap;
+        rbc::generate_manifold(epa.normal, epa.depth, epa.contact_point,
+                               sa, tf_a, sb, tf_b, out.manifold, &cap);
         out.manifold_built = true;
+        out.edge_edge      = cap.edge_edge;
+
+        const int ref_n = static_cast<int>(cap.ref_face.size());
+        out.ref_face_n = (ref_n < rbc::kMaxFaceCorners) ? ref_n : rbc::kMaxFaceCorners;
+        for (int i = 0; i < out.ref_face_n; ++i)
+            out.ref_face[i] = cap.ref_face[i];
+
+        const int inc_n = static_cast<int>(cap.inc_face.size());
+        out.inc_face_n = (inc_n < rbc::kMaxFaceCorners) ? inc_n : rbc::kMaxFaceCorners;
+        for (int i = 0; i < out.inc_face_n; ++i)
+            out.inc_face[i] = cap.inc_face[i];
+
+        out.post_clip_polygon = std::move(cap.post_clip_polygon);
+        out.kept_points       = std::move(cap.kept_points);
+        out.kept_depths       = std::move(cap.kept_depths);
     }
 
 } // namespace cdbg

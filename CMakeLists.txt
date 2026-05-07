@@ -282,10 +282,9 @@ add_test(NAME test_convex_hull_self COMMAND test_convex_hull_self)
 # add_test(NAME test_plane_capsule COMMAND test_plane_capsule)
 
 
-# Disabled during the GJK/EPA/manifold rewrite (see test_gjk note above).
-# add_executable(test_dispatcher tests/rbc/test_dispatcher.cpp)
-# target_link_libraries(test_dispatcher PRIVATE rbc_lib)
-# add_test(NAME test_dispatcher COMMAND test_dispatcher)
+add_executable(test_dispatcher tests/rbc/test_dispatcher.cpp)
+target_link_libraries(test_dispatcher PRIVATE rbc_lib)
+add_test(NAME test_dispatcher COMMAND test_dispatcher)
 
 add_executable(test_broad_phase tests/rbc/test_broad_phase.cpp)
 target_link_libraries(test_broad_phase PRIVATE rbc_lib)

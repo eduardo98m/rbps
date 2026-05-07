@@ -22,9 +22,28 @@
 #include "rbc/gjk/MinkowskiDiff.hpp"
 #include "rbc/shapes/ShapeTypes.hpp"
 #include <algorithm>
+#include <vector>
 
 namespace rbc
 {
+    /**
+     * @brief Optional intermediate capture for the visual debugger.
+     *
+     * When non-null and passed to `generate_manifold`, the manifold
+     * pipeline fills these vectors with the per-stage geometry the
+     * debugger renders. Each field is left empty if the corresponding
+     * stage didn't run (e.g. edge-edge contacts skip the polygon clip).
+     */
+    struct ManifoldDebugCapture
+    {
+        std::vector<m3d::vec3>   ref_face;          ///< Reference polygon, world space.
+        std::vector<m3d::vec3>   inc_face;          ///< Incident polygon, world space.
+        std::vector<m3d::vec3>   post_clip_polygon; ///< After side-plane Sutherland–Hodgman.
+        std::vector<m3d::vec3>   kept_points;       ///< Points kept after the ref-plane clip + depth test.
+        std::vector<m3d::scalar> kept_depths;       ///< Penetration depth per kept point.
+        bool                     edge_edge = false; ///< True when the edge-edge feature path was taken.
+    };
+
     namespace manifold_detail
     {
         /**
@@ -139,7 +158,8 @@ namespace rbc
     /**
      * @brief Build a manifold from an EPA result.
      *
-     * Defined in ContactManifoldGenerator.cpp.
+     * Pass a non-null `capture` to receive per-stage intermediates
+     * (used by the visual debugger). Defined in ContactManifoldGenerator.cpp.
      */
     void generate_manifold(const m3d::vec3 &epa_normal,
                            m3d::scalar epa_depth,
@@ -148,7 +168,8 @@ namespace rbc
                            const m3d::tf &tf_a,
                            const Shape &shape_b,
                            const m3d::tf &tf_b,
-                           ContactManifold &manifold);
+                           ContactManifold &manifold,
+                           ManifoldDebugCapture *capture = nullptr);
 
     /**
      * @brief Run GJK → EPA → `generate_manifold` in one call.
