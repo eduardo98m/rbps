@@ -88,14 +88,23 @@ namespace rbc
 
         struct Edge { SimplexVertex *a; SimplexVertex *b; };
 
-        // Add an edge with reverse-cancellation: if (b, a) is already
-        // present, remove it and skip; otherwise append (a, b). The
-        // remaining edges form the silhouette of the visible region.
+        // Add an edge with cancellation: if either (b, a) OR (a, b) is
+        // already present, remove it and skip; otherwise append (a, b).
+        // The remaining edges form the silhouette of the visible region.
+        //
+        // The same-direction cancellation matters because the seed tet's
+        // face windings are not all CCW-from-outside: BCD's cross product
+        // can point inward (compute_face_normal flips the normal but
+        // leaves the edge order alone). When two adjacent obsolete faces
+        // happen to traverse a shared edge in the SAME direction, we
+        // still need to cancel them; otherwise the silhouette ends up
+        // with duplicate phantom edges and stitches degenerate faces.
         void add_edge(std::vector<Edge> &edges, SimplexVertex *a, SimplexVertex *b)
         {
             for (size_t i = 0; i < edges.size(); ++i)
             {
-                if (edges[i].a == b && edges[i].b == a)
+                if ((edges[i].a == a && edges[i].b == b) ||
+                    (edges[i].a == b && edges[i].b == a))
                 {
                     edges.erase(edges.begin() + static_cast<long>(i));
                     return;

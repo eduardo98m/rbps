@@ -23,10 +23,17 @@ namespace rbc
         const m3d::vec3 acd = m3d::cross(ac, ad);
         const m3d::vec3 adb = m3d::cross(ad, ab);
 
+        // Use a small positive threshold instead of `>= 0.0` so origins
+        // that lie *exactly* on a face plane (dot ≈ 0, common when the
+        // shapes are perfectly aligned and an MD face passes through
+        // origin) fall into case 0x0 (enclosed) rather than reducing
+        // to a sub-feature. Without this, GJK never terminates on
+        // aligned-stack configurations and EPA never gets a seed.
+        constexpr m3d::scalar kInsideEps = 1e-10;
         unsigned char plane_info = 0x0;
-        if (m3d::dot(abc, ao) >= 0.0) plane_info |= 0x1;
-        if (m3d::dot(acd, ao) >= 0.0) plane_info |= 0x2;
-        if (m3d::dot(adb, ao) >= 0.0) plane_info |= 0x4;
+        if (m3d::dot(abc, ao) > kInsideEps) plane_info |= 0x1;
+        if (m3d::dot(acd, ao) > kInsideEps) plane_info |= 0x2;
+        if (m3d::dot(adb, ao) > kInsideEps) plane_info |= 0x4;
 
         using simplex_detail::triple_cross;
 
