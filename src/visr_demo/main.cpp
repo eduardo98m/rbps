@@ -229,6 +229,7 @@ int main()
 {
     visr::VisrApp app;
     app.title = "RBPS - Thread-Safe Stacking Demo";
+    app.world.substeps = 20;
 
     // 1. Build Ground
     rbps::BodyParams gp{};
