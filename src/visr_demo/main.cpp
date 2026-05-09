@@ -9,31 +9,26 @@
 
 // ── Convex Hull Data Providers ────────────────────────────────────────────────
 
-static rbc::ConvexHullData *get_tetrahedron_data()
-{
-    static const m3d::vec3 verts[4] = {
-        m3d::vec3(0.6, 0.6, 0.6),
-        m3d::vec3(-0.6, -0.6, 0.6),
-        m3d::vec3(-0.6, 0.6, -0.6),
-        m3d::vec3(0.6, -0.6, -0.6),
-    };
-    static const uint32_t faces[4 * 3] = {
-        0,
-        1,
-        2,
-        0,
-        3,
-        1,
-        0,
-        2,
-        3,
-        1,
-        3,
-        2,
-    };
-    static rbc::ConvexHullData *data = rbc::convex_hull_data_create(verts, 4, faces, 4);
-    return data;
-}
+inline rbc::ConvexHullData *get_tetrahedron_data()
+    {
+        static const m3d::vec3 verts[4] = {
+            m3d::vec3( 0.6,  0.6,  0.6),
+            m3d::vec3(-0.6, -0.6,  0.6),
+            m3d::vec3(-0.6,  0.6, -0.6),
+            m3d::vec3( 0.6, -0.6, -0.6),
+        };
+        // CCW-from-outside winding so cross(B-A, C-A) yields the outward normal.
+        // (Original 0,1,2 / 0,3,1 / 0,2,3 / 1,3,2 was inward — see plan.)
+        static const uint32_t faces[4 * 3] = {
+            0, 2, 1,
+            0, 1, 3,
+            0, 3, 2,
+            1, 2, 3,
+        };
+        static rbc::ConvexHullData *data =
+            rbc::convex_hull_data_create(verts, 4, faces, 4);
+        return data;
+    }
 
 static rbc::ConvexHullData *get_octahedron_data()
 {
@@ -62,45 +57,56 @@ static rbc::ConvexHullData *get_prism_data()
     return data;
 }
 
-static rbc::ConvexHullData* get_hex_prism_data() {
-    static m3d::vec3 verts[12];
-    static uint32_t faces[20 * 3]; // 20 triangles total
-    static bool initialized = false;
+inline rbc::ConvexHullData *get_hex_prism_data()
+    {
+        static m3d::vec3 verts[12];
+        static uint32_t  faces[20 * 3];
+        static bool initialized = false;
 
-    if (!initialized) {
-        // 1. Generate Vertices (Top and Bottom Hexagons)
-        for (int i = 0; i < 6; ++i) {
-            float angle = i * (6.283185307f / 6.0f);
-            float x = std::cos(angle) * 0.8f; // Radius 0.8
-            float z = std::sin(angle) * 0.8f;
-            verts[i]   = m3d::vec3(x,  0.5f, z); // Top Cap
-            verts[i+6] = m3d::vec3(x, -0.5f, z); // Bottom Cap
+        if (!initialized)
+        {
+            for (int i = 0; i < 6; ++i)
+            {
+                const float angle = i * (2 * m3d::PI / 6.0f);
+                const float x = std::cos(angle) * 0.8f;
+                const float z = std::sin(angle) * 0.8f;
+                verts[i]     = m3d::vec3(x,  0.5f, z);
+                verts[i + 6] = m3d::vec3(x, -0.5f, z);
+            }
+
+            int f = 0;
+            // Vertices on top/bottom hexagons go CCW around +Y when viewed
+            // from above (+Y → -Y), because (cos θ, sin θ) with θ increasing
+            // and looking down -Y traces the X-Z plane CW... but cross(B-A,
+            // C-A) of three CCW-from-+Y points lands in -Y. So for the
+            // OUTWARD top-cap normal we need (0, i+1, i), and for the
+            // outward bottom-cap normal we need (6, i+6, i+7). Sides also
+            // need their winding flipped from the naive choice.
+
+            // Top cap (tri-fan around vertex 0) — outward = +Y
+            for (int i = 1; i < 5; ++i)
+            {
+                faces[f++] = 0; faces[f++] = i + 1; faces[f++] = i;
+            }
+            // Bottom cap (tri-fan around vertex 6) — outward = -Y
+            for (int i = 1; i < 5; ++i)
+            {
+                faces[f++] = 6; faces[f++] = i + 6; faces[f++] = i + 7;
+            }
+            // Sides: 6 quads = 12 triangles, outward radial
+            for (int i = 0; i < 6; ++i)
+            {
+                const int next = (i + 1) % 6;
+                faces[f++] = i;    faces[f++] = next;       faces[f++] = i + 6;
+                faces[f++] = next; faces[f++] = next + 6;   faces[f++] = i + 6;
+            }
+            initialized = true;
         }
 
-        int f = 0;
-        // 2. Top Cap (Tri-fan)
-        for (int i = 1; i < 5; ++i) {
-            faces[f++] = 0; faces[f++] = i; faces[f++] = i + 1;
-        }
-        // 3. Bottom Cap (Tri-fan, reversed winding for outward normal)
-        for (int i = 1; i < 5; ++i) {
-            faces[f++] = 6; faces[f++] = i + 7; faces[f++] = i + 6;
-        }
-        // 4. Sides (6 Quads = 12 Triangles)
-        for (int i = 0; i < 6; ++i) {
-            int next = (i + 1) % 6;
-            // Tri 1
-            faces[f++] = i; faces[f++] = i + 6; faces[f++] = next;
-            // Tri 2
-            faces[f++] = next; faces[f++] = i + 6; faces[f++] = next + 6;
-        }
-        initialized = true;
+        static rbc::ConvexHullData *data =
+            rbc::convex_hull_data_create(verts, 12, faces, 20);
+        return data;
     }
-
-    // Pass the actual faces and count (20 triangles)
-    static rbc::ConvexHullData* data = rbc::convex_hull_data_create(verts, 12, faces, 20);
-    return data;
-}
 // ── Corrected Helpers ─────────────────────────────────────────────────────────
 
 // This function now takes volume and unit_inertia explicitly to avoid the Shape overloading error
