@@ -1,6 +1,7 @@
 #pragma once
 #include <thread>
 #include <atomic>
+#include <optional>
 #include <functional>
 #include <vector>
 #include <raylib.h>
@@ -68,8 +69,8 @@ namespace visr
      */
     struct VisrApp
     {
-        rbps::World world;                          ///< Physics world the user populates before `run()`.
-        DebugChannel<InProcessTransport> channel;   ///< Snapshot/command channel between physics and render threads.
+        rbps::World world;                        ///< Physics world the user populates before `run()`.
+        DebugChannel<InProcessTransport> channel; ///< Snapshot/command channel between physics and render threads.
 
         CameraSystem camera_sys;       ///< WASD + RMB-drag free-look camera.
         SelectionSystem selection_sys; ///< LMB ray-pick + ESC deselect.
@@ -155,7 +156,15 @@ namespace visr
 
                 camera_sys.update(camera);
 
-                const FrameSnapshot *snap = channel.transport.latest_snapshot();
+                std::optional<FrameSnapshot> snap_copy;
+                {
+                    const FrameSnapshot *raw = channel.transport.latest_snapshot();
+                    if (raw)
+                        snap_copy = *raw; // deep copy — all vectors duplicated
+                }
+
+                const FrameSnapshot *snap = snap_copy ? &*snap_copy : nullptr;
+
                 if (snap && !ImGui::GetIO().WantCaptureMouse)
                     selection_sys.update(*snap, camera, sel, channel.transport);
 
