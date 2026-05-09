@@ -17,8 +17,7 @@ inline rbc::ConvexHullData *get_tetrahedron_data()
             m3d::vec3(-0.6,  0.6, -0.6),
             m3d::vec3( 0.6, -0.6, -0.6),
         };
-        // CCW-from-outside winding so cross(B-A, C-A) yields the outward normal.
-        // (Original 0,1,2 / 0,3,1 / 0,2,3 / 1,3,2 was inward — see plan.)
+        
         static const uint32_t faces[4 * 3] = {
             0, 2, 1,
             0, 1, 3,

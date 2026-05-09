@@ -1,7 +1,6 @@
 #pragma once
 #include <thread>
 #include <atomic>
-#include <optional>
 #include <functional>
 #include <vector>
 #include <raylib.h>
@@ -150,32 +149,26 @@ namespace visr
 
             while (!WindowShouldClose())
             {
-                // Space → pause / resume
                 if (IsKeyPressed(KEY_SPACE))
                     channel.toggle_pause();
 
                 camera_sys.update(camera);
 
-                std::optional<FrameSnapshot> snap_copy;
-                {
-                    const FrameSnapshot *raw = channel.transport.latest_snapshot();
-                    if (raw)
-                        snap_copy = *raw; // deep copy — all vectors duplicated
-                }
-
-                const FrameSnapshot *snap = snap_copy ? &*snap_copy : nullptr;
+                // Claim the latest snapshot ONCE per frame. The triple buffer guarantees
+                // this slot won't be touched by physics until we call latest_snapshot()
+                // again on the next frame, handing it back implicitly.
+                const FrameSnapshot *snap = channel.transport.latest_snapshot();
 
                 if (snap && !ImGui::GetIO().WantCaptureMouse)
                     selection_sys.update(*snap, camera, sel, channel.transport);
 
                 render_sys.update(channel, channel.transport, snap,
                                   camera, sel, camera_sys, extra_guis);
-            }
 
-            running.store(false, std::memory_order_relaxed);
-            render_sys.shutdown();
-            CloseWindow();
-            phys.join();
+                // Do NOT call latest_snapshot() again inside this frame.
+                // render_sys and selection_sys must use the pointer passed to them,
+                // not fetch a new one internally.
+            }
         }
     };
 
