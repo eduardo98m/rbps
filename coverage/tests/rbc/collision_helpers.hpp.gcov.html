@@ -1,0 +1,139 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - coverage_clean.info - tests/rbc/collision_helpers.hpp</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">tests/rbc</a> - collision_helpers.hpp<span style="font-size: 80%;"> (source / <a href="collision_helpers.hpp.func-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">coverage_clean.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryHi">90.9&nbsp;%</td>
+            <td class="headerCovTableEntry">22</td>
+            <td class="headerCovTableEntry">20</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2026-05-14 13:13:57</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">14</td>
+            <td class="headerCovTableEntry">14</td>
+          </tr>
+                  <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">            Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>              : #pragma once</span>
+<span id="L2"><span class="lineNum">       2</span>              : #include &quot;rbc/Dispatcher.hpp&quot;</span>
+<span id="L3"><span class="lineNum">       3</span>              : #include &quot;rbc/gjk/GJK.hpp&quot;</span>
+<span id="L4"><span class="lineNum">       4</span>              : #include &quot;rbc/gjk/EPA.hpp&quot;</span>
+<span id="L5"><span class="lineNum">       5</span>              : #include &quot;rbc/gjk/MinkowskiDiff.hpp&quot;</span>
+<span id="L6"><span class="lineNum">       6</span>              : #include &quot;tests/transform_helpers.hpp&quot;   // test::tf_at (shared across rbc + rbps)</span>
+<span id="L7"><span class="lineNum">       7</span>              : </span>
+<span id="L8"><span class="lineNum">       8</span>              : // ── rbc collision test helpers ──────────────────────────────────────────────</span>
+<span id="L9"><span class="lineNum">       9</span>              : // Replaces the gjk_reference() copy-paste duplicated across 5 analytic tests</span>
+<span id="L10"><span class="lineNum">      10</span>              : // and the m3d::tf-construction / .get&lt;T&gt;() / .points[0].x boilerplate.</span>
+<span id="L11"><span class="lineNum">      11</span>              : //</span>
+<span id="L12"><span class="lineNum">      12</span>              : // All free functions, all inline (header-only); ADL still finds them with a</span>
+<span id="L13"><span class="lineNum">      13</span>              : // `test::` prefix at call sites for clarity.</span>
+<span id="L14"><span class="lineNum">      14</span>              : namespace test</span>
+<span id="L15"><span class="lineNum">      15</span>              : {</span>
+<span id="L16"><span class="lineNum">      16</span>              :     // GJK + EPA cross-validation. Runs the generic Minkowski-diff GJK fallback</span>
+<span id="L17"><span class="lineNum">      17</span>              :     // on any pair of shapes and fills `out` as a single-point ContactManifold.</span>
+<span id="L18"><span class="lineNum">      18</span>              :     // Returns false if shapes don't penetrate.</span>
+<span id="L19"><span class="lineNum">      19</span> <span class="tlaGNC tlaBgGNC">          11 :     inline bool gjk_reference(const rbc::Shape &amp;sa, const m3d::tf &amp;tfa,</span></span>
+<span id="L20"><span class="lineNum">      20</span>              :                               const rbc::Shape &amp;sb, const m3d::tf &amp;tfb,</span>
+<span id="L21"><span class="lineNum">      21</span>              :                               rbc::ContactManifold &amp;out)</span>
+<span id="L22"><span class="lineNum">      22</span>              :     {</span>
+<span id="L23"><span class="lineNum">      23</span> <span class="tlaGNC">          11 :         rbc::MinkowskiDiff md(&amp;sa, &amp;sb, tfa, tfb);</span></span>
+<span id="L24"><span class="lineNum">      24</span> <span class="tlaGNC">          11 :         m3d::vec3 guess = tfb.pos - tfa.pos;</span></span>
+<span id="L25"><span class="lineNum">      25</span> <span class="tlaGNC">          11 :         if (m3d::length_sq(guess) &lt; m3d::EPSILON)</span></span>
+<span id="L26"><span class="lineNum">      26</span> <span class="tlaUNC tlaBgUNC">           0 :             guess = m3d::vec3(1.0, 0.0, 0.0);</span></span>
+<span id="L27"><span class="lineNum">      27</span>              : </span>
+<span id="L28"><span class="lineNum">      28</span> <span class="tlaGNC tlaBgGNC">          11 :         rbc::GJK gjk;</span></span>
+<span id="L29"><span class="lineNum">      29</span> <span class="tlaGNC">          11 :         if (gjk.evaluate(md, guess) != rbc::GJK::Inside)</span></span>
+<span id="L30"><span class="lineNum">      30</span> <span class="tlaUNC tlaBgUNC">           0 :             return false;</span></span>
+<span id="L31"><span class="lineNum">      31</span>              : </span>
+<span id="L32"><span class="lineNum">      32</span> <span class="tlaGNC tlaBgGNC">          11 :         rbc::EPA epa;</span></span>
+<span id="L33"><span class="lineNum">      33</span> <span class="tlaGNC">          11 :         if (epa.evaluate(gjk, md) != rbc::EPA::Valid)</span></span>
+<span id="L34"><span class="lineNum">      34</span> <span class="tlaGNC">           3 :             return false;</span></span>
+<span id="L35"><span class="lineNum">      35</span>              : </span>
+<span id="L36"><span class="lineNum">      36</span> <span class="tlaGNC">           8 :         out.normal                       = epa.normal;</span></span>
+<span id="L37"><span class="lineNum">      37</span> <span class="tlaGNC">           8 :         out.num_points                   = 1;</span></span>
+<span id="L38"><span class="lineNum">      38</span> <span class="tlaGNC">           8 :         out.points[0].penetration_depth  = epa.depth;</span></span>
+<span id="L39"><span class="lineNum">      39</span> <span class="tlaGNC">           8 :         out.points[0].position           = epa.contact_point;</span></span>
+<span id="L40"><span class="lineNum">      40</span> <span class="tlaGNC">           8 :         return true;</span></span>
+<span id="L41"><span class="lineNum">      41</span> <span class="tlaGNC">          11 :     }</span></span>
+<span id="L42"><span class="lineNum">      42</span>              : </span>
+<span id="L43"><span class="lineNum">      43</span>              :     // Type-deduced wrapper around CollisionAlgorithm&lt;A, B&gt;::test that takes</span>
+<span id="L44"><span class="lineNum">      44</span>              :     // Shape-wrapped operands. Avoids the .get&lt;A&gt;() / .get&lt;B&gt;() boilerplate.</span>
+<span id="L45"><span class="lineNum">      45</span>              :     template &lt;class A, class B&gt;</span>
+<span id="L46"><span class="lineNum">      46</span> <span class="tlaGNC">          46 :     inline bool collide(const rbc::Shape &amp;sa, const m3d::tf &amp;tfa,</span></span>
+<span id="L47"><span class="lineNum">      47</span>              :                         const rbc::Shape &amp;sb, const m3d::tf &amp;tfb,</span>
+<span id="L48"><span class="lineNum">      48</span>              :                         rbc::ContactManifold &amp;out)</span>
+<span id="L49"><span class="lineNum">      49</span>              :     {</span>
+<span id="L50"><span class="lineNum">      50</span> <span class="tlaGNC">          46 :         return rbc::CollisionAlgorithm&lt;A, B&gt;::test(</span></span>
+<span id="L51"><span class="lineNum">      51</span> <span class="tlaGNC">          46 :             sa.get&lt;A&gt;(), tfa, sb.get&lt;B&gt;(), tfb, out);</span></span>
+<span id="L52"><span class="lineNum">      52</span>              :     }</span>
+<span id="L53"><span class="lineNum">      53</span>              : </span>
+<span id="L54"><span class="lineNum">      54</span>              :     // Single-point manifold accessors (the common case in analytic tests).</span>
+<span id="L55"><span class="lineNum">      55</span> <span class="tlaGNC">          39 :     inline m3d::scalar depth(const rbc::ContactManifold &amp;m)</span></span>
+<span id="L56"><span class="lineNum">      56</span>              :     {</span>
+<span id="L57"><span class="lineNum">      57</span> <span class="tlaGNC">          39 :         return m.points[0].penetration_depth;</span></span>
+<span id="L58"><span class="lineNum">      58</span>              :     }</span>
+<span id="L59"><span class="lineNum">      59</span>              :     inline m3d::vec3 contact_position(const rbc::ContactManifold &amp;m)</span>
+<span id="L60"><span class="lineNum">      60</span>              :     {</span>
+<span id="L61"><span class="lineNum">      61</span>              :         return m.points[0].position;</span>
+<span id="L62"><span class="lineNum">      62</span>              :     }</span>
+<span id="L63"><span class="lineNum">      63</span>              : } // namespace test</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com//linux-test-project/lcov" target="_parent">LCOV version 2.0-1</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>

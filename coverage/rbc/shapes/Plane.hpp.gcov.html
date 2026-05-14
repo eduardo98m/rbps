@@ -1,0 +1,162 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - coverage_clean.info - rbc/shapes/Plane.hpp</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">rbc/shapes</a> - Plane.hpp<span style="font-size: 80%;"> (source / <a href="Plane.hpp.func-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">coverage_clean.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryLo">20.0&nbsp;%</td>
+            <td class="headerCovTableEntry">5</td>
+            <td class="headerCovTableEntry">1</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2026-05-14 13:13:57</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryLo">33.3&nbsp;%</td>
+            <td class="headerCovTableEntry">3</td>
+            <td class="headerCovTableEntry">1</td>
+          </tr>
+                  <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">            Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>              : #pragma once</span>
+<span id="L2"><span class="lineNum">       2</span>              : #include &lt;limits&gt;</span>
+<span id="L3"><span class="lineNum">       3</span>              : #include &lt;math3d/math3d.hpp&gt;</span>
+<span id="L4"><span class="lineNum">       4</span>              : #include &quot;rbc/AABB.hpp&quot;</span>
+<span id="L5"><span class="lineNum">       5</span>              : </span>
+<span id="L6"><span class="lineNum">       6</span>              : /**</span>
+<span id="L7"><span class="lineNum">       7</span>              :  * @file Plane.hpp</span>
+<span id="L8"><span class="lineNum">       8</span>              :  * @brief Infinite half-space (plane) collision shape.</span>
+<span id="L9"><span class="lineNum">       9</span>              :  * @ingroup rbc</span>
+<span id="L10"><span class="lineNum">      10</span>              :  */</span>
+<span id="L11"><span class="lineNum">      11</span>              : </span>
+<span id="L12"><span class="lineNum">      12</span>              : namespace rbc</span>
+<span id="L13"><span class="lineNum">      13</span>              : {</span>
+<span id="L14"><span class="lineNum">      14</span>              :     /**</span>
+<span id="L15"><span class="lineNum">      15</span>              :      * @brief Infinite half-space defined by `normal · x = d` in local space.</span>
+<span id="L16"><span class="lineNum">      16</span>              :      *</span>
+<span id="L17"><span class="lineNum">      17</span>              :      * The solid region is `normal · x ≥ d` (&quot;above&quot; the plane).</span>
+<span id="L18"><span class="lineNum">      18</span>              :      *</span>
+<span id="L19"><span class="lineNum">      19</span>              :      * Applying transform `tf`, the world-space plane parameters are:</span>
+<span id="L20"><span class="lineNum">      20</span>              :      * - `world_normal = tf.rotate_vector(normal)`</span>
+<span id="L21"><span class="lineNum">      21</span>              :      * - `world_d      = d + dot(world_normal, tf.pos)`</span>
+<span id="L22"><span class="lineNum">      22</span>              :      *</span>
+<span id="L23"><span class="lineNum">      23</span>              :      * @warning Plane is an *infinite* shape — GJK cannot handle it. Every</span>
+<span id="L24"><span class="lineNum">      24</span>              :      *          `*–Plane` collision pair must use an analytic algorithm</span>
+<span id="L25"><span class="lineNum">      25</span>              :      *          (see [analytic/PlaneCollision.hpp](analytic/PlaneCollision.hpp)).</span>
+<span id="L26"><span class="lineNum">      26</span>              :      *          The `support` and `face_corners` overloads here are stubs</span>
+<span id="L27"><span class="lineNum">      27</span>              :      *          that exist only because the variant-level dispatchers need</span>
+<span id="L28"><span class="lineNum">      28</span>              :      *          one overload per shape kind.</span>
+<span id="L29"><span class="lineNum">      29</span>              :      *</span>
+<span id="L30"><span class="lineNum">      30</span>              :      * @ingroup rbc</span>
+<span id="L31"><span class="lineNum">      31</span>              :      */</span>
+<span id="L32"><span class="lineNum">      32</span>              :     struct Plane</span>
+<span id="L33"><span class="lineNum">      33</span>              :     {</span>
+<span id="L34"><span class="lineNum">      34</span>              :         m3d::vec3 normal = {0.0, 1.0, 0.0}; ///&lt; Unit local-space normal (default: +Y up).</span>
+<span id="L35"><span class="lineNum">      35</span>              :         m3d::scalar d = 0.0;                ///&lt; Local-space offset: `normal·x = d` on the surface.</span>
+<span id="L36"><span class="lineNum">      36</span>              : </span>
+<span id="L37"><span class="lineNum">      37</span>              :         /** @brief Default plane: y = 0, normal +Y (a floor). */</span>
+<span id="L38"><span class="lineNum">      38</span>              :         Plane() = default;</span>
+<span id="L39"><span class="lineNum">      39</span>              :         /** @brief Construct from a normal and offset. */</span>
+<span id="L40"><span class="lineNum">      40</span> <span class="tlaGNC tlaBgGNC">           4 :         Plane(const m3d::vec3 &amp;normal, m3d::scalar d) : normal(normal), d(d) {}</span></span>
+<span id="L41"><span class="lineNum">      41</span>              : </span>
+<span id="L42"><span class="lineNum">      42</span>              :         /** @brief Equality. */</span>
+<span id="L43"><span class="lineNum">      43</span>              :         inline bool operator==(const Plane &amp;o) const { return normal == o.normal &amp;&amp; d == o.d; }</span>
+<span id="L44"><span class="lineNum">      44</span>              :         /** @brief Inequality. */</span>
+<span id="L45"><span class="lineNum">      45</span>              :         inline bool operator!=(const Plane &amp;o) const { return !(*this == o); }</span>
+<span id="L46"><span class="lineNum">      46</span>              :     };</span>
+<span id="L47"><span class="lineNum">      47</span>              : </span>
+<span id="L48"><span class="lineNum">      48</span>              :     /** @brief World-space plane normal: `tf.rot * p.normal`. @ingroup rbc */</span>
+<span id="L49"><span class="lineNum">      49</span>              :     inline m3d::vec3 plane_world_normal(const Plane &amp;p, const m3d::tf &amp;tf)</span>
+<span id="L50"><span class="lineNum">      50</span>              :     {</span>
+<span id="L51"><span class="lineNum">      51</span>              :         return tf.rotate_vector(p.normal);</span>
+<span id="L52"><span class="lineNum">      52</span>              :     }</span>
+<span id="L53"><span class="lineNum">      53</span>              : </span>
+<span id="L54"><span class="lineNum">      54</span>              :     /** @brief World-space plane offset: `p.d + dot(world_normal, tf.pos)`. @ingroup rbc */</span>
+<span id="L55"><span class="lineNum">      55</span>              :     inline m3d::scalar plane_world_d(const Plane &amp;p, const m3d::tf &amp;tf)</span>
+<span id="L56"><span class="lineNum">      56</span>              :     {</span>
+<span id="L57"><span class="lineNum">      57</span>              :         return p.d + m3d::dot(plane_world_normal(p, tf), tf.pos);</span>
+<span id="L58"><span class="lineNum">      58</span>              :     }</span>
+<span id="L59"><span class="lineNum">      59</span>              : </span>
+<span id="L60"><span class="lineNum">      60</span>              :     /**</span>
+<span id="L61"><span class="lineNum">      61</span>              :      * @brief Stub support function — returns zero.</span>
+<span id="L62"><span class="lineNum">      62</span>              :      *</span>
+<span id="L63"><span class="lineNum">      63</span>              :      * Plane is non-convex (infinite). `is_gjk_convex(const Plane*) == false`,</span>
+<span id="L64"><span class="lineNum">      64</span>              :      * so the dispatcher's compile-time guard prevents GJK from ever calling</span>
+<span id="L65"><span class="lineNum">      65</span>              :      * this. The overload exists only so the variant-level `shape_support`</span>
+<span id="L66"><span class="lineNum">      66</span>              :      * dispatch compiles.</span>
+<span id="L67"><span class="lineNum">      67</span>              :      *</span>
+<span id="L68"><span class="lineNum">      68</span>              :      * @ingroup rbc</span>
+<span id="L69"><span class="lineNum">      69</span>              :      */</span>
+<span id="L70"><span class="lineNum">      70</span> <span class="tlaUNC tlaBgUNC">           0 :     inline m3d::vec3 support(const Plane &amp;, const m3d::vec3 &amp;) { return m3d::vec3(); }</span></span>
+<span id="L71"><span class="lineNum">      71</span>              : </span>
+<span id="L72"><span class="lineNum">      72</span>              :     /** @brief AABB is infinite in all directions. @ingroup rbc */</span>
+<span id="L73"><span class="lineNum">      73</span> <span class="tlaUNC">           0 :     inline AABB compute_aabb(const Plane &amp; /*p*/, const m3d::tf &amp; /*tf*/)</span></span>
+<span id="L74"><span class="lineNum">      74</span>              :     {</span>
+<span id="L75"><span class="lineNum">      75</span> <span class="tlaUNC">           0 :         constexpr m3d::scalar INF = std::numeric_limits&lt;m3d::scalar&gt;::infinity();</span></span>
+<span id="L76"><span class="lineNum">      76</span> <span class="tlaUNC">           0 :         return {m3d::vec3(-INF, -INF, -INF), m3d::vec3(INF, INF, INF)};</span></span>
+<span id="L77"><span class="lineNum">      77</span>              :     }</span>
+<span id="L78"><span class="lineNum">      78</span>              : </span>
+<span id="L79"><span class="lineNum">      79</span>              :     /** @brief Tag-dispatched marker: Plane is non-convex / unbounded (false). @ingroup rbc */</span>
+<span id="L80"><span class="lineNum">      80</span>              :     constexpr bool is_gjk_convex(const Plane *) { return false; }</span>
+<span id="L81"><span class="lineNum">      81</span>              :     /** @brief Returns 0 — unbounded shape has no representative size. @ingroup rbc */</span>
+<span id="L82"><span class="lineNum">      82</span>              :     inline m3d::scalar representative_radius(const Plane &amp;) { return 0.0; }</span>
+<span id="L83"><span class="lineNum">      83</span>              :     /** @brief Stub — Plane pairs go through analytic algorithms. @ingroup rbc */</span>
+<span id="L84"><span class="lineNum">      84</span>              :     inline int face_corners(const Plane &amp;, const m3d::tf &amp;,</span>
+<span id="L85"><span class="lineNum">      85</span>              :                             const m3d::vec3 &amp;, m3d::vec3 *, int) { return 0; }</span>
+<span id="L86"><span class="lineNum">      86</span>              : } // namespace rbc</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com//linux-test-project/lcov" target="_parent">LCOV version 2.0-1</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>

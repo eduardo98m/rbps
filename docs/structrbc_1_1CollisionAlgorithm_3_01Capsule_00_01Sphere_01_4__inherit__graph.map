@@ -1,0 +1,5 @@
+<map id="rbc::CollisionAlgorithm&lt; Capsule, Sphere &gt;" name="rbc::CollisionAlgorithm&lt; Capsule, Sphere &gt;">
+<area shape="rect" id="Node000001" title="Capsule vs Sphere — reuses &lt;Sphere, Capsule&gt; and flips the normal." alt="" coords="19,93,190,133"/>
+<area shape="rect" id="Node000002" href="$structrbc_1_1CollisionAlgorithmSym.html" title=" " alt="" coords="5,5,204,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="107,59,107,93,102,93,102,59"/>
+</map>

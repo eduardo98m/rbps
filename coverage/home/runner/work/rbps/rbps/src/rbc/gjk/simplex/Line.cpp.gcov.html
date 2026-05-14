@@ -1,0 +1,124 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - coverage_clean.info - home/runner/work/rbps/rbps/src/rbc/gjk/simplex/Line.cpp</title>
+  <link rel="stylesheet" type="text/css" href="../../../../../../../../../gcov.css">
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="ruler"><img src="../../../../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../../../../../../../../index.html">top level</a> - <a href="index.html">/home/runner/work/rbps/rbps/src/rbc/gjk/simplex</a> - Line.cpp<span style="font-size: 80%;"> (source / <a href="Line.cpp.func-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">coverage_clean.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryMed">86.4&nbsp;%</td>
+            <td class="headerCovTableEntry">22</td>
+            <td class="headerCovTableEntry">19</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2026-05-14 13:13:57</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">1</td>
+            <td class="headerCovTableEntry">1</td>
+          </tr>
+                  <tr><td><img src="../../../../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../../../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">            Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>              : #include &quot;rbc/gjk/simplex/DoSimplex.hpp&quot;</span>
+<span id="L2"><span class="lineNum">       2</span>              : #include &quot;SimplexHelpers.hpp&quot;</span>
+<span id="L3"><span class="lineNum">       3</span>              : </span>
+<span id="L4"><span class="lineNum">       4</span>              : namespace rbc</span>
+<span id="L5"><span class="lineNum">       5</span>              : {</span>
+<span id="L6"><span class="lineNum">       6</span> <span class="tlaGNC tlaBgGNC">          17 :     bool do_simplex_2(Simplex &amp;s, m3d::vec3 &amp;direction)</span></span>
+<span id="L7"><span class="lineNum">       7</span>              :     {</span>
+<span id="L8"><span class="lineNum">       8</span> <span class="tlaGNC">          17 :         const m3d::vec3 a = s.vertex[0]-&gt;w;</span></span>
+<span id="L9"><span class="lineNum">       9</span> <span class="tlaGNC">          17 :         const m3d::vec3 b = s.vertex[1]-&gt;w;</span></span>
+<span id="L10"><span class="lineNum">      10</span>              : </span>
+<span id="L11"><span class="lineNum">      11</span> <span class="tlaGNC">          17 :         const m3d::vec3 ao = -a;</span></span>
+<span id="L12"><span class="lineNum">      12</span> <span class="tlaGNC">          17 :         const m3d::vec3 ab = b - a;</span></span>
+<span id="L13"><span class="lineNum">      13</span>              : </span>
+<span id="L14"><span class="lineNum">      14</span> <span class="tlaGNC">          17 :         if (m3d::dot(ab, ao) &gt;= 0.0)</span></span>
+<span id="L15"><span class="lineNum">      15</span>              :         {</span>
+<span id="L16"><span class="lineNum">      16</span> <span class="tlaGNC">          17 :             s.rank = 2;</span></span>
+<span id="L17"><span class="lineNum">      17</span> <span class="tlaGNC">          17 :             direction = simplex_detail::triple_cross(ab, ao, ab);</span></span>
+<span id="L18"><span class="lineNum">      18</span>              : </span>
+<span id="L19"><span class="lineNum">      19</span>              :             // Origin lies on the AB line: triple_cross collapses to zero.</span>
+<span id="L20"><span class="lineNum">      20</span>              :             // The literal reference would stall here, so EPA receives a</span>
+<span id="L21"><span class="lineNum">      21</span>              :             // rank-2 simplex and reports NonLinear (this is what shows</span>
+<span id="L22"><span class="lineNum">      22</span>              :             // up in tet-edge-vs-tet-edge contacts). Pick any axis not</span>
+<span id="L23"><span class="lineNum">      23</span>              :             // parallel to ab and cross with it to get a perpendicular</span>
+<span id="L24"><span class="lineNum">      24</span>              :             // search direction; the next support sample breaks the</span>
+<span id="L25"><span class="lineNum">      25</span>              :             // collinearity and the simplex grows to rank 3, then 4.</span>
+<span id="L26"><span class="lineNum">      26</span> <span class="tlaGNC">          17 :             if (m3d::length_sq(direction) &lt; 1e-6)</span></span>
+<span id="L27"><span class="lineNum">      27</span>              :             {</span>
+<span id="L28"><span class="lineNum">      28</span> <span class="tlaGNC">           7 :                 const m3d::scalar ax = m3d::abs(ab.x);</span></span>
+<span id="L29"><span class="lineNum">      29</span> <span class="tlaGNC">           7 :                 const m3d::scalar ay = m3d::abs(ab.y);</span></span>
+<span id="L30"><span class="lineNum">      30</span> <span class="tlaGNC">           7 :                 const m3d::scalar az = m3d::abs(ab.z);</span></span>
+<span id="L31"><span class="lineNum">      31</span> <span class="tlaGNC">          10 :                 const m3d::vec3 axis = (ax &lt;= ay &amp;&amp; ax &lt;= az)</span></span>
+<span id="L32"><span class="lineNum">      32</span> <span class="tlaGNC">           7 :                                          ? m3d::vec3(1.0, 0.0, 0.0)</span></span>
+<span id="L33"><span class="lineNum">      33</span>              :                                          : (ay &lt;= az</span>
+<span id="L34"><span class="lineNum">      34</span> <span class="tlaGNC">           5 :                                               ? m3d::vec3(0.0, 1.0, 0.0)</span></span>
+<span id="L35"><span class="lineNum">      35</span> <span class="tlaGNC">           7 :                                               : m3d::vec3(0.0, 0.0, 1.0));</span></span>
+<span id="L36"><span class="lineNum">      36</span> <span class="tlaGNC">           7 :                 direction = m3d::cross(ab, axis);</span></span>
+<span id="L37"><span class="lineNum">      37</span> <span class="tlaGNC">           7 :                 if (m3d::length_sq(direction) &lt; 1e-6)</span></span>
+<span id="L38"><span class="lineNum">      38</span> <span class="tlaUNC tlaBgUNC">           0 :                     direction = m3d::cross(ab, m3d::vec3(0.0, 0.0, 1.0));</span></span>
+<span id="L39"><span class="lineNum">      39</span>              :             }</span>
+<span id="L40"><span class="lineNum">      40</span>              :         }</span>
+<span id="L41"><span class="lineNum">      41</span>              :         else</span>
+<span id="L42"><span class="lineNum">      42</span>              :         {</span>
+<span id="L43"><span class="lineNum">      43</span> <span class="tlaUNC">           0 :             s.rank = 1;</span></span>
+<span id="L44"><span class="lineNum">      44</span> <span class="tlaUNC">           0 :             direction = ao;</span></span>
+<span id="L45"><span class="lineNum">      45</span>              :         }</span>
+<span id="L46"><span class="lineNum">      46</span> <span class="tlaGNC tlaBgGNC">          17 :         return false;</span></span>
+<span id="L47"><span class="lineNum">      47</span>              :     }</span>
+<span id="L48"><span class="lineNum">      48</span>              : } // namespace rbc</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../../../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com//linux-test-project/lcov" target="_parent">LCOV version 2.0-1</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>

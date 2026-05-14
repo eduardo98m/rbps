@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - coverage_clean.info - tests/math3d_helpers.hpp</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">tests</a> - math3d_helpers.hpp<span style="font-size: 80%;"> (source / <a href="math3d_helpers.hpp.func-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">coverage_clean.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">6</td>
+            <td class="headerCovTableEntry">6</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2026-05-14 13:13:57</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">2</td>
+          </tr>
+                  <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">            Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>              : #pragma once</span>
+<span id="L2"><span class="lineNum">       2</span>              : #include &lt;math3d/math3d.hpp&gt;</span>
+<span id="L3"><span class="lineNum">       3</span>              : </span>
+<span id="L4"><span class="lineNum">       4</span>              : // ── math3d test helpers ─────────────────────────────────────────────────────</span>
+<span id="L5"><span class="lineNum">       5</span>              : // Small utilities used across the math3d test suite.</span>
+<span id="L6"><span class="lineNum">       6</span>              : //   - identity_quat()       : the 1+0i+0j+0k quaternion</span>
+<span id="L7"><span class="lineNum">       7</span>              : //   - axis_quat(axis, theta): quaternion for a rotation about an axis</span>
+<span id="L8"><span class="lineNum">       8</span>              : //   - smat3_to_mat3(s)      : expand a symmetric 3x3 to a full mat3 (used in</span>
+<span id="L9"><span class="lineNum">       9</span>              : //                             test_mat3.cpp's smat3-vs-mat3 comparisons)</span>
+<span id="L10"><span class="lineNum">      10</span>              : namespace test</span>
+<span id="L11"><span class="lineNum">      11</span>              : {</span>
+<span id="L12"><span class="lineNum">      12</span>              :     inline m3d::quat identity_quat() { return m3d::quat(1.0, 0.0, 0.0, 0.0); }</span>
+<span id="L13"><span class="lineNum">      13</span>              : </span>
+<span id="L14"><span class="lineNum">      14</span> <span class="tlaGNC tlaBgGNC">           1 :     inline m3d::quat axis_quat(const m3d::vec3 &amp;axis, m3d::scalar angle_rad)</span></span>
+<span id="L15"><span class="lineNum">      15</span>              :     {</span>
+<span id="L16"><span class="lineNum">      16</span> <span class="tlaGNC">           1 :         return m3d::quat::from_axis_angle(axis, angle_rad);</span></span>
+<span id="L17"><span class="lineNum">      17</span>              :     }</span>
+<span id="L18"><span class="lineNum">      18</span>              : </span>
+<span id="L19"><span class="lineNum">      19</span> <span class="tlaGNC">           4 :     inline m3d::mat3 smat3_to_mat3(const m3d::smat3 &amp;s)</span></span>
+<span id="L20"><span class="lineNum">      20</span>              :     {</span>
+<span id="L21"><span class="lineNum">      21</span>              :         return m3d::mat3(</span>
+<span id="L22"><span class="lineNum">      22</span> <span class="tlaGNC">           4 :             s.xx, s.xy, s.xz,</span></span>
+<span id="L23"><span class="lineNum">      23</span> <span class="tlaGNC">           4 :             s.xy, s.yy, s.yz,</span></span>
+<span id="L24"><span class="lineNum">      24</span> <span class="tlaGNC">           4 :             s.xz, s.yz, s.zz);</span></span>
+<span id="L25"><span class="lineNum">      25</span>              :     }</span>
+<span id="L26"><span class="lineNum">      26</span>              : } // namespace test</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com//linux-test-project/lcov" target="_parent">LCOV version 2.0-1</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>

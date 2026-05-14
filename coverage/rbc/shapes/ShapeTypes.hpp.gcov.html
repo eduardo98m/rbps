@@ -1,0 +1,240 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - coverage_clean.info - rbc/shapes/ShapeTypes.hpp</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">rbc/shapes</a> - ShapeTypes.hpp<span style="font-size: 80%;"> (source / <a href="ShapeTypes.hpp.func-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">coverage_clean.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryMed">82.4&nbsp;%</td>
+            <td class="headerCovTableEntry">17</td>
+            <td class="headerCovTableEntry">14</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2026-05-14 13:13:57</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryLo">58.5&nbsp;%</td>
+            <td class="headerCovTableEntry">41</td>
+            <td class="headerCovTableEntry">24</td>
+          </tr>
+                  <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">            Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>              : #pragma once</span>
+<span id="L2"><span class="lineNum">       2</span>              : #include &lt;variant&gt;</span>
+<span id="L3"><span class="lineNum">       3</span>              : #include &quot;rbc/shapes/Sphere.hpp&quot;</span>
+<span id="L4"><span class="lineNum">       4</span>              : #include &quot;rbc/shapes/Box.hpp&quot;</span>
+<span id="L5"><span class="lineNum">       5</span>              : #include &quot;rbc/shapes/Ellipsoid.hpp&quot;</span>
+<span id="L6"><span class="lineNum">       6</span>              : #include &quot;rbc/shapes/Capsule.hpp&quot;</span>
+<span id="L7"><span class="lineNum">       7</span>              : #include &quot;rbc/shapes/Cylinder.hpp&quot;</span>
+<span id="L8"><span class="lineNum">       8</span>              : #include &quot;rbc/shapes/Cone.hpp&quot;</span>
+<span id="L9"><span class="lineNum">       9</span>              : #include &quot;rbc/shapes/Plane.hpp&quot;</span>
+<span id="L10"><span class="lineNum">      10</span>              : #include &quot;rbc/shapes/Heightmap.hpp&quot;</span>
+<span id="L11"><span class="lineNum">      11</span>              : #include &quot;rbc/shapes/Mesh.hpp&quot;</span>
+<span id="L12"><span class="lineNum">      12</span>              : #include &quot;rbc/shapes/ConvexHull.hpp&quot;</span>
+<span id="L13"><span class="lineNum">      13</span>              : </span>
+<span id="L14"><span class="lineNum">      14</span>              : /**</span>
+<span id="L15"><span class="lineNum">      15</span>              :  * @defgroup rbc rbc — Rigid-Body Collision</span>
+<span id="L16"><span class="lineNum">      16</span>              :  * @brief Collision shapes, broad-phase, narrow-phase, GJK/EPA, and contact manifolds.</span>
+<span id="L17"><span class="lineNum">      17</span>              :  *</span>
+<span id="L18"><span class="lineNum">      18</span>              :  * The rbc library answers a single question: given two shapes with poses,</span>
+<span id="L19"><span class="lineNum">      19</span>              :  * are they overlapping, and if so, where? It is split into three layers:</span>
+<span id="L20"><span class="lineNum">      20</span>              :  *</span>
+<span id="L21"><span class="lineNum">      21</span>              :  * - **Shapes** (`include/rbc/shapes/`) — geometric primitives plus a</span>
+<span id="L22"><span class="lineNum">      22</span>              :  *   uniform interface (`support`, `compute_aabb`, `face_corners`,</span>
+<span id="L23"><span class="lineNum">      23</span>              :  *   `is_gjk_convex`, `representative_radius`). All shape kinds are</span>
+<span id="L24"><span class="lineNum">      24</span>              :  *   discriminated through a `std::variant` in `Shape`.</span>
+<span id="L25"><span class="lineNum">      25</span>              :  * - **Broad / narrow phase** (`AABB.hpp`, `BroadPhase.hpp`,</span>
+<span id="L26"><span class="lineNum">      26</span>              :  *   `narrow_phase.hpp`, `Dispatcher.hpp`) — bounding-box pruning, then</span>
+<span id="L27"><span class="lineNum">      27</span>              :  *   per-pair dispatch to the right algorithm.</span>
+<span id="L28"><span class="lineNum">      28</span>              :  * - **Algorithms** (`gjk/`, `analytic/`) — GJK + EPA for generic convex</span>
+<span id="L29"><span class="lineNum">      29</span>              :  *   pairs, hand-written analytic routines for common pairs where they</span>
+<span id="L30"><span class="lineNum">      30</span>              :  *   beat GJK on speed and robustness.</span>
+<span id="L31"><span class="lineNum">      31</span>              :  *</span>
+<span id="L32"><span class="lineNum">      32</span>              :  * All public collision queries return a `ContactManifold` (defined in</span>
+<span id="L33"><span class="lineNum">      33</span>              :  * `gjk/ContactManifoldGenerator.hpp`) with up to 4 contact points.</span>
+<span id="L34"><span class="lineNum">      34</span>              :  */</span>
+<span id="L35"><span class="lineNum">      35</span>              : </span>
+<span id="L36"><span class="lineNum">      36</span>              : /**</span>
+<span id="L37"><span class="lineNum">      37</span>              :  * @file ShapeTypes.hpp</span>
+<span id="L38"><span class="lineNum">      38</span>              :  * @brief `Shape` variant + variant-level dispatchers (`compute_aabb`,</span>
+<span id="L39"><span class="lineNum">      39</span>              :  *        `shape_support`, `shape_face_corners`, `shape_representative_radius`).</span>
+<span id="L40"><span class="lineNum">      40</span>              :  * @ingroup rbc</span>
+<span id="L41"><span class="lineNum">      41</span>              :  */</span>
+<span id="L42"><span class="lineNum">      42</span>              : </span>
+<span id="L43"><span class="lineNum">      43</span>              : namespace rbc</span>
+<span id="L44"><span class="lineNum">      44</span>              : {</span>
+<span id="L45"><span class="lineNum">      45</span>              :     /**</span>
+<span id="L46"><span class="lineNum">      46</span>              :      * @brief Type-erased collision shape: a `std::variant` over every concrete shape.</span>
+<span id="L47"><span class="lineNum">      47</span>              :      *</span>
+<span id="L48"><span class="lineNum">      48</span>              :      * The variant alternative list IS the master list of shape kinds. Adding</span>
+<span id="L49"><span class="lineNum">      49</span>              :      * a new shape is one line in the `std::variant&lt;...&gt;` plus a header that</span>
+<span id="L50"><span class="lineNum">      50</span>              :      * provides `support`, `compute_aabb`, `is_gjk_convex`, `representative_radius`,</span>
+<span id="L51"><span class="lineNum">      51</span>              :      * and `face_corners`. No macros, no parallel enum, no manual dispatch table.</span>
+<span id="L52"><span class="lineNum">      52</span>              :      *</span>
+<span id="L53"><span class="lineNum">      53</span>              :      * Consumers query the kind with `is&lt;T&gt;()`, read a typed alternative with</span>
+<span id="L54"><span class="lineNum">      54</span>              :      * `get&lt;T&gt;()` (throws on mismatch), or get a nullable pointer with `as&lt;T&gt;()`.</span>
+<span id="L55"><span class="lineNum">      55</span>              :      *</span>
+<span id="L56"><span class="lineNum">      56</span>              :      * @code</span>
+<span id="L57"><span class="lineNum">      57</span>              :      * Shape s = Box{m3d::vec3{1, 0.5, 0.5}};</span>
+<span id="L58"><span class="lineNum">      58</span>              :      * if (s.is&lt;Box&gt;()) {</span>
+<span id="L59"><span class="lineNum">      59</span>              :      *     const Box&amp; b = s.get&lt;Box&gt;();</span>
+<span id="L60"><span class="lineNum">      60</span>              :      *     // ...</span>
+<span id="L61"><span class="lineNum">      61</span>              :      * }</span>
+<span id="L62"><span class="lineNum">      62</span>              :      * AABB world_box = compute_aabb(s, body_tf);</span>
+<span id="L63"><span class="lineNum">      63</span>              :      * @endcode</span>
+<span id="L64"><span class="lineNum">      64</span>              :      *</span>
+<span id="L65"><span class="lineNum">      65</span>              :      * @ingroup rbc</span>
+<span id="L66"><span class="lineNum">      66</span>              :      */</span>
+<span id="L67"><span class="lineNum">      67</span>              :     struct Shape</span>
+<span id="L68"><span class="lineNum">      68</span>              :     {</span>
+<span id="L69"><span class="lineNum">      69</span>              :         std::variant&lt;Sphere, Box, Ellipsoid, Capsule, Cylinder, Cone, Plane, Heightmap, Mesh, ConvexHull&gt; v;</span>
+<span id="L70"><span class="lineNum">      70</span>              : </span>
+<span id="L71"><span class="lineNum">      71</span>              :         /** @brief Default-construct holding a default `Sphere`. */</span>
+<span id="L72"><span class="lineNum">      72</span> <span class="tlaGNC tlaBgGNC">          96 :         Shape() = default;</span></span>
+<span id="L73"><span class="lineNum">      73</span>              :         /** @brief Construct from a concrete shape. */</span>
+<span id="L74"><span class="lineNum">      74</span> <span class="tlaGNC">          84 :         Shape(const Sphere     &amp;s) : v(s) {}</span></span>
+<span id="L75"><span class="lineNum">      75</span>              :         /** @brief Construct from a concrete shape. */</span>
+<span id="L76"><span class="lineNum">      76</span> <span class="tlaGNC">          37 :         Shape(const Box        &amp;b) : v(b) {}</span></span>
+<span id="L77"><span class="lineNum">      77</span>              :         /** @brief Construct from a concrete shape. */</span>
+<span id="L78"><span class="lineNum">      78</span> <span class="tlaUNC tlaBgUNC">           0 :         Shape(const Ellipsoid  &amp;e) : v(e) {}</span></span>
+<span id="L79"><span class="lineNum">      79</span>              :         /** @brief Construct from a concrete shape. */</span>
+<span id="L80"><span class="lineNum">      80</span> <span class="tlaGNC tlaBgGNC">           9 :         Shape(const Capsule    &amp;c) : v(c) {}</span></span>
+<span id="L81"><span class="lineNum">      81</span>              :         /** @brief Construct from a concrete shape. */</span>
+<span id="L82"><span class="lineNum">      82</span> <span class="tlaUNC tlaBgUNC">           0 :         Shape(const Cylinder &amp;c) : v(c) {}</span></span>
+<span id="L83"><span class="lineNum">      83</span>              :         /** @brief Construct from a concrete shape. */</span>
+<span id="L84"><span class="lineNum">      84</span> <span class="tlaUNC">           0 :         Shape(const Cone       &amp;c) : v(c) {}</span></span>
+<span id="L85"><span class="lineNum">      85</span>              :         /** @brief Construct from a concrete shape. */</span>
+<span id="L86"><span class="lineNum">      86</span> <span class="tlaGNC tlaBgGNC">           4 :         Shape(const Plane      &amp;p) : v(p) {}</span></span>
+<span id="L87"><span class="lineNum">      87</span>              :         /** @brief Construct from a concrete shape. */</span>
+<span id="L88"><span class="lineNum">      88</span> <span class="tlaGNC">           9 :         Shape(const Heightmap  &amp;h) : v(h) {}</span></span>
+<span id="L89"><span class="lineNum">      89</span>              :         /** @brief Construct from a concrete shape. */</span>
+<span id="L90"><span class="lineNum">      90</span>              :         Shape(const Mesh       &amp;m) : v(m) {}</span>
+<span id="L91"><span class="lineNum">      91</span>              :         /** @brief Construct from a concrete shape. */</span>
+<span id="L92"><span class="lineNum">      92</span> <span class="tlaGNC">          28 :         Shape(const ConvexHull &amp;h) : v(h) {}</span></span>
+<span id="L93"><span class="lineNum">      93</span>              :         </span>
+<span id="L94"><span class="lineNum">      94</span>              : </span>
+<span id="L95"><span class="lineNum">      95</span>              :         /** @brief Read the active alternative; throws `std::bad_variant_access` on mismatch. */</span>
+<span id="L96"><span class="lineNum">      96</span> <span class="tlaGNC">          97 :         template &lt;class T&gt; const T &amp;get() const { return std::get&lt;T&gt;(v); }</span></span>
+<span id="L97"><span class="lineNum">      97</span>              :         /** @brief Read the active alternative; returns `nullptr` on mismatch. */</span>
+<span id="L98"><span class="lineNum">      98</span> <span class="tlaGNC">          10 :         template &lt;class T&gt; const T *as()  const { return std::get_if&lt;T&gt;(&amp;v); }</span></span>
+<span id="L99"><span class="lineNum">      99</span>              :         /** @brief Test whether the variant currently holds a `T`. */</span>
+<span id="L100"><span class="lineNum">     100</span> <span class="tlaGNC">       26570 :         template &lt;class T&gt; bool     is()  const { return std::holds_alternative&lt;T&gt;(v); }</span></span>
+<span id="L101"><span class="lineNum">     101</span>              :     };</span>
+<span id="L102"><span class="lineNum">     102</span>              : </span>
+<span id="L103"><span class="lineNum">     103</span>              :     // ── Variant-level dispatchers ────────────────────────────────────────────</span>
+<span id="L104"><span class="lineNum">     104</span>              :     // Each routes through std::visit to the per-shape free function. The</span>
+<span id="L105"><span class="lineNum">     105</span>              :     // ADL-found overload is selected at compile time per alternative; runtime</span>
+<span id="L106"><span class="lineNum">     106</span>              :     // cost is one indirect call (one variant index lookup + jump).</span>
+<span id="L107"><span class="lineNum">     107</span>              : </span>
+<span id="L108"><span class="lineNum">     108</span>              :     /**</span>
+<span id="L109"><span class="lineNum">     109</span>              :      * @brief World-space AABB of `shape` placed at `tf`.</span>
+<span id="L110"><span class="lineNum">     110</span>              :      *</span>
+<span id="L111"><span class="lineNum">     111</span>              :      * Variant-level dispatcher: routes through `std::visit` to the per-shape</span>
+<span id="L112"><span class="lineNum">     112</span>              :      * `compute_aabb(const T&amp;, const tf&amp;)` overload.</span>
+<span id="L113"><span class="lineNum">     113</span>              :      *</span>
+<span id="L114"><span class="lineNum">     114</span>              :      * @ingroup rbc</span>
+<span id="L115"><span class="lineNum">     115</span>              :      */</span>
+<span id="L116"><span class="lineNum">     116</span> <span class="tlaGNC">        1240 :     inline AABB compute_aabb(const Shape &amp;shape, const m3d::tf &amp;tf)</span></span>
+<span id="L117"><span class="lineNum">     117</span>              :     {</span>
+<span id="L118"><span class="lineNum">     118</span> <span class="tlaGNC">        3720 :         return std::visit([&amp;](const auto &amp;x) { return compute_aabb(x, tf); }, shape.v);</span></span>
+<span id="L119"><span class="lineNum">     119</span>              :     }</span>
+<span id="L120"><span class="lineNum">     120</span>              : </span>
+<span id="L121"><span class="lineNum">     121</span>              :     /**</span>
+<span id="L122"><span class="lineNum">     122</span>              :      * @brief Local-space support point of `shape` along `dir`.</span>
+<span id="L123"><span class="lineNum">     123</span>              :      *</span>
+<span id="L124"><span class="lineNum">     124</span>              :      * Variant-level dispatcher used by GJK. Only meaningful for convex</span>
+<span id="L125"><span class="lineNum">     125</span>              :      * shapes (`is_gjk_convex(const T*) == true`); non-convex shapes return</span>
+<span id="L126"><span class="lineNum">     126</span>              :      * a placeholder and should never be called this way at runtime.</span>
+<span id="L127"><span class="lineNum">     127</span>              :      *</span>
+<span id="L128"><span class="lineNum">     128</span>              :      * @ingroup rbc</span>
+<span id="L129"><span class="lineNum">     129</span>              :      */</span>
+<span id="L130"><span class="lineNum">     130</span> <span class="tlaGNC">         770 :     inline m3d::vec3 shape_support(const Shape &amp;shape, const m3d::vec3 &amp;dir)</span></span>
+<span id="L131"><span class="lineNum">     131</span>              :     {</span>
+<span id="L132"><span class="lineNum">     132</span> <span class="tlaGNC">        2310 :         return std::visit([&amp;](const auto &amp;x) { return support(x, dir); }, shape.v);</span></span>
+<span id="L133"><span class="lineNum">     133</span>              :     }</span>
+<span id="L134"><span class="lineNum">     134</span>              : </span>
+<span id="L135"><span class="lineNum">     135</span>              :     /**</span>
+<span id="L136"><span class="lineNum">     136</span>              :      * @brief World-space corners of the face of `shape` that is most aligned with `dir`.</span>
+<span id="L137"><span class="lineNum">     137</span>              :      *</span>
+<span id="L138"><span class="lineNum">     138</span>              :      * Used by the contact-manifold generator as the reference / incident</span>
+<span id="L139"><span class="lineNum">     139</span>              :      * polygon. Returns the number of corners written (up to `capacity`);</span>
+<span id="L140"><span class="lineNum">     140</span>              :      * shapes without flat faces fall back to a disc approximation in</span>
+<span id="L141"><span class="lineNum">     141</span>              :      * `get_generic_face_corners`. ConvexHull may return up to its</span>
+<span id="L142"><span class="lineNum">     142</span>              :      * largest merged-polygon size — pass at least `kMaxFaceCorners`.</span>
+<span id="L143"><span class="lineNum">     143</span>              :      *</span>
+<span id="L144"><span class="lineNum">     144</span>              :      * @ingroup rbc</span>
+<span id="L145"><span class="lineNum">     145</span>              :      */</span>
+<span id="L146"><span class="lineNum">     146</span>              :     inline int shape_face_corners(const Shape &amp;shape, const m3d::tf &amp;tf,</span>
+<span id="L147"><span class="lineNum">     147</span>              :                                   const m3d::vec3 &amp;dir, m3d::vec3 *out, int capacity)</span>
+<span id="L148"><span class="lineNum">     148</span>              :     {</span>
+<span id="L149"><span class="lineNum">     149</span>              :         return std::visit([&amp;](const auto &amp;x) { return face_corners(x, tf, dir, out, capacity); }, shape.v);</span>
+<span id="L150"><span class="lineNum">     150</span>              :     }</span>
+<span id="L151"><span class="lineNum">     151</span>              : </span>
+<span id="L152"><span class="lineNum">     152</span>              :     /**</span>
+<span id="L153"><span class="lineNum">     153</span>              :      * @brief A representative size used for contact-tolerance scaling.</span>
+<span id="L154"><span class="lineNum">     154</span>              :      *</span>
+<span id="L155"><span class="lineNum">     155</span>              :      * Roughly the largest principal radius / half-extent of the shape.</span>
+<span id="L156"><span class="lineNum">     156</span>              :      * Returns 0 for unbounded shapes (`Plane`, `Heightmap`, `Mesh`).</span>
+<span id="L157"><span class="lineNum">     157</span>              :      *</span>
+<span id="L158"><span class="lineNum">     158</span>              :      * @ingroup rbc</span>
+<span id="L159"><span class="lineNum">     159</span>              :      */</span>
+<span id="L160"><span class="lineNum">     160</span>              :     inline m3d::scalar shape_representative_radius(const Shape &amp;shape)</span>
+<span id="L161"><span class="lineNum">     161</span>              :     {</span>
+<span id="L162"><span class="lineNum">     162</span>              :         return std::visit([](const auto &amp;x) { return representative_radius(x); }, shape.v);</span>
+<span id="L163"><span class="lineNum">     163</span>              :     }</span>
+<span id="L164"><span class="lineNum">     164</span>              : } // namespace rbc</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com//linux-test-project/lcov" target="_parent">LCOV version 2.0-1</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>

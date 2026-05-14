@@ -1,0 +1,174 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - coverage_clean.info - home/runner/work/rbps/rbps/src/rbc/gjk/GJK.cpp</title>
+  <link rel="stylesheet" type="text/css" href="../../../../../../../../gcov.css">
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="ruler"><img src="../../../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../../../../../../../index.html">top level</a> - <a href="index.html">/home/runner/work/rbps/rbps/src/rbc/gjk</a> - GJK.cpp<span style="font-size: 80%;"> (source / <a href="GJK.cpp.func-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">coverage_clean.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryHi">95.3&nbsp;%</td>
+            <td class="headerCovTableEntry">43</td>
+            <td class="headerCovTableEntry">41</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2026-05-14 13:13:57</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">2</td>
+          </tr>
+                  <tr><td><img src="../../../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">            Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>              : // GJK — overlap test for convex shapes via Minkowski-difference origin search.</span>
+<span id="L2"><span class="lineNum">       2</span>              : //</span>
+<span id="L3"><span class="lineNum">       3</span>              : // Reference algorithm (Ericson, Real-Time Collision Detection §9.5):</span>
+<span id="L4"><span class="lineNum">       4</span>              : //   1. Initialize the simplex set Q to one or more points (up to d + 1</span>
+<span id="L5"><span class="lineNum">       5</span>              : //      points, where d is the dimension) from the Minkowski difference</span>
+<span id="L6"><span class="lineNum">       6</span>              : //      of A and B.</span>
+<span id="L7"><span class="lineNum">       7</span>              : //   2. Compute the point P of minimum norm in CH(Q).</span>
+<span id="L8"><span class="lineNum">       8</span>              : //   3. If P is the origin itself, the origin is clearly contained in</span>
+<span id="L9"><span class="lineNum">       9</span>              : //      the Minkowski difference of A and B. Stop and return A and B</span>
+<span id="L10"><span class="lineNum">      10</span>              : //      as intersecting.</span>
+<span id="L11"><span class="lineNum">      11</span>              : //   4. Reduce Q to the smallest subset Q' of Q such that P ∈ CH(Q').</span>
+<span id="L12"><span class="lineNum">      12</span>              : //      That is, remove any points from Q not determining the</span>
+<span id="L13"><span class="lineNum">      13</span>              : //      subsimplex of Q in which P lies.</span>
+<span id="L14"><span class="lineNum">      14</span>              : //   5. Let V = sA−B(−P) = sA(−P) − sB(P) be a supporting point in</span>
+<span id="L15"><span class="lineNum">      15</span>              : //      direction −P.</span>
+<span id="L16"><span class="lineNum">      16</span>              : //   6. If V is no more extremal in direction −P than P itself, stop</span>
+<span id="L17"><span class="lineNum">      17</span>              : //      and return A and B as not intersecting. The length of the</span>
+<span id="L18"><span class="lineNum">      18</span>              : //      vector from the origin to P is the separation distance of</span>
+<span id="L19"><span class="lineNum">      19</span>              : //      A and B.</span>
+<span id="L20"><span class="lineNum">      20</span>              : //   7. Add V to Q and go to 2.</span>
+<span id="L21"><span class="lineNum">      21</span>              : //</span>
+<span id="L22"><span class="lineNum">      22</span>              : // Steps 2–4 are implemented by `do_simplex` (per-rank handlers in</span>
+<span id="L23"><span class="lineNum">      23</span>              : // `simplex/Line.cpp`, `Triangle.cpp`, `Tetrahedron.cpp`); step 5 by the</span>
+<span id="L24"><span class="lineNum">      24</span>              : // MinkowskiDiff support call; step 6 by the early-out below.</span>
+<span id="L25"><span class="lineNum">      25</span>              : </span>
+<span id="L26"><span class="lineNum">      26</span>              : #include &quot;rbc/gjk/GJK.hpp&quot;</span>
+<span id="L27"><span class="lineNum">      27</span>              : #include &quot;rbc/gjk/simplex/DoSimplex.hpp&quot;</span>
+<span id="L28"><span class="lineNum">      28</span>              : #include &lt;math3d/math3d.hpp&gt;</span>
+<span id="L29"><span class="lineNum">      29</span>              : </span>
+<span id="L30"><span class="lineNum">      30</span>              : namespace rbc</span>
+<span id="L31"><span class="lineNum">      31</span>              : {</span>
+<span id="L32"><span class="lineNum">      32</span> <span class="tlaGNC tlaBgGNC">          20 :     GJK::GJK()</span></span>
+<span id="L33"><span class="lineNum">      33</span> <span class="tlaGNC">          20 :         : status(Failed),</span></span>
+<span id="L34"><span class="lineNum">      34</span> <span class="tlaGNC">          20 :           current_shape(nullptr),</span></span>
+<span id="L35"><span class="lineNum">      35</span> <span class="tlaGNC">          20 :           ray(0.0, 0.0, 0.0),</span></span>
+<span id="L36"><span class="lineNum">      36</span> <span class="tlaGNC">          20 :           distance(0.0),</span></span>
+<span id="L37"><span class="lineNum">      37</span> <span class="tlaGNC">          20 :           active_simplex(nullptr)</span></span>
+<span id="L38"><span class="lineNum">      38</span>              :     {</span>
+<span id="L39"><span class="lineNum">      39</span> <span class="tlaGNC">          20 :         simplex.reset();</span></span>
+<span id="L40"><span class="lineNum">      40</span> <span class="tlaGNC">          20 :     }</span></span>
+<span id="L41"><span class="lineNum">      41</span>              : </span>
+<span id="L42"><span class="lineNum">      42</span> <span class="tlaGNC">          20 :     GJK::Status GJK::evaluate(const MinkowskiDiff &amp;shape, const m3d::vec3 &amp;initial_guess)</span></span>
+<span id="L43"><span class="lineNum">      43</span>              :     {</span>
+<span id="L44"><span class="lineNum">      44</span> <span class="tlaGNC">          20 :         current_shape  = &amp;shape;</span></span>
+<span id="L45"><span class="lineNum">      45</span> <span class="tlaGNC">          20 :         active_simplex = &amp;simplex;</span></span>
+<span id="L46"><span class="lineNum">      46</span> <span class="tlaGNC">          20 :         simplex.reset();</span></span>
+<span id="L47"><span class="lineNum">      47</span>              : </span>
+<span id="L48"><span class="lineNum">      48</span> <span class="tlaGNC">          20 :         m3d::vec3 dir = (m3d::length_sq(initial_guess) &gt; m3d::EPSILON)</span></span>
+<span id="L49"><span class="lineNum">      49</span> <span class="tlaGNC">          20 :                           ? initial_guess</span></span>
+<span id="L50"><span class="lineNum">      50</span> <span class="tlaGNC">          20 :                           : m3d::vec3(1.0, 0.0, 0.0);</span></span>
+<span id="L51"><span class="lineNum">      51</span>              : </span>
+<span id="L52"><span class="lineNum">      52</span>              :         // Step 1 — seed the simplex with one support sample.</span>
+<span id="L53"><span class="lineNum">      53</span> <span class="tlaGNC">          20 :         SimplexVertex v0;</span></span>
+<span id="L54"><span class="lineNum">      54</span> <span class="tlaGNC">          20 :         v0.w0 = shape.support_a(dir);</span></span>
+<span id="L55"><span class="lineNum">      55</span> <span class="tlaGNC">          20 :         v0.w1 = shape.support_b(-dir);</span></span>
+<span id="L56"><span class="lineNum">      56</span> <span class="tlaGNC">          20 :         v0.w  = v0.w0 - v0.w1;</span></span>
+<span id="L57"><span class="lineNum">      57</span> <span class="tlaGNC">          20 :         add_to_simplex(simplex, v0);</span></span>
+<span id="L58"><span class="lineNum">      58</span> <span class="tlaGNC">          20 :         dir      = -v0.w;</span></span>
+<span id="L59"><span class="lineNum">      59</span> <span class="tlaGNC">          20 :         ray      = dir;</span></span>
+<span id="L60"><span class="lineNum">      60</span> <span class="tlaGNC">          20 :         distance = m3d::length(ray);</span></span>
+<span id="L61"><span class="lineNum">      61</span>              : </span>
+<span id="L62"><span class="lineNum">      62</span> <span class="tlaGNC">          54 :         for (unsigned int it = 0; it &lt; max_iterations; ++it)</span></span>
+<span id="L63"><span class="lineNum">      63</span>              :         {</span>
+<span id="L64"><span class="lineNum">      64</span>              :             // Step 5 — sample the support along the current direction.</span>
+<span id="L65"><span class="lineNum">      65</span> <span class="tlaGNC">          54 :             SimplexVertex next;</span></span>
+<span id="L66"><span class="lineNum">      66</span> <span class="tlaGNC">          54 :             next.w0 = shape.support_a(dir);</span></span>
+<span id="L67"><span class="lineNum">      67</span> <span class="tlaGNC">          54 :             next.w1 = shape.support_b(-dir);</span></span>
+<span id="L68"><span class="lineNum">      68</span> <span class="tlaGNC">          54 :             next.w  = next.w0 - next.w1;</span></span>
+<span id="L69"><span class="lineNum">      69</span>              : </span>
+<span id="L70"><span class="lineNum">      70</span>              :             // Step 6 — early out when the new support cannot reach the origin.</span>
+<span id="L71"><span class="lineNum">      71</span> <span class="tlaGNC">          54 :             if (m3d::dot(next.w, dir) &lt; 0.0)</span></span>
+<span id="L72"><span class="lineNum">      72</span>              :             {</span>
+<span id="L73"><span class="lineNum">      73</span> <span class="tlaGNC">           3 :                 ray      = dir;</span></span>
+<span id="L74"><span class="lineNum">      74</span> <span class="tlaGNC">           3 :                 distance = m3d::length(dir);</span></span>
+<span id="L75"><span class="lineNum">      75</span> <span class="tlaGNC">           3 :                 status   = Valid;</span></span>
+<span id="L76"><span class="lineNum">      76</span> <span class="tlaGNC">           3 :                 return status;</span></span>
+<span id="L77"><span class="lineNum">      77</span>              :             }</span>
+<span id="L78"><span class="lineNum">      78</span>              : </span>
+<span id="L79"><span class="lineNum">      79</span> <span class="tlaGNC">          51 :             add_to_simplex(simplex, next);</span></span>
+<span id="L80"><span class="lineNum">      80</span>              : </span>
+<span id="L81"><span class="lineNum">      81</span>              :             // Steps 2–4 — reduce the simplex and update the search direction.</span>
+<span id="L82"><span class="lineNum">      82</span> <span class="tlaGNC">          51 :             if (do_simplex(simplex, dir))</span></span>
+<span id="L83"><span class="lineNum">      83</span>              :             {</span>
+<span id="L84"><span class="lineNum">      84</span> <span class="tlaGNC">          17 :                 ray      = m3d::vec3(0.0, 0.0, 0.0);</span></span>
+<span id="L85"><span class="lineNum">      85</span> <span class="tlaGNC">          17 :                 distance = 0.0;</span></span>
+<span id="L86"><span class="lineNum">      86</span> <span class="tlaGNC">          17 :                 status   = Inside;</span></span>
+<span id="L87"><span class="lineNum">      87</span> <span class="tlaGNC">          17 :                 return status;</span></span>
+<span id="L88"><span class="lineNum">      88</span>              :             }</span>
+<span id="L89"><span class="lineNum">      89</span>              : </span>
+<span id="L90"><span class="lineNum">      90</span> <span class="tlaGNC">          34 :             ray      = dir;</span></span>
+<span id="L91"><span class="lineNum">      91</span> <span class="tlaGNC">          34 :             distance = m3d::length(dir);</span></span>
+<span id="L92"><span class="lineNum">      92</span>              :         }</span>
+<span id="L93"><span class="lineNum">      93</span>              : </span>
+<span id="L94"><span class="lineNum">      94</span> <span class="tlaUNC tlaBgUNC">           0 :         status = Failed;</span></span>
+<span id="L95"><span class="lineNum">      95</span> <span class="tlaUNC">           0 :         return status;</span></span>
+<span id="L96"><span class="lineNum">      96</span>              :     }</span>
+<span id="L97"><span class="lineNum">      97</span>              : </span>
+<span id="L98"><span class="lineNum">      98</span>              : } // namespace rbc</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com//linux-test-project/lcov" target="_parent">LCOV version 2.0-1</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>

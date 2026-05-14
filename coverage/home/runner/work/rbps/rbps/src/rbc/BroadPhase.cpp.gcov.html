@@ -1,0 +1,323 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - coverage_clean.info - home/runner/work/rbps/rbps/src/rbc/BroadPhase.cpp</title>
+  <link rel="stylesheet" type="text/css" href="../../../../../../../gcov.css">
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="ruler"><img src="../../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../../../../../../index.html">top level</a> - <a href="index.html">/home/runner/work/rbps/rbps/src/rbc</a> - BroadPhase.cpp<span style="font-size: 80%;"> (source / <a href="BroadPhase.cpp.func-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">coverage_clean.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryHi">98.3&nbsp;%</td>
+            <td class="headerCovTableEntry">115</td>
+            <td class="headerCovTableEntry">113</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2026-05-14 13:13:57</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">13</td>
+            <td class="headerCovTableEntry">13</td>
+          </tr>
+                  <tr><td><img src="../../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">            Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>              : #include &quot;rbc/BroadPhase.hpp&quot;</span>
+<span id="L2"><span class="lineNum">       2</span>              : #include &lt;algorithm&gt;</span>
+<span id="L3"><span class="lineNum">       3</span>              : #include &lt;cassert&gt;</span>
+<span id="L4"><span class="lineNum">       4</span>              : </span>
+<span id="L5"><span class="lineNum">       5</span>              : namespace rbc</span>
+<span id="L6"><span class="lineNum">       6</span>              : {</span>
+<span id="L7"><span class="lineNum">       7</span>              :     // =========================================================================</span>
+<span id="L8"><span class="lineNum">       8</span>              :     //  Helpers</span>
+<span id="L9"><span class="lineNum">       9</span>              :     // =========================================================================</span>
+<span id="L10"><span class="lineNum">      10</span>              : </span>
+<span id="L11"><span class="lineNum">      11</span>              :     // Check whether `tight` is still fully contained inside `fat`.</span>
+<span id="L12"><span class="lineNum">      12</span>              :     // Returns true when the object does NOT need a fat-AABB rebuild.</span>
+<span id="L13"><span class="lineNum">      13</span> <span class="tlaGNC tlaBgGNC">        1198 :     static inline bool aabb_contained(const AABB &amp;tight, const AABB &amp;fat)</span></span>
+<span id="L14"><span class="lineNum">      14</span>              :     {</span>
+<span id="L15"><span class="lineNum">      15</span> <span class="tlaGNC">        1186 :         return tight.min.x &gt;= fat.min.x &amp;&amp; tight.max.x &lt;= fat.max.x &amp;&amp;</span></span>
+<span id="L16"><span class="lineNum">      16</span> <span class="tlaGNC">        1165 :                tight.min.y &gt;= fat.min.y &amp;&amp; tight.max.y &lt;= fat.max.y &amp;&amp;</span></span>
+<span id="L17"><span class="lineNum">      17</span> <span class="tlaGNC">        2384 :                tight.min.z &gt;= fat.min.z &amp;&amp; tight.max.z &lt;= fat.max.z;</span></span>
+<span id="L18"><span class="lineNum">      18</span>              :     }</span>
+<span id="L19"><span class="lineNum">      19</span>              : </span>
+<span id="L20"><span class="lineNum">      20</span> <span class="tlaGNC">         199 :     static inline AABB make_fat(const AABB &amp;tight, m3d::scalar margin)</span></span>
+<span id="L21"><span class="lineNum">      21</span>              :     {</span>
+<span id="L22"><span class="lineNum">      22</span> <span class="tlaGNC">         199 :         return aabb_expand(tight, margin);</span></span>
+<span id="L23"><span class="lineNum">      23</span>              :     }</span>
+<span id="L24"><span class="lineNum">      24</span>              : </span>
+<span id="L25"><span class="lineNum">      25</span>              :     // =========================================================================</span>
+<span id="L26"><span class="lineNum">      26</span>              :     //  Endpoint management</span>
+<span id="L27"><span class="lineNum">      27</span>              :     // =========================================================================</span>
+<span id="L28"><span class="lineNum">      28</span>              : </span>
+<span id="L29"><span class="lineNum">      29</span>              :     // Append two endpoints (min + max on X) for a newly inserted object.</span>
+<span id="L30"><span class="lineNum">      30</span> <span class="tlaGNC">          80 :     static void ep_insert(std::vector&lt;SAPEndpoint&gt; &amp;endpoints,</span></span>
+<span id="L31"><span class="lineNum">      31</span>              :                           uint32_t                  slot,</span>
+<span id="L32"><span class="lineNum">      32</span>              :                           const AABB               &amp;fat)</span>
+<span id="L33"><span class="lineNum">      33</span>              :     {</span>
+<span id="L34"><span class="lineNum">      34</span> <span class="tlaGNC">          80 :         SAPEndpoint ep_min, ep_max;</span></span>
+<span id="L35"><span class="lineNum">      35</span> <span class="tlaGNC">          80 :         ep_min.value  = static_cast&lt;float&gt;(fat.min.x);</span></span>
+<span id="L36"><span class="lineNum">      36</span> <span class="tlaGNC">          80 :         ep_min.slot   = slot;</span></span>
+<span id="L37"><span class="lineNum">      37</span> <span class="tlaGNC">          80 :         ep_min.is_max = 0;</span></span>
+<span id="L38"><span class="lineNum">      38</span>              : </span>
+<span id="L39"><span class="lineNum">      39</span> <span class="tlaGNC">          80 :         ep_max.value  = static_cast&lt;float&gt;(fat.max.x);</span></span>
+<span id="L40"><span class="lineNum">      40</span> <span class="tlaGNC">          80 :         ep_max.slot   = slot;</span></span>
+<span id="L41"><span class="lineNum">      41</span> <span class="tlaGNC">          80 :         ep_max.is_max = 1;</span></span>
+<span id="L42"><span class="lineNum">      42</span>              : </span>
+<span id="L43"><span class="lineNum">      43</span> <span class="tlaGNC">          80 :         endpoints.push_back(ep_min);</span></span>
+<span id="L44"><span class="lineNum">      44</span> <span class="tlaGNC">          80 :         endpoints.push_back(ep_max);</span></span>
+<span id="L45"><span class="lineNum">      45</span>              :         // Full re-sort will be triggered via dirty flag.</span>
+<span id="L46"><span class="lineNum">      46</span> <span class="tlaGNC">          80 :     }</span></span>
+<span id="L47"><span class="lineNum">      47</span>              : </span>
+<span id="L48"><span class="lineNum">      48</span>              :     // Remove both endpoints belonging to `slot` (O(n) scan — acceptable because</span>
+<span id="L49"><span class="lineNum">      49</span>              :     // removals are rare compared to moves; a free-list keeps slots stable).</span>
+<span id="L50"><span class="lineNum">      50</span> <span class="tlaGNC">           6 :     static void ep_remove(std::vector&lt;SAPEndpoint&gt; &amp;endpoints, uint32_t slot)</span></span>
+<span id="L51"><span class="lineNum">      51</span>              :     {</span>
+<span id="L52"><span class="lineNum">      52</span> <span class="tlaGNC">           6 :         auto it = std::remove_if(endpoints.begin(), endpoints.end(),</span></span>
+<span id="L53"><span class="lineNum">      53</span> <span class="tlaGNC">          18 :                                  [slot](const SAPEndpoint &amp;e) { return e.slot == slot; });</span></span>
+<span id="L54"><span class="lineNum">      54</span> <span class="tlaGNC">           6 :         endpoints.erase(it, endpoints.end());</span></span>
+<span id="L55"><span class="lineNum">      55</span> <span class="tlaGNC">           6 :     }</span></span>
+<span id="L56"><span class="lineNum">      56</span>              : </span>
+<span id="L57"><span class="lineNum">      57</span>              :     // Update the stored values for both endpoints of `slot` in place (O(n)).</span>
+<span id="L58"><span class="lineNum">      58</span>              :     // After updating we re-sort, so we don't need to keep the array sorted here.</span>
+<span id="L59"><span class="lineNum">      59</span> <span class="tlaGNC">         119 :     static void ep_update_values(std::vector&lt;SAPEndpoint&gt; &amp;endpoints,</span></span>
+<span id="L60"><span class="lineNum">      60</span>              :                                  uint32_t                  slot,</span>
+<span id="L61"><span class="lineNum">      61</span>              :                                  const AABB               &amp;fat)</span>
+<span id="L62"><span class="lineNum">      62</span>              :     {</span>
+<span id="L63"><span class="lineNum">      63</span> <span class="tlaGNC">         591 :         for (SAPEndpoint &amp;e : endpoints)</span></span>
+<span id="L64"><span class="lineNum">      64</span>              :         {</span>
+<span id="L65"><span class="lineNum">      65</span> <span class="tlaGNC">         472 :             if (e.slot != slot)</span></span>
+<span id="L66"><span class="lineNum">      66</span> <span class="tlaGNC">         234 :                 continue;</span></span>
+<span id="L67"><span class="lineNum">      67</span> <span class="tlaGNC">         238 :             if (e.is_max == 0)</span></span>
+<span id="L68"><span class="lineNum">      68</span> <span class="tlaGNC">         119 :                 e.value = static_cast&lt;float&gt;(fat.min.x);</span></span>
+<span id="L69"><span class="lineNum">      69</span>              :             else</span>
+<span id="L70"><span class="lineNum">      70</span> <span class="tlaGNC">         119 :                 e.value = static_cast&lt;float&gt;(fat.max.x);</span></span>
+<span id="L71"><span class="lineNum">      71</span>              :         }</span>
+<span id="L72"><span class="lineNum">      72</span> <span class="tlaGNC">         119 :     }</span></span>
+<span id="L73"><span class="lineNum">      73</span>              : </span>
+<span id="L74"><span class="lineNum">      74</span>              :     // =========================================================================</span>
+<span id="L75"><span class="lineNum">      75</span>              :     //  Sort</span>
+<span id="L76"><span class="lineNum">      76</span>              :     // =========================================================================</span>
+<span id="L77"><span class="lineNum">      77</span>              : </span>
+<span id="L78"><span class="lineNum">      78</span>              :     // Insertion sort: O(n²) worst case but O(n) when the array is nearly sorted,</span>
+<span id="L79"><span class="lineNum">      79</span>              :     // which is exactly what happens frame-to-frame for slowly-moving objects.</span>
+<span id="L80"><span class="lineNum">      80</span> <span class="tlaGNC">         110 :     void bp_insertion_sort(std::vector&lt;SAPEndpoint&gt; &amp;ep)</span></span>
+<span id="L81"><span class="lineNum">      81</span>              :     {</span>
+<span id="L82"><span class="lineNum">      82</span> <span class="tlaGNC">         110 :         const int n = static_cast&lt;int&gt;(ep.size());</span></span>
+<span id="L83"><span class="lineNum">      83</span> <span class="tlaGNC">         428 :         for (int i = 1; i &lt; n; ++i)</span></span>
+<span id="L84"><span class="lineNum">      84</span>              :         {</span>
+<span id="L85"><span class="lineNum">      85</span> <span class="tlaGNC">         318 :             SAPEndpoint key = ep[i];</span></span>
+<span id="L86"><span class="lineNum">      86</span> <span class="tlaGNC">         318 :             int j = i - 1;</span></span>
+<span id="L87"><span class="lineNum">      87</span> <span class="tlaGNC">         357 :             while (j &gt;= 0 &amp;&amp; ep[j].value &gt; key.value)</span></span>
+<span id="L88"><span class="lineNum">      88</span>              :             {</span>
+<span id="L89"><span class="lineNum">      89</span> <span class="tlaGNC">          39 :                 ep[j + 1] = ep[j];</span></span>
+<span id="L90"><span class="lineNum">      90</span> <span class="tlaGNC">          39 :                 --j;</span></span>
+<span id="L91"><span class="lineNum">      91</span>              :             }</span>
+<span id="L92"><span class="lineNum">      92</span> <span class="tlaGNC">         318 :             ep[j + 1] = key;</span></span>
+<span id="L93"><span class="lineNum">      93</span>              :         }</span>
+<span id="L94"><span class="lineNum">      94</span> <span class="tlaGNC">         110 :     }</span></span>
+<span id="L95"><span class="lineNum">      95</span>              : </span>
+<span id="L96"><span class="lineNum">      96</span>              :     // =========================================================================</span>
+<span id="L97"><span class="lineNum">      97</span>              :     //  Sweep</span>
+<span id="L98"><span class="lineNum">      98</span>              :     // =========================================================================</span>
+<span id="L99"><span class="lineNum">      99</span>              : </span>
+<span id="L100"><span class="lineNum">     100</span>              :     // Classic SAP sweep on the X axis.</span>
+<span id="L101"><span class="lineNum">     101</span>              :     // Active set = slots whose X-interval has started but not yet ended.</span>
+<span id="L102"><span class="lineNum">     102</span>              :     // When we open a new interval (is_max==0), we pair it with everything active</span>
+<span id="L103"><span class="lineNum">     103</span>              :     // and verify with a full 3-D AABB test to reject false positives.</span>
+<span id="L104"><span class="lineNum">     104</span> <span class="tlaGNC">         627 :     void bp_sweep(BroadPhaseState &amp;bp)</span></span>
+<span id="L105"><span class="lineNum">     105</span>              :     {</span>
+<span id="L106"><span class="lineNum">     106</span> <span class="tlaGNC">         627 :         bp.pairs.clear();</span></span>
+<span id="L107"><span class="lineNum">     107</span> <span class="tlaGNC">         627 :         bp.active_set.clear();</span></span>
+<span id="L108"><span class="lineNum">     108</span>              : </span>
+<span id="L109"><span class="lineNum">     109</span> <span class="tlaGNC">        3083 :         for (const SAPEndpoint &amp;ep : bp.endpoints)</span></span>
+<span id="L110"><span class="lineNum">     110</span>              :         {</span>
+<span id="L111"><span class="lineNum">     111</span> <span class="tlaGNC">        2456 :             const BPObject &amp;obj = bp.objects[ep.slot];</span></span>
+<span id="L112"><span class="lineNum">     112</span> <span class="tlaGNC">        2456 :             if (!obj.alive)</span></span>
+<span id="L113"><span class="lineNum">     113</span> <span class="tlaUNC tlaBgUNC">           0 :                 continue;</span></span>
+<span id="L114"><span class="lineNum">     114</span>              : </span>
+<span id="L115"><span class="lineNum">     115</span> <span class="tlaGNC tlaBgGNC">        2456 :             if (ep.is_max == 0)</span></span>
+<span id="L116"><span class="lineNum">     116</span>              :             {</span>
+<span id="L117"><span class="lineNum">     117</span>              :                 // Min endpoint — open interval: test against every currently active slot.</span>
+<span id="L118"><span class="lineNum">     118</span> <span class="tlaGNC">        1755 :                 for (uint32_t active_slot : bp.active_set)</span></span>
+<span id="L119"><span class="lineNum">     119</span>              :                 {</span>
+<span id="L120"><span class="lineNum">     120</span> <span class="tlaGNC">         527 :                     const BPObject &amp;other = bp.objects[active_slot];</span></span>
+<span id="L121"><span class="lineNum">     121</span> <span class="tlaGNC">         527 :                     if (!other.alive)</span></span>
+<span id="L122"><span class="lineNum">     122</span> <span class="tlaUNC tlaBgUNC">           0 :                         continue;</span></span>
+<span id="L123"><span class="lineNum">     123</span>              : </span>
+<span id="L124"><span class="lineNum">     124</span>              :                     // Reject false positives: full 3-D fat AABB overlap test.</span>
+<span id="L125"><span class="lineNum">     125</span> <span class="tlaGNC tlaBgGNC">         527 :                     if (!aabb_overlap(obj.fat_aabb, other.fat_aabb))</span></span>
+<span id="L126"><span class="lineNum">     126</span> <span class="tlaGNC">         100 :                         continue;</span></span>
+<span id="L127"><span class="lineNum">     127</span>              : </span>
+<span id="L128"><span class="lineNum">     128</span>              :                     // Emit the pair (lower user_id first for determinism).</span>
+<span id="L129"><span class="lineNum">     129</span> <span class="tlaGNC">         427 :                     BroadPhasePair pair;</span></span>
+<span id="L130"><span class="lineNum">     130</span> <span class="tlaGNC">         427 :                     if (obj.user_id &lt; other.user_id)</span></span>
+<span id="L131"><span class="lineNum">     131</span>              :                     {</span>
+<span id="L132"><span class="lineNum">     132</span> <span class="tlaGNC">           2 :                         pair.id_a = obj.user_id;</span></span>
+<span id="L133"><span class="lineNum">     133</span> <span class="tlaGNC">           2 :                         pair.id_b = other.user_id;</span></span>
+<span id="L134"><span class="lineNum">     134</span>              :                     }</span>
+<span id="L135"><span class="lineNum">     135</span>              :                     else</span>
+<span id="L136"><span class="lineNum">     136</span>              :                     {</span>
+<span id="L137"><span class="lineNum">     137</span> <span class="tlaGNC">         425 :                         pair.id_a = other.user_id;</span></span>
+<span id="L138"><span class="lineNum">     138</span> <span class="tlaGNC">         425 :                         pair.id_b = obj.user_id;</span></span>
+<span id="L139"><span class="lineNum">     139</span>              :                     }</span>
+<span id="L140"><span class="lineNum">     140</span> <span class="tlaGNC">         427 :                     bp.pairs.push_back(pair);</span></span>
+<span id="L141"><span class="lineNum">     141</span>              :                 }</span>
+<span id="L142"><span class="lineNum">     142</span> <span class="tlaGNC">        1228 :                 bp.active_set.push_back(ep.slot);</span></span>
+<span id="L143"><span class="lineNum">     143</span>              :             }</span>
+<span id="L144"><span class="lineNum">     144</span>              :             else</span>
+<span id="L145"><span class="lineNum">     145</span>              :             {</span>
+<span id="L146"><span class="lineNum">     146</span>              :                 // Max endpoint — close interval: remove from active set.</span>
+<span id="L147"><span class="lineNum">     147</span> <span class="tlaGNC">        1228 :                 auto it = std::find(bp.active_set.begin(), bp.active_set.end(), ep.slot);</span></span>
+<span id="L148"><span class="lineNum">     148</span> <span class="tlaGNC">        1228 :                 if (it != bp.active_set.end())</span></span>
+<span id="L149"><span class="lineNum">     149</span> <span class="tlaGNC">        1228 :                     bp.active_set.erase(it);</span></span>
+<span id="L150"><span class="lineNum">     150</span>              :             }</span>
+<span id="L151"><span class="lineNum">     151</span>              :         }</span>
+<span id="L152"><span class="lineNum">     152</span> <span class="tlaGNC">         627 :     }</span></span>
+<span id="L153"><span class="lineNum">     153</span>              : </span>
+<span id="L154"><span class="lineNum">     154</span>              :     // =========================================================================</span>
+<span id="L155"><span class="lineNum">     155</span>              :     //  Public API</span>
+<span id="L156"><span class="lineNum">     156</span>              :     // =========================================================================</span>
+<span id="L157"><span class="lineNum">     157</span>              : </span>
+<span id="L158"><span class="lineNum">     158</span> <span class="tlaGNC">          38 :     void broad_phase_init(BroadPhaseState &amp;bp, const BroadPhaseConfig &amp;cfg)</span></span>
+<span id="L159"><span class="lineNum">     159</span>              :     {</span>
+<span id="L160"><span class="lineNum">     160</span> <span class="tlaGNC">          38 :         bp.config = cfg;</span></span>
+<span id="L161"><span class="lineNum">     161</span> <span class="tlaGNC">          38 :         bp.objects.clear();</span></span>
+<span id="L162"><span class="lineNum">     162</span> <span class="tlaGNC">          38 :         bp.free_list.clear();</span></span>
+<span id="L163"><span class="lineNum">     163</span> <span class="tlaGNC">          38 :         bp.endpoints.clear();</span></span>
+<span id="L164"><span class="lineNum">     164</span> <span class="tlaGNC">          38 :         bp.active_set.clear();</span></span>
+<span id="L165"><span class="lineNum">     165</span> <span class="tlaGNC">          38 :         bp.pairs.clear();</span></span>
+<span id="L166"><span class="lineNum">     166</span> <span class="tlaGNC">          38 :         bp.dirty = false;</span></span>
+<span id="L167"><span class="lineNum">     167</span> <span class="tlaGNC">          38 :     }</span></span>
+<span id="L168"><span class="lineNum">     168</span>              : </span>
+<span id="L169"><span class="lineNum">     169</span> <span class="tlaGNC">          80 :     BPHandle broad_phase_insert(BroadPhaseState &amp;bp,</span></span>
+<span id="L170"><span class="lineNum">     170</span>              :                                 uint32_t         user_id,</span>
+<span id="L171"><span class="lineNum">     171</span>              :                                 const AABB      &amp;tight_aabb)</span>
+<span id="L172"><span class="lineNum">     172</span>              :     {</span>
+<span id="L173"><span class="lineNum">     173</span>              :         uint32_t slot;</span>
+<span id="L174"><span class="lineNum">     174</span>              : </span>
+<span id="L175"><span class="lineNum">     175</span> <span class="tlaGNC">          80 :         if (!bp.free_list.empty())</span></span>
+<span id="L176"><span class="lineNum">     176</span>              :         {</span>
+<span id="L177"><span class="lineNum">     177</span> <span class="tlaGNC">           2 :             slot = bp.free_list.back();</span></span>
+<span id="L178"><span class="lineNum">     178</span> <span class="tlaGNC">           2 :             bp.free_list.pop_back();</span></span>
+<span id="L179"><span class="lineNum">     179</span> <span class="tlaGNC">           2 :             bp.objects[slot] = {}; // clear old data</span></span>
+<span id="L180"><span class="lineNum">     180</span>              :         }</span>
+<span id="L181"><span class="lineNum">     181</span>              :         else</span>
+<span id="L182"><span class="lineNum">     182</span>              :         {</span>
+<span id="L183"><span class="lineNum">     183</span> <span class="tlaGNC">          78 :             slot = static_cast&lt;uint32_t&gt;(bp.objects.size());</span></span>
+<span id="L184"><span class="lineNum">     184</span> <span class="tlaGNC">          78 :             bp.objects.emplace_back();</span></span>
+<span id="L185"><span class="lineNum">     185</span>              :         }</span>
+<span id="L186"><span class="lineNum">     186</span>              : </span>
+<span id="L187"><span class="lineNum">     187</span> <span class="tlaGNC">          80 :         BPObject &amp;obj  = bp.objects[slot];</span></span>
+<span id="L188"><span class="lineNum">     188</span> <span class="tlaGNC">          80 :         obj.tight_aabb = tight_aabb;</span></span>
+<span id="L189"><span class="lineNum">     189</span> <span class="tlaGNC">          80 :         obj.fat_aabb   = make_fat(tight_aabb, bp.config.fat_margin);</span></span>
+<span id="L190"><span class="lineNum">     190</span> <span class="tlaGNC">          80 :         obj.user_id    = user_id;</span></span>
+<span id="L191"><span class="lineNum">     191</span> <span class="tlaGNC">          80 :         obj.alive      = true;</span></span>
+<span id="L192"><span class="lineNum">     192</span>              : </span>
+<span id="L193"><span class="lineNum">     193</span> <span class="tlaGNC">          80 :         ep_insert(bp.endpoints, slot, obj.fat_aabb);</span></span>
+<span id="L194"><span class="lineNum">     194</span> <span class="tlaGNC">          80 :         bp.dirty = true; // needs re-sort before next sweep</span></span>
+<span id="L195"><span class="lineNum">     195</span>              : </span>
+<span id="L196"><span class="lineNum">     196</span> <span class="tlaGNC">          80 :         return static_cast&lt;BPHandle&gt;(slot);</span></span>
+<span id="L197"><span class="lineNum">     197</span>              :     }</span>
+<span id="L198"><span class="lineNum">     198</span>              : </span>
+<span id="L199"><span class="lineNum">     199</span> <span class="tlaGNC">           6 :     void broad_phase_remove(BroadPhaseState &amp;bp, BPHandle h)</span></span>
+<span id="L200"><span class="lineNum">     200</span>              :     {</span>
+<span id="L201"><span class="lineNum">     201</span> <span class="tlaGNC">           6 :         assert(h &lt; bp.objects.size() &amp;&amp; &quot;Invalid BPHandle&quot;);</span></span>
+<span id="L202"><span class="lineNum">     202</span> <span class="tlaGNC">           6 :         BPObject &amp;obj = bp.objects[h];</span></span>
+<span id="L203"><span class="lineNum">     203</span> <span class="tlaGNC">           6 :         assert(obj.alive &amp;&amp; &quot;Double-remove of BPHandle&quot;);</span></span>
+<span id="L204"><span class="lineNum">     204</span>              : </span>
+<span id="L205"><span class="lineNum">     205</span> <span class="tlaGNC">           6 :         obj.alive = false;</span></span>
+<span id="L206"><span class="lineNum">     206</span> <span class="tlaGNC">           6 :         ep_remove(bp.endpoints, h);</span></span>
+<span id="L207"><span class="lineNum">     207</span> <span class="tlaGNC">           6 :         bp.free_list.push_back(h);</span></span>
+<span id="L208"><span class="lineNum">     208</span>              :         // No dirty flag needed: endpoints were already removed.</span>
+<span id="L209"><span class="lineNum">     209</span> <span class="tlaGNC">           6 :     }</span></span>
+<span id="L210"><span class="lineNum">     210</span>              : </span>
+<span id="L211"><span class="lineNum">     211</span> <span class="tlaGNC">        1198 :     void broad_phase_move(BroadPhaseState &amp;bp,</span></span>
+<span id="L212"><span class="lineNum">     212</span>              :                           BPHandle         h,</span>
+<span id="L213"><span class="lineNum">     213</span>              :                           const AABB      &amp;new_tight_aabb)</span>
+<span id="L214"><span class="lineNum">     214</span>              :     {</span>
+<span id="L215"><span class="lineNum">     215</span> <span class="tlaGNC">        1198 :         assert(h &lt; bp.objects.size() &amp;&amp; &quot;Invalid BPHandle&quot;);</span></span>
+<span id="L216"><span class="lineNum">     216</span> <span class="tlaGNC">        1198 :         BPObject &amp;obj = bp.objects[h];</span></span>
+<span id="L217"><span class="lineNum">     217</span> <span class="tlaGNC">        1198 :         assert(obj.alive &amp;&amp; &quot;Move on removed BPHandle&quot;);</span></span>
+<span id="L218"><span class="lineNum">     218</span>              : </span>
+<span id="L219"><span class="lineNum">     219</span> <span class="tlaGNC">        1198 :         obj.tight_aabb = new_tight_aabb;</span></span>
+<span id="L220"><span class="lineNum">     220</span>              : </span>
+<span id="L221"><span class="lineNum">     221</span>              :         // Temporal coherence: only rebuild fat AABB and trigger a re-sort when</span>
+<span id="L222"><span class="lineNum">     222</span>              :         // the object has escaped its current fattened envelope.</span>
+<span id="L223"><span class="lineNum">     223</span> <span class="tlaGNC">        1198 :         if (aabb_contained(new_tight_aabb, obj.fat_aabb))</span></span>
+<span id="L224"><span class="lineNum">     224</span> <span class="tlaGNC">        1079 :             return; // Still inside — no work needed this frame.</span></span>
+<span id="L225"><span class="lineNum">     225</span>              : </span>
+<span id="L226"><span class="lineNum">     226</span>              :         // The tight AABB escaped: rebuild the fat AABB with extra slack.</span>
+<span id="L227"><span class="lineNum">     227</span> <span class="tlaGNC">         119 :         obj.fat_aabb = make_fat(new_tight_aabb,</span></span>
+<span id="L228"><span class="lineNum">     228</span> <span class="tlaGNC">         119 :                                 bp.config.fat_margin + bp.config.reinsert_threshold);</span></span>
+<span id="L229"><span class="lineNum">     229</span>              : </span>
+<span id="L230"><span class="lineNum">     230</span> <span class="tlaGNC">         119 :         ep_update_values(bp.endpoints, h, obj.fat_aabb);</span></span>
+<span id="L231"><span class="lineNum">     231</span> <span class="tlaGNC">         119 :         bp.dirty = true;</span></span>
+<span id="L232"><span class="lineNum">     232</span>              :     }</span>
+<span id="L233"><span class="lineNum">     233</span>              : </span>
+<span id="L234"><span class="lineNum">     234</span> <span class="tlaGNC">         627 :     void broad_phase_update(BroadPhaseState &amp;bp)</span></span>
+<span id="L235"><span class="lineNum">     235</span>              :     {</span>
+<span id="L236"><span class="lineNum">     236</span> <span class="tlaGNC">         627 :         if (bp.dirty)</span></span>
+<span id="L237"><span class="lineNum">     237</span>              :         {</span>
+<span id="L238"><span class="lineNum">     238</span>              :             // Use insertion sort — exploits near-sortedness from previous frame.</span>
+<span id="L239"><span class="lineNum">     239</span>              :             // Falls back to std::sort for the very first frame or after many insertions.</span>
+<span id="L240"><span class="lineNum">     240</span> <span class="tlaGNC">         110 :             bp_insertion_sort(bp.endpoints);</span></span>
+<span id="L241"><span class="lineNum">     241</span> <span class="tlaGNC">         110 :             bp.dirty = false;</span></span>
+<span id="L242"><span class="lineNum">     242</span>              :         }</span>
+<span id="L243"><span class="lineNum">     243</span>              : </span>
+<span id="L244"><span class="lineNum">     244</span> <span class="tlaGNC">         627 :         bp_sweep(bp);</span></span>
+<span id="L245"><span class="lineNum">     245</span> <span class="tlaGNC">         627 :     }</span></span>
+<span id="L246"><span class="lineNum">     246</span>              : </span>
+<span id="L247"><span class="lineNum">     247</span>              : } // namespace rbc</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com//linux-test-project/lcov" target="_parent">LCOV version 2.0-1</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>

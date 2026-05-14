@@ -1,0 +1,327 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - coverage_clean.info - rbps/Body.hpp</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">rbps</a> - Body.hpp<span style="font-size: 80%;"> (source / <a href="Body.hpp.func-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">coverage_clean.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">1</td>
+            <td class="headerCovTableEntry">1</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2026-05-14 13:13:57</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">4</td>
+            <td class="headerCovTableEntry">4</td>
+          </tr>
+                  <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">            Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>              : #pragma once</span>
+<span id="L2"><span class="lineNum">       2</span>              : </span>
+<span id="L3"><span class="lineNum">       3</span>              : #include &lt;storage/Soa.hpp&gt;</span>
+<span id="L4"><span class="lineNum">       4</span>              : #include &lt;math3d/math3d.hpp&gt;</span>
+<span id="L5"><span class="lineNum">       5</span>              : </span>
+<span id="L6"><span class="lineNum">       6</span>              : /**</span>
+<span id="L7"><span class="lineNum">       7</span>              :  * @defgroup rbps rbps — Physics core</span>
+<span id="L8"><span class="lineNum">       8</span>              :  * @brief Bodies, constraints, joints, contacts, and the `World` step loop.</span>
+<span id="L9"><span class="lineNum">       9</span>              :  *</span>
+<span id="L10"><span class="lineNum">      10</span>              :  * The user-facing entry point is `World` in [API/World.hpp](API/World.hpp).</span>
+<span id="L11"><span class="lineNum">      11</span>              :  * Lower-level layers (Body / Constraint / Joint / Contact / Collider)</span>
+<span id="L12"><span class="lineNum">      12</span>              :  * are exposed for fine-grained control or for unit-tested data flow.</span>
+<span id="L13"><span class="lineNum">      13</span>              :  *</span>
+<span id="L14"><span class="lineNum">      14</span>              :  * @par Step loop summary</span>
+<span id="L15"><span class="lineNum">      15</span>              :  * Per frame: broad-phase update → narrow-phase contact detection → N substeps</span>
+<span id="L16"><span class="lineNum">      16</span>              :  * of `(integrate → position-level solve → velocity update → velocity-level</span>
+<span id="L17"><span class="lineNum">      17</span>              :  * solve)`. See [API/World.hpp](API/World.hpp) for the full diagram.</span>
+<span id="L18"><span class="lineNum">      18</span>              :  */</span>
+<span id="L19"><span class="lineNum">      19</span>              : </span>
+<span id="L20"><span class="lineNum">      20</span>              : /**</span>
+<span id="L21"><span class="lineNum">      21</span>              :  * @file Body.hpp</span>
+<span id="L22"><span class="lineNum">      22</span>              :  * @brief `BodyCollection` SoA + per-body integration / impulse helpers.</span>
+<span id="L23"><span class="lineNum">      23</span>              :  * @ingroup rbps</span>
+<span id="L24"><span class="lineNum">      24</span>              :  */</span>
+<span id="L25"><span class="lineNum">      25</span>              : </span>
+<span id="L26"><span class="lineNum">      26</span>              : using namespace m3d;</span>
+<span id="L27"><span class="lineNum">      27</span>              : </span>
+<span id="L28"><span class="lineNum">      28</span>              : namespace rbps</span>
+<span id="L29"><span class="lineNum">      29</span>              : {</span>
+<span id="L30"><span class="lineNum">      30</span>              : </span>
+<span id="L31"><span class="lineNum">      31</span>              :     /**</span>
+<span id="L32"><span class="lineNum">      32</span>              :      * @brief Motion type of a rigid body.</span>
+<span id="L33"><span class="lineNum">      33</span>              :      *</span>
+<span id="L34"><span class="lineNum">      34</span>              :      * - `STATIC`  — infinite mass; never moved by the solver. Used for level</span>
+<span id="L35"><span class="lineNum">      35</span>              :      *               geometry, anchors, and kinematic obstacles.</span>
+<span id="L36"><span class="lineNum">      36</span>              :      * - `DYNAMIC` — integrated each frame; affected by forces, torques, and</span>
+<span id="L37"><span class="lineNum">      37</span>              :      *               constraint impulses.</span>
+<span id="L38"><span class="lineNum">      38</span>              :      *</span>
+<span id="L39"><span class="lineNum">      39</span>              :      * @ingroup rbps</span>
+<span id="L40"><span class="lineNum">      40</span>              :      */</span>
+<span id="L41"><span class="lineNum">      41</span>              :     enum BodyType</span>
+<span id="L42"><span class="lineNum">      42</span>              :     {</span>
+<span id="L43"><span class="lineNum">      43</span>              :         STATIC,</span>
+<span id="L44"><span class="lineNum">      44</span>              :         DYNAMIC</span>
+<span id="L45"><span class="lineNum">      45</span>              :     };</span>
+<span id="L46"><span class="lineNum">      46</span>              : </span>
+<span id="L47"><span class="lineNum">      47</span>              : // ─────────────────────────────────────────────────────────────────────────────</span>
+<span id="L48"><span class="lineNum">      48</span>              : //  BODY_FIELDS — the ONLY place body fields are declared.</span>
+<span id="L49"><span class="lineNum">      49</span>              : //  BodyCollection, its vectors, swap, pop, and reserve are all derived</span>
+<span id="L50"><span class="lineNum">      50</span>              : //  automatically from this macro.  To add a field: one line here.</span>
+<span id="L51"><span class="lineNum">      51</span>              : // ─────────────────────────────────────────────────────────────────────────────</span>
+<span id="L52"><span class="lineNum">      52</span>              : #define BODY_FIELDS(X)               \</span>
+<span id="L53"><span class="lineNum">      53</span>              :     X(vec3, force)                   \</span>
+<span id="L54"><span class="lineNum">      54</span>              :     X(vec3, torque)                  \</span>
+<span id="L55"><span class="lineNum">      55</span>              :     X(scalar, mass)                  \</span>
+<span id="L56"><span class="lineNum">      56</span>              :     X(scalar, inverse_mass)          \</span>
+<span id="L57"><span class="lineNum">      57</span>              :     X(BodyType, type)                \</span>
+<span id="L58"><span class="lineNum">      58</span>              :     X(vec3, position)                \</span>
+<span id="L59"><span class="lineNum">      59</span>              :     X(quat, orientation)             \</span>
+<span id="L60"><span class="lineNum">      60</span>              :     X(vec3, linear_velocity)         \</span>
+<span id="L61"><span class="lineNum">      61</span>              :     X(vec3, angular_velocity)        \</span>
+<span id="L62"><span class="lineNum">      62</span>              :     X(vec3, prev_position)           \</span>
+<span id="L63"><span class="lineNum">      63</span>              :     X(quat, prev_orientation)        \</span>
+<span id="L64"><span class="lineNum">      64</span>              :     X(vec3, prev_linear_velocity)    \</span>
+<span id="L65"><span class="lineNum">      65</span>              :     X(vec3, prev_angular_velocity)   \</span>
+<span id="L66"><span class="lineNum">      66</span>              :     X(smat3, inertia_tensor)         \</span>
+<span id="L67"><span class="lineNum">      67</span>              :     X(smat3, inverse_inertia_tensor) \</span>
+<span id="L68"><span class="lineNum">      68</span>              :     X(smat3, inertia_tensor_world)   \</span>
+<span id="L69"><span class="lineNum">      69</span>              :     X(smat3, inverse_inertia_tensor_world)</span>
+<span id="L70"><span class="lineNum">      70</span>              : </span>
+<span id="L71"><span class="lineNum">      71</span>              :     // ─────────────────────────────────────────────────────────────────────────────</span>
+<span id="L72"><span class="lineNum">      72</span>              :     //  BodyCollection</span>
+<span id="L73"><span class="lineNum">      73</span>              :     //</span>
+<span id="L74"><span class="lineNum">      74</span>              :     //  Dynamic SoA: grows at runtime, no compile-time capacity needed.</span>
+<span id="L75"><span class="lineNum">      75</span>              :     //  ID type:       uint32_t</span>
+<span id="L76"><span class="lineNum">      76</span>              :     //  GenerationBits: 8  →  24-bit slot index (≤16 M bodies),</span>
+<span id="L77"><span class="lineNum">      77</span>              :     //                         256 reuse cycles before generation wraps.</span>
+<span id="L78"><span class="lineNum">      78</span>              :     //</span>
+<span id="L79"><span class="lineNum">      79</span>              :     //  Access pattern:</span>
+<span id="L80"><span class="lineNum">      80</span>              :     //    uint32_t id = create_body(bc, params);   // stable ID</span>
+<span id="L81"><span class="lineNum">      81</span>              :     //    uint32_t i  = bc.index_of(id);           // current packed index</span>
+<span id="L82"><span class="lineNum">      82</span>              :     //    bc.position[i] = {0, 5, 0};             // direct field write</span>
+<span id="L83"><span class="lineNum">      83</span>              :     //</span>
+<span id="L84"><span class="lineNum">      84</span>              :     //    for (uint32_t i = 0; i &lt; bc.count(); ++i)   // solver loop</span>
+<span id="L85"><span class="lineNum">      85</span>              :     //        bc.position[i] += bc.linear_velocity[i] * dt;</span>
+<span id="L86"><span class="lineNum">      86</span>              :     // ─────────────────────────────────────────────────────────────────────────────</span>
+<span id="L87"><span class="lineNum">      87</span>              :     /**</span>
+<span id="L88"><span class="lineNum">      88</span>              :      * @ingroup rbps</span>
+<span id="L89"><span class="lineNum">      89</span>              :      * @brief Structure-of-Arrays collection for rigid bodies.</span>
+<span id="L90"><span class="lineNum">      90</span>              :      *</span>
+<span id="L91"><span class="lineNum">      91</span>              :      * Every body field listed in `BODY_FIELDS` becomes a `std::vector&lt;T&gt;`</span>
+<span id="L92"><span class="lineNum">      92</span>              :      * member; access is by packed data index.</span>
+<span id="L93"><span class="lineNum">      93</span>              :      *</span>
+<span id="L94"><span class="lineNum">      94</span>              :      * - `uint32_t` IDs with 8 generation bits — `2^24` slots, 256 reuse cycles.</span>
+<span id="L95"><span class="lineNum">      95</span>              :      * - All allocation / freeing goes through the `DynSoABase` API</span>
+<span id="L96"><span class="lineNum">      96</span>              :      *   (`bc.add()`, `bc.remove(id)`, `bc.index_of(id)`, `bc.count()`).</span>
+<span id="L97"><span class="lineNum">      97</span>              :      *</span>
+<span id="L98"><span class="lineNum">      98</span>              :      * @code</span>
+<span id="L99"><span class="lineNum">      99</span>              :      * // Allocate a dynamic body and write its starting state.</span>
+<span id="L100"><span class="lineNum">     100</span>              :      * uint32_t id = bc.add();</span>
+<span id="L101"><span class="lineNum">     101</span>              :      * uint32_t i  = bc.index_of(id);</span>
+<span id="L102"><span class="lineNum">     102</span>              :      * bc.position[i] = {0, 5, 0};</span>
+<span id="L103"><span class="lineNum">     103</span>              :      * bc.mass[i]     = 2.0;</span>
+<span id="L104"><span class="lineNum">     104</span>              :      *</span>
+<span id="L105"><span class="lineNum">     105</span>              :      * // Solver loop — direct array access, no per-body indirection.</span>
+<span id="L106"><span class="lineNum">     106</span>              :      * for (uint32_t i = 0; i &lt; bc.count(); ++i)</span>
+<span id="L107"><span class="lineNum">     107</span>              :      *     bc.position[i] += bc.linear_velocity[i] * dt;</span>
+<span id="L108"><span class="lineNum">     108</span>              :      * @endcode</span>
+<span id="L109"><span class="lineNum">     109</span>              :      *</span>
+<span id="L110"><span class="lineNum">     110</span>              :      * @example test_body.cpp</span>
+<span id="L111"><span class="lineNum">     111</span>              :      */</span>
+<span id="L112"><span class="lineNum">     112</span> <span class="tlaGNC tlaBgGNC">         384 :     DEFINE_DYN_SOA(BodyCollection, uint32_t, /*GenerationBits=*/8, BODY_FIELDS)</span></span>
+<span id="L113"><span class="lineNum">     113</span>              : </span>
+<span id="L114"><span class="lineNum">     114</span>              :     // ─────────────────────────────────────────────────────────────────────────────</span>
+<span id="L115"><span class="lineNum">     115</span>              :     //  Free functions — implementations in Body.cpp</span>
+<span id="L116"><span class="lineNum">     116</span>              :     //  All take a packed data index i, NOT a stable ID.</span>
+<span id="L117"><span class="lineNum">     117</span>              :     // ─────────────────────────────────────────────────────────────────────────────</span>
+<span id="L118"><span class="lineNum">     118</span>              : </span>
+<span id="L119"><span class="lineNum">     119</span>              :     /**</span>
+<span id="L120"><span class="lineNum">     120</span>              :      * @brief Recompute the world-space inertia tensor and its inverse for body i.</span>
+<span id="L121"><span class="lineNum">     121</span>              :      *</span>
+<span id="L122"><span class="lineNum">     122</span>              :      * Must be called whenever orientation[i] changes before any function that</span>
+<span id="L123"><span class="lineNum">     123</span>              :      * reads inertia_tensor_world or inverse_inertia_tensor_world.</span>
+<span id="L124"><span class="lineNum">     124</span>              :      *</span>
+<span id="L125"><span class="lineNum">     125</span>              :      * @param bc  The BodyCollection.</span>
+<span id="L126"><span class="lineNum">     126</span>              :      * @param i   Packed data index of the body to update.</span>
+<span id="L127"><span class="lineNum">     127</span>              :      *</span>
+<span id="L128"><span class="lineNum">     128</span>              :      * @ingroup rbps</span>
+<span id="L129"><span class="lineNum">     129</span>              :      */</span>
+<span id="L130"><span class="lineNum">     130</span>              :     void update_inertia_tensor_world(BodyCollection &amp;bc, uint32_t i);</span>
+<span id="L131"><span class="lineNum">     131</span>              : </span>
+<span id="L132"><span class="lineNum">     132</span>              :     /**</span>
+<span id="L133"><span class="lineNum">     133</span>              :      * @brief Integrate positions and orientations for all dynamic bodies.</span>
+<span id="L134"><span class="lineNum">     134</span>              :      *</span>
+<span id="L135"><span class="lineNum">     135</span>              :      * For each dynamic body:</span>
+<span id="L136"><span class="lineNum">     136</span>              :      *   1. Store previous pose.</span>
+<span id="L137"><span class="lineNum">     137</span>              :      *   2. Recompute world inertia tensor.</span>
+<span id="L138"><span class="lineNum">     138</span>              :      *   3. Integrate linear velocity from applied forces.</span>
+<span id="L139"><span class="lineNum">     139</span>              :      *   4. Integrate position.</span>
+<span id="L140"><span class="lineNum">     140</span>              :      *   5. Integrate angular velocity from applied torques (gyroscopic correction).</span>
+<span id="L141"><span class="lineNum">     141</span>              :      *   6. Update orientation via small-angle quaternion approximation.</span>
+<span id="L142"><span class="lineNum">     142</span>              :      *</span>
+<span id="L143"><span class="lineNum">     143</span>              :      * @param bc  The BodyCollection.</span>
+<span id="L144"><span class="lineNum">     144</span>              :      * @param dt  Time step (Δt).</span>
+<span id="L145"><span class="lineNum">     145</span>              :      *</span>
+<span id="L146"><span class="lineNum">     146</span>              :      * @ingroup rbps</span>
+<span id="L147"><span class="lineNum">     147</span>              :      */</span>
+<span id="L148"><span class="lineNum">     148</span>              :     void update_position_and_orientation(BodyCollection &amp;bc, scalar dt);</span>
+<span id="L149"><span class="lineNum">     149</span>              : </span>
+<span id="L150"><span class="lineNum">     150</span>              :     /**</span>
+<span id="L151"><span class="lineNum">     151</span>              :      * @brief Recompute linear and angular velocities from pose deltas.</span>
+<span id="L152"><span class="lineNum">     152</span>              :      *</span>
+<span id="L153"><span class="lineNum">     153</span>              :      * Called after constraint solving to derive post-solve velocities.</span>
+<span id="L154"><span class="lineNum">     154</span>              :      *</span>
+<span id="L155"><span class="lineNum">     155</span>              :      * @param bc      The BodyCollection.</span>
+<span id="L156"><span class="lineNum">     156</span>              :      * @param inv_dt  Inverse time step (1/Δt).</span>
+<span id="L157"><span class="lineNum">     157</span>              :      *</span>
+<span id="L158"><span class="lineNum">     158</span>              :      * @ingroup rbps</span>
+<span id="L159"><span class="lineNum">     159</span>              :      */</span>
+<span id="L160"><span class="lineNum">     160</span>              :     void update_velocities(BodyCollection &amp;bc, scalar inv_dt);</span>
+<span id="L161"><span class="lineNum">     161</span>              : </span>
+<span id="L162"><span class="lineNum">     162</span>              :     /**</span>
+<span id="L163"><span class="lineNum">     163</span>              :      * @brief Apply a positional impulse at offset r to body i.</span>
+<span id="L164"><span class="lineNum">     164</span>              :      *</span>
+<span id="L165"><span class="lineNum">     165</span>              :      * Adjusts position and orientation. Used during position-level constraint</span>
+<span id="L166"><span class="lineNum">     166</span>              :      * solving (XPBD).</span>
+<span id="L167"><span class="lineNum">     167</span>              :      *</span>
+<span id="L168"><span class="lineNum">     168</span>              :      * @param bc      The BodyCollection.</span>
+<span id="L169"><span class="lineNum">     169</span>              :      * @param i       Packed data index.</span>
+<span id="L170"><span class="lineNum">     170</span>              :      * @param impulse Impulse vector in world space.</span>
+<span id="L171"><span class="lineNum">     171</span>              :      * @param r       Lever arm from centre of mass to application point (world space).</span>
+<span id="L172"><span class="lineNum">     172</span>              :      *</span>
+<span id="L173"><span class="lineNum">     173</span>              :      * @ingroup rbps</span>
+<span id="L174"><span class="lineNum">     174</span>              :      */</span>
+<span id="L175"><span class="lineNum">     175</span>              :     void apply_positional_constraint_impulse(BodyCollection &amp;bc, uint32_t i, vec3 impulse, vec3 r);</span>
+<span id="L176"><span class="lineNum">     176</span>              : </span>
+<span id="L177"><span class="lineNum">     177</span>              :     /**</span>
+<span id="L178"><span class="lineNum">     178</span>              :      * @brief Apply a pure rotational impulse to body i.</span>
+<span id="L179"><span class="lineNum">     179</span>              :      *</span>
+<span id="L180"><span class="lineNum">     180</span>              :      * @param bc      The BodyCollection.</span>
+<span id="L181"><span class="lineNum">     181</span>              :      * @param i       Packed data index.</span>
+<span id="L182"><span class="lineNum">     182</span>              :      * @param impulse Rotational impulse (torque impulse) in world space.</span>
+<span id="L183"><span class="lineNum">     183</span>              :      *</span>
+<span id="L184"><span class="lineNum">     184</span>              :      * @ingroup rbps</span>
+<span id="L185"><span class="lineNum">     185</span>              :      */</span>
+<span id="L186"><span class="lineNum">     186</span>              :     void apply_rotational_constraint_impulse(BodyCollection &amp;bc, uint32_t i, vec3 impulse);</span>
+<span id="L187"><span class="lineNum">     187</span>              : </span>
+<span id="L188"><span class="lineNum">     188</span>              :     /**</span>
+<span id="L189"><span class="lineNum">     189</span>              :      * @brief Apply a velocity-level impulse at offset r to body i.</span>
+<span id="L190"><span class="lineNum">     190</span>              :      *</span>
+<span id="L191"><span class="lineNum">     191</span>              :      * Adjusts linear_velocity and angular_velocity. Used during velocity-level</span>
+<span id="L192"><span class="lineNum">     192</span>              :      * constraint solving (restitution, friction).</span>
+<span id="L193"><span class="lineNum">     193</span>              :      * No-op if the body is STATIC.</span>
+<span id="L194"><span class="lineNum">     194</span>              :      *</span>
+<span id="L195"><span class="lineNum">     195</span>              :      * @param bc      The BodyCollection.</span>
+<span id="L196"><span class="lineNum">     196</span>              :      * @param i       Packed data index.</span>
+<span id="L197"><span class="lineNum">     197</span>              :      * @param impulse Impulse vector in world space.</span>
+<span id="L198"><span class="lineNum">     198</span>              :      * @param r       Lever arm from centre of mass to application point (world space).</span>
+<span id="L199"><span class="lineNum">     199</span>              :      *</span>
+<span id="L200"><span class="lineNum">     200</span>              :      * @ingroup rbps</span>
+<span id="L201"><span class="lineNum">     201</span>              :      */</span>
+<span id="L202"><span class="lineNum">     202</span>              :     void apply_positional_velocity_constraint_impulse(BodyCollection &amp;bc, uint32_t i, vec3 impulse, vec3 r);</span>
+<span id="L203"><span class="lineNum">     203</span>              : </span>
+<span id="L204"><span class="lineNum">     204</span>              : </span>
+<span id="L205"><span class="lineNum">     205</span>              :     /**</span>
+<span id="L206"><span class="lineNum">     206</span>              :      * @brief Apply a velocity-level rotational impulse at to body i.</span>
+<span id="L207"><span class="lineNum">     207</span>              :      *</span>
+<span id="L208"><span class="lineNum">     208</span>              :      * Adjusts  angular_velocity. Used during velocity-level</span>
+<span id="L209"><span class="lineNum">     209</span>              :      * joint damping solver.</span>
+<span id="L210"><span class="lineNum">     210</span>              :      * No-op if the body is STATIC.</span>
+<span id="L211"><span class="lineNum">     211</span>              :      *</span>
+<span id="L212"><span class="lineNum">     212</span>              :      * @param bc      The BodyCollection.</span>
+<span id="L213"><span class="lineNum">     213</span>              :      * @param i       Packed data index.</span>
+<span id="L214"><span class="lineNum">     214</span>              :      * @param impulse Impulse vector in world space.</span>
+<span id="L215"><span class="lineNum">     215</span>              :      *</span>
+<span id="L216"><span class="lineNum">     216</span>              :      * @ingroup rbps</span>
+<span id="L217"><span class="lineNum">     217</span>              :      */</span>
+<span id="L218"><span class="lineNum">     218</span>              :     void apply_rotational_velocity_constraint_impulse(BodyCollection &amp;bc, uint32_t i, vec3 impulse);</span>
+<span id="L219"><span class="lineNum">     219</span>              : </span>
+<span id="L220"><span class="lineNum">     220</span>              :     /**</span>
+<span id="L221"><span class="lineNum">     221</span>              :      * @brief Compute the generalised inverse mass for a positional constraint.</span>
+<span id="L222"><span class="lineNum">     222</span>              :      *</span>
+<span id="L223"><span class="lineNum">     223</span>              :      * Returns  w = 1/m + (r×n)ᵀ I⁻¹ (r×n).</span>
+<span id="L224"><span class="lineNum">     224</span>              :      * Returns 0 for STATIC bodies.</span>
+<span id="L225"><span class="lineNum">     225</span>              :      *</span>
+<span id="L226"><span class="lineNum">     226</span>              :      * @param bc  The BodyCollection.</span>
+<span id="L227"><span class="lineNum">     227</span>              :      * @param i   Packed data index.</span>
+<span id="L228"><span class="lineNum">     228</span>              :      * @param r   Vector from centre of mass to contact point.</span>
+<span id="L229"><span class="lineNum">     229</span>              :      * @param n   Constraint direction (unit normal).</span>
+<span id="L230"><span class="lineNum">     230</span>              :      * @return    Generalised inverse mass scalar.</span>
+<span id="L231"><span class="lineNum">     231</span>              :      *</span>
+<span id="L232"><span class="lineNum">     232</span>              :      * @ingroup rbps</span>
+<span id="L233"><span class="lineNum">     233</span>              :      */</span>
+<span id="L234"><span class="lineNum">     234</span>              :     scalar get_positional_generalized_inverse_mass(BodyCollection &amp;bc, uint32_t i, vec3 r, vec3 n);</span>
+<span id="L235"><span class="lineNum">     235</span>              : </span>
+<span id="L236"><span class="lineNum">     236</span>              :     /**</span>
+<span id="L237"><span class="lineNum">     237</span>              :      * @brief Compute the generalised inverse mass for a rotational constraint.</span>
+<span id="L238"><span class="lineNum">     238</span>              :      *</span>
+<span id="L239"><span class="lineNum">     239</span>              :      * Returns  w = nᵀ I⁻¹ n.</span>
+<span id="L240"><span class="lineNum">     240</span>              :      * Returns 0 for STATIC bodies.</span>
+<span id="L241"><span class="lineNum">     241</span>              :      *</span>
+<span id="L242"><span class="lineNum">     242</span>              :      * @param bc  The BodyCollection.</span>
+<span id="L243"><span class="lineNum">     243</span>              :      * @param i   Packed data index.</span>
+<span id="L244"><span class="lineNum">     244</span>              :      * @param n   Rotation axis (unit direction).</span>
+<span id="L245"><span class="lineNum">     245</span>              :      * @return    Generalised inverse mass scalar.</span>
+<span id="L246"><span class="lineNum">     246</span>              :      *</span>
+<span id="L247"><span class="lineNum">     247</span>              :      * @ingroup rbps</span>
+<span id="L248"><span class="lineNum">     248</span>              :      */</span>
+<span id="L249"><span class="lineNum">     249</span>              :     scalar get_rotational_generalized_inverse_mass(BodyCollection &amp;bc, uint32_t i, vec3 n);</span>
+<span id="L250"><span class="lineNum">     250</span>              : </span>
+<span id="L251"><span class="lineNum">     251</span>              : } // namespace rbps</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com//linux-test-project/lcov" target="_parent">LCOV version 2.0-1</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>
